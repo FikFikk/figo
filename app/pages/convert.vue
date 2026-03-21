@@ -277,36 +277,19 @@ function resetAll() {
 }
 
 async function triggerDownload(blob: Blob, filename: string) {
-  // 1. Prioritize File System Access API (Bypasses IDM natively and ensures perfect filename)
-  if ('showSaveFilePicker' in window) {
-    try {
-      const handle = await (window as any).showSaveFilePicker({
-        suggestedName: filename,
-      })
-      const writable = await handle.createWritable()
-      await writable.write(blob)
-      await writable.close()
-      return // Success!
-    } catch (err: any) {
-      // User cancelled or error, fall through to fallback
-      if (err.name === 'AbortError') return
-      console.warn('showSaveFilePicker failed:', err)
-    }
-  }
-
-  // 2. IE/Edge fallback
+  // 1. IE/Edge fallback
   if (typeof (window.navigator as any).msSaveOrOpenBlob !== 'undefined') {
     (window.navigator as any).msSaveOrOpenBlob(blob, filename)
     return
   }
   
-  // 3. Last resort fallback (Object URL + anchor element)
+  // 2. Standard URL generation and anchor download
+  // We use this standard method so it natively goes to the 'Downloads' folder and appears in Chrome download history
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.style.display = 'none'
   a.href = url
   a.download = filename || 'download.file'
-  a.target = '_blank' // Sometimes helps IDM back off
   document.body.appendChild(a)
   a.click()
   
@@ -347,7 +330,8 @@ async function startConversion() {
       let outputName = response.headers.get('X-Output-Name')
       if (!outputName) {
         const baseName = file.name.replace(/\.[^.]+$/, '')
-        outputName = `${baseName}.${selectedFormat.value.toLowerCase()}`
+        const timestamp = Date.now()
+        outputName = `${baseName}-figo-${timestamp}.${selectedFormat.value.toLowerCase()}`
       }
 
       return {
@@ -391,7 +375,8 @@ async function downloadAllZip() {
     if (!response.ok) throw new Error('Failed to create ZIP')
 
     const blob = await response.blob()
-    await triggerDownload(blob, 'figo-converted.zip')
+    const timestamp = Date.now()
+    await triggerDownload(blob, `figo-converted-${timestamp}.zip`)
     
     status.value = prevStatus
   } catch (err: any) {

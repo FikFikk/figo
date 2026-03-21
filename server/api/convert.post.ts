@@ -66,8 +66,12 @@ async function convertBuffer(
 }
 
 export default defineEventHandler(async (event) => {
+  const reqStartTime = performance.now()
   try {
+    const parseStartTime = performance.now()
     const formData = await readMultipartFormData(event)
+    const parseTime = performance.now() - parseStartTime
+
     if (!formData || formData.length === 0) {
       throw createError({ statusCode: 400, message: 'No files provided' })
     }
@@ -101,9 +105,12 @@ export default defineEventHandler(async (event) => {
       const entry = fileEntries[0]!
       const originalName = entry.filename || 'file'
       const baseName = originalName.replace(/\.[^.]+$/, '')
-      const outputName = `${baseName}.${targetFormat === 'jpeg' ? 'jpg' : targetFormat}`
+      const timestamp = Date.now()
+      const outputName = `${baseName}-figo-${timestamp}.${targetFormat === 'jpeg' ? 'jpg' : targetFormat}`
 
+      const convertStartTime = performance.now()
       const converted = await convertBuffer(entry.data, targetFormat)
+      const convertTime = performance.now() - convertStartTime
 
       setResponseHeaders(event, {
         'Content-Type': getOutputMime(targetFormat),
@@ -114,25 +121,30 @@ export default defineEventHandler(async (event) => {
         'X-Output-Size': String(converted.length),
       })
 
+      const totalTime = performance.now() - reqStartTime
+      console.log(`[convert] [Single] OK: Parse=${parseTime.toFixed(1)}ms | Sharp=${convertTime.toFixed(1)}ms | Total=${totalTime.toFixed(1)}ms | Image=${originalName}`)
       return converted
     }
 
     // === MULTIPLE FILES: convert all concurrently, stream as ZIP ===
     // Convert all files in parallel for maximum throughput
+    const convertStartTime = performance.now()
     const convertedFiles = await Promise.all(
       fileEntries.map(async (entry) => {
         const originalName = entry.filename || 'file'
         const baseName = originalName.replace(/\.[^.]+$/, '')
-        const outputName = `${baseName}.${targetFormat === 'jpeg' ? 'jpg' : targetFormat}`
+        const timestamp = Date.now()
+        const outputName = `${baseName}-figo-${timestamp}.${targetFormat === 'jpeg' ? 'jpg' : targetFormat}`
         const buffer = await convertBuffer(entry.data, targetFormat)
         return { outputName, buffer }
       })
     )
 
     // Stream ZIP response directly — no temp files
+    const timestamp = Date.now()
     setResponseHeaders(event, {
       'Content-Type': 'application/zip',
-      'Content-Disposition': `attachment; filename="figo-converted.zip"`,
+      'Content-Disposition': `attachment; filename="figo-converted-${timestamp}.zip"`,
     })
 
     const passThrough = new PassThrough()
@@ -146,6 +158,10 @@ export default defineEventHandler(async (event) => {
 
     // Finalize the archive (no await — it streams)
     archive.finalize()
+
+    const convertTime = performance.now() - convertStartTime
+    const totalTime = performance.now() - reqStartTime
+    console.log(`[convert] [ZIP] OK (${fileEntries.length} files): Parse=${parseTime.toFixed(1)}ms | Sharp/Zip Init=${convertTime.toFixed(1)}ms | Total=${totalTime.toFixed(1)}ms`)
 
     return sendStream(event, passThrough)
   } catch (err: any) {
