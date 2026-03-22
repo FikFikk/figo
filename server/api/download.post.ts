@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 import { tmpdir } from 'os'
+import { spawn } from 'child_process'
 import { downloadJobs } from '../lib/jobs'
 
 // Blocklist for adult sites
@@ -32,17 +33,49 @@ function parseYtdlpOutput(raw: string): any {
   return JSON.parse(raw)
 }
 
-// Lazy-load youtube-dl-exec to avoid TDZ issues with Nitro bundler
-let _ytdl: any = null
-async function getYtdl() {
-  if (!_ytdl) {
-    const { create } = await import('youtube-dl-exec')
-    const isWin = process.platform === 'win32'
-    const binName = isWin ? 'yt-dlp.exe' : 'yt-dlp'
-    const binPath = join(process.cwd(), 'server', 'api', binName)
-    _ytdl = create(binPath)
-  }
-  return _ytdl
+/**
+ * Native implementation of yt-dlp execution to replace youtube-dl-exec dependency.
+ * This ensures compatibility with Nitro/Rollup production builds.
+ */
+async function execYtdlp(url: string, flags: Record<string, any>): Promise<{ stdout: string }> {
+  const isWin = process.platform === 'win32'
+  const binName = isWin ? 'yt-dlp.exe' : 'yt-dlp'
+  const binPath = join(process.cwd(), 'server', 'api', binName)
+
+  // Map flags to command line arguments
+  const args: string[] = []
+  
+  if (flags.dumpSingleJson) args.push('--dump-single-json')
+  if (flags.noWarnings) args.push('--no-warnings')
+  if (flags.noCheckCertificates) args.push('--no-check-certificates')
+  if (flags.youtubeSkipDashManifest) args.push('--youtube-skip-dash-manifest')
+  if (flags.flatPlaylist) args.push('--flat-playlist')
+  if (flags.format) args.push('--format', flags.format)
+  if (flags.output) args.push('--output', flags.output)
+  if (flags.ffmpegLocation) args.push('--ffmpeg-location', flags.ffmpegLocation)
+  if (flags.mergeOutputFormat) args.push('--merge-output-format', flags.mergeOutputFormat)
+  
+  // Add positionals (URL)
+  args.push(url)
+
+  return new Promise((resolve, reject) => {
+    console.log(`[Spawn] Running: ${binPath} ${args.join(' ')}`)
+    const child = spawn(binPath, args)
+    let stdout = ''
+    let stderr = ''
+
+    child.stdout.on('data', (data) => { stdout += data.toString() })
+    child.stderr.on('data', (data) => { stderr += data.toString() })
+
+    child.on('close', (code) => {
+      if (code === 0) resolve({ stdout })
+      else reject(new Error(stderr || `yt-dlp exited with code ${code}`))
+    })
+
+    child.on('error', (err) => {
+      reject(err)
+    })
+  })
 }
 
 export default defineEventHandler(async (event) => {
@@ -69,12 +102,9 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const youtubedl = await getYtdl()
-    const { exec } = youtubedl
-
     // ===================== MODE: INFO =====================
     if (mode === 'info') {
-      const child = await exec(url, {
+      const dataRaw = await execYtdlp(url, {
         dumpSingleJson: true,
         noWarnings: true,
         noCheckCertificates: true,
@@ -82,7 +112,7 @@ export default defineEventHandler(async (event) => {
         flatPlaylist: true,
       })
 
-      const data = parseYtdlpOutput(child.stdout)
+      const data = parseYtdlpOutput(dataRaw.stdout)
 
       // Collect unique heights
       const heights = new Set<number>()
@@ -177,7 +207,7 @@ export default defineEventHandler(async (event) => {
           }
           if (ext === 'mp4') flags.mergeOutputFormat = 'mp4'
 
-          await exec(url, flags)
+          await execYtdlp(url, flags)
           console.log(`[Job ${jobId}] Done!`)
 
           downloadJobs.set(jobId, {
