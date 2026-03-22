@@ -1,13 +1,24 @@
 import sharp from 'sharp'
 import archiver from 'archiver'
 import { Readable, PassThrough } from 'stream'
+import * as XLSX from 'xlsx'
 
 // Supported output formats
-const SUPPORTED_FORMATS = ['webp', 'png', 'jpg', 'jpeg', 'gif', 'avif', 'tiff'] as const
+const IMAGE_FORMATS = ['webp', 'png', 'jpg', 'jpeg', 'gif', 'avif', 'tiff'] as const
+const SHEET_FORMATS = ['xlsx', 'csv', 'txt', 'html'] as const
+const SUPPORTED_FORMATS = [...IMAGE_FORMATS, ...SHEET_FORMATS] as const
 type SupportedFormat = typeof SUPPORTED_FORMATS[number]
 
+function isImageFormat(fmt: string): boolean {
+  return (IMAGE_FORMATS as readonly string[]).includes(fmt)
+}
+
+function isSheetFormat(fmt: string): boolean {
+  return (SHEET_FORMATS as readonly string[]).includes(fmt)
+}
+
 function isSupportedFormat(fmt: string): fmt is SupportedFormat {
-  return SUPPORTED_FORMATS.includes(fmt.toLowerCase() as SupportedFormat)
+  return (SUPPORTED_FORMATS as readonly string[]).includes(fmt.toLowerCase())
 }
 
 function normalizeFormat(fmt: string): SupportedFormat {
@@ -25,44 +36,64 @@ function getOutputMime(fmt: SupportedFormat): string {
     gif: 'image/gif',
     avif: 'image/avif',
     tiff: 'image/tiff',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    csv: 'text/csv',
+    txt: 'text/plain',
+    html: 'text/html',
   }
   return mimeMap[fmt] || 'application/octet-stream'
 }
 
-// Convert a single buffer using sharp — streaming pipeline, zero intermediate copies
+// Convert a single buffer using sharp or xlsx — zero intermediate copies
 async function convertBuffer(
   inputBuffer: Buffer,
   targetFormat: SupportedFormat
 ): Promise<Buffer> {
-  let pipeline = sharp(inputBuffer, {
-    // Disable cache to reduce memory — each file is one-shot
-    limitInputPixels: 268_402_689,  // ~16384x16384
-    sequentialRead: true,           // Lower memory for sequential access
-  })
+  if (isImageFormat(targetFormat)) {
+    let pipeline = sharp(inputBuffer, {
+      // Disable cache to reduce memory — each file is one-shot
+      limitInputPixels: 268_402_689,  // ~16384x16384
+      sequentialRead: true,           // Lower memory for sequential access
+    })
 
-  // Apply format-specific optimizations for speed
-  switch (targetFormat) {
-    case 'webp':
-      pipeline = pipeline.webp({ effort: 2, quality: 85 })
-      break
-    case 'png':
-      pipeline = pipeline.png({ compressionLevel: 4, adaptiveFiltering: true })
-      break
-    case 'jpeg':
-      pipeline = pipeline.jpeg({ quality: 85, mozjpeg: false })
-      break
-    case 'gif':
-      pipeline = pipeline.gif()
-      break
-    case 'avif':
-      pipeline = pipeline.avif({ effort: 2, quality: 70 })
-      break
-    case 'tiff':
-      pipeline = pipeline.tiff({ compression: 'lzw' })
-      break
+    // Apply format-specific optimizations for speed
+    switch (targetFormat) {
+      case 'webp':
+        pipeline = pipeline.webp({ effort: 2, quality: 85 })
+        break
+      case 'png':
+        pipeline = pipeline.png({ compressionLevel: 4, adaptiveFiltering: true })
+        break
+      case 'jpeg':
+      case 'jpg':
+        pipeline = pipeline.jpeg({ quality: 85, mozjpeg: false })
+        break
+      case 'gif':
+        pipeline = pipeline.gif()
+        break
+      case 'avif':
+        pipeline = pipeline.avif({ effort: 2, quality: 70 })
+        break
+      case 'tiff':
+        pipeline = pipeline.tiff({ compression: 'lzw' })
+        break
+    }
+
+    return pipeline.toBuffer()
+  } 
+  
+  if (isSheetFormat(targetFormat)) {
+    // Read the spreadsheet directly from the memory buffer
+    const workbook = XLSX.read(inputBuffer, { type: 'buffer' })
+    
+    // SheetJS uses bookType 'txt' for UTF-16 tab-separated text
+    const bookType: any = targetFormat
+    
+    // Write back directly into a Buffer instead of a file
+    return XLSX.write(workbook, { type: 'buffer', bookType })
   }
 
-  return pipeline.toBuffer()
+  throw new Error(`Fallback failure: Target format unsupported -> ${targetFormat}`)
 }
 
 export default defineEventHandler(async (event) => {

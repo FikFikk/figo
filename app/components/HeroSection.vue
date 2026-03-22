@@ -345,3 +345,8 @@ onUnmounted(() => {
   cancelAnimationFrame(rafId)
 })
 </script>
+
+<style scoped>
+/* fix */
+</style>
+

@@ -6,3 +6,8 @@
     </NuxtLayout>
   </div>
 </template>
+
+<style scoped>
+/* fix */
+</style>
+

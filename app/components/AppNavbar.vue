@@ -92,3 +92,8 @@ function isActive(path: string): boolean {
   return route.path === path
 }
 </script>
+
+<style scoped>
+/* fix */
+</style>
+

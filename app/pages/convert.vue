@@ -29,7 +29,7 @@
       @drop.prevent="handleDrop"
       @click="triggerInput"
     >
-      <input ref="fileInput" type="file" class="hidden" multiple accept="image/*" @change="handleFileSelect" />
+      <input ref="fileInput" type="file" class="hidden" multiple accept="image/*,.xlsx,.xls,.csv,.txt" @change="handleFileSelect" />
       <div class="mb-4">
         <span class="material-symbols-outlined text-5xl transition-transform duration-300 group-hover:scale-110"
           :class="isDragging ? 'text-primary' : (isDark ? 'text-gray-500' : 'text-slate-400')"
@@ -215,11 +215,16 @@ const results = ref<ConvertedFile[]>([])
 const errorMessage = ref('')
 const conversionTime = ref('')
 
-const ALL_FORMATS = ['WEBP', 'PNG', 'JPG', 'GIF', 'AVIF', 'TIFF']
+const IMAGE_FORMATS = ['WEBP', 'PNG', 'JPG', 'GIF', 'AVIF', 'TIFF']
+const SHEET_FORMATS = ['XLSX', 'CSV', 'TXT', 'HTML']
 
-// Smart format filtering: hide the input file's format from the options
+// Smart format filtering: hide the input file's format from the options and segregate images from spreadsheets
 const availableFormats = computed(() => {
-  if (files.value.length === 0) return ALL_FORMATS
+  if (files.value.length === 0) return [...IMAGE_FORMATS, ...SHEET_FORMATS]
+
+  const firstExt = files.value[0]?.name.split('.').pop()?.toUpperCase() || ''
+  const isSheet = SHEET_FORMATS.includes(firstExt) || firstExt === 'XLS'
+  const filterList = isSheet ? SHEET_FORMATS : IMAGE_FORMATS
 
   // Collect all unique extensions from uploaded files
   const inputExtensions = new Set(
@@ -229,7 +234,7 @@ const availableFormats = computed(() => {
     })
   )
 
-  const filtered = ALL_FORMATS.filter(fmt => !inputExtensions.has(fmt))
+  const filtered = filterList.filter(fmt => !inputExtensions.has(fmt))
 
   // If the currently selected format was removed, auto-select the first available
   if (!filtered.includes(selectedFormat.value) && filtered.length > 0) {

@@ -78,3 +78,8 @@ onMounted(() => {
   itemRefs.forEach((el) => { if (el) observer.observe(el) })
 })
 </script>
+
+<style scoped>
+/* fix */
+</style>
+

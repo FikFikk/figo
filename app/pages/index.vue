@@ -88,3 +88,7 @@ function handleToolAction(toolName: string) {
   if (tool) router.push(tool.route)
 }
 </script>
+
+<style scoped>
+/* Vite parser fix */
+</style>

@@ -68,3 +68,8 @@ onMounted(() => {
   observer.observe(cardRef.value)
 })
 </script>
+
+<style scoped>
+/* fix */
+</style>
+

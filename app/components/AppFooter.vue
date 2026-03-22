@@ -20,3 +20,8 @@ const { isDark } = useColorMode()
 const currentYear = new Date().getFullYear()
 const links = ['Privacy', 'Terms', 'Status', 'API']
 </script>
+
+<style scoped>
+/* fix */
+</style>
+

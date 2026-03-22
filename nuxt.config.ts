@@ -1,7 +1,48 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  ssr: false,
+  devtools: { enabled: false },
+
+  devServer: {
+    port: 5000
+  },
+
+  nitro: {
+    rollupConfig: {
+      output: {
+        plugins: [
+          {
+            name: 'fix-windows-esm-paths',
+            renderChunk(code: string) {
+              // Fix raw Windows paths like 'C:\\path\\to\\file.js' -> 'file:///C:/path/to/file.js'
+              const fixed = code.replace(
+                /from\s+['"](([A-Z]):\\\\[^'"]+)['"]/g,
+                (_match: string, rawPath: string) => {
+                  const normalized = rawPath.replace(/\\\\/g, '/')
+                  return `from 'file:///${normalized}'`
+                }
+              )
+              return fixed !== code ? { code: fixed, map: null } : null
+            }
+          }
+        ]
+      }
+    },
+  },
+
+  vite: {
+    server: {
+      fs: {
+        strict: false,
+      }
+    }
+  },
+
+  tailwindcss: {
+    viewer: false,
+    editorSupport: false
+  },
 
   modules: [
     '@nuxtjs/google-fonts',

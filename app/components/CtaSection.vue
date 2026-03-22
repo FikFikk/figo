@@ -68,3 +68,8 @@ onMounted(() => {
   observer.observe(ctaRef.value)
 })
 </script>
+
+<style scoped>
+/* fix */
+</style>
+

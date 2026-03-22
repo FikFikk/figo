@@ -346,3 +346,8 @@ const otherTools = [
   { icon: 'vpn_key', title: 'Password Generator', description: 'Generate secure random passwords' },
 ]
 </script>
+
+<style scoped>
+/* fix */
+</style>
+

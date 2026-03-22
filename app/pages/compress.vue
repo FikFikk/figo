@@ -124,3 +124,8 @@ function compress() {
   alert(`Compressing ${files.value.length} file(s) at ${quality.value}% quality... (UI demo)`)
 }
 </script>
+
+<style scoped>
+/* fix */
+</style>
+

@@ -13,3 +13,7 @@ const { isDark } = useColorMode()
     <AppFooter class="md:pb-0 pb-6" />
   </div>
 </template>
+
+<style scoped>
+/* Vite parser fix */
+</style>

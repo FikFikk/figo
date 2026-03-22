@@ -49,3 +49,8 @@ function simulateAction() {
   increment(amount)
 }
 </script>
+
+<style scoped>
+/* fix */
+</style>
+
