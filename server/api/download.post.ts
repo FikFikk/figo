@@ -37,7 +37,9 @@ let _ytdl: any = null
 async function getYtdl() {
   if (!_ytdl) {
     const { create } = await import('youtube-dl-exec')
-    const binPath = join(process.cwd(), 'server', 'api', 'yt-dlp.exe')
+    const isWin = process.platform === 'win32'
+    const binName = isWin ? 'yt-dlp.exe' : 'yt-dlp'
+    const binPath = join(process.cwd(), 'server', 'api', binName)
     _ytdl = create(binPath)
   }
   return _ytdl
@@ -151,7 +153,10 @@ export default defineEventHandler(async (event) => {
       const formatStr = formatId || 'best'
       const ext = formatStr.includes('bestaudio') && !formatStr.includes('bestvideo') ? 'm4a' : 'mp4'
       const tmpFile = join(tmpdir(), `figo-${jobId}.${ext}`)
-      const ffmpegPath = join(process.cwd(), 'server', 'api', 'ffmpeg.exe')
+      
+      const isWin = process.platform === 'win32'
+      const ffmpegName = isWin ? 'ffmpeg.exe' : 'ffmpeg'
+      const ffmpegPath = join(process.cwd(), 'server', 'api', ffmpegName)
 
       const rawTitle = (body?.title as string) || 'Video'
       // Remove invalid characters for Windows/Linux filenames
