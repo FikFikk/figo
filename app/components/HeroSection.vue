@@ -50,7 +50,7 @@ let destroyed = false
 // =============================================
 function initWireframeMesh() {
   const canvas = meshCanvas.value!
-  const ctx = canvas.getContext('2d')!
+  const ctx = canvas.getContext('2d', { alpha: true })!
 
   let dpr = 1
   let W = 0
@@ -64,27 +64,17 @@ function initWireframeMesh() {
     canvas.height = H * dpr
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   }
+  
   resize()
   window.addEventListener('resize', resize)
-
-  // 3D helpers (inlined for speed)
-  const cosv: number[] = []
-  const sinv: number[] = []
-
-  function project(x: number, y: number, z: number): [number, number] {
-    const d = z + 500
-    const s = 600 / (d > 80 ? d : 80)
-    return [W * 0.5 + x * s, H * 0.5 + y * s]
-  }
 
   // Mesh parameters
   const COLS = 50
   const ROWS = 25
-  const SP = 13
+  const SP = 14
   const halfC = COLS * 0.5
   const halfR = ROWS * 0.5
 
-  // Pre-allocate arrays for projected points (avoid GC pressure)
   const pxArr = new Float32Array(COLS * ROWS)
   const pyArr = new Float32Array(COLS * ROWS)
   const depthArr = new Float32Array(COLS * ROWS)
@@ -94,43 +84,29 @@ function initWireframeMesh() {
 
   function draw() {
     if (destroyed) return
-
     const t = (performance.now() - startTime) * 0.0008
+    const rx = 0.55, ry = t * 0.1 + 0.2
+    const cRx = Math.cos(rx), sRx = Math.sin(rx), cRy = Math.cos(ry), sRy = Math.sin(ry)
 
-    // Theme colors
-    const dark = isDark.value
-    const lr = dark ? 0 : 30
-    const lg = dark ? 210 : 110
-    const lb = dark ? 200 : 170
-
-    // Precompute rotation
-    const rx = 0.55
-    const ry = t * 0.12 + 0.3
-    const cRx = Math.cos(rx), sRx = Math.sin(rx)
-    const cRy = Math.cos(ry), sRy = Math.sin(ry)
-
-    // Generate all points
+    // Generate points: Complex multi-harmonic fluid waves
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const u = (c - halfC) * SP
         const v = (r - halfR) * SP
 
-        const py = Math.sin(u * 0.018 + t * 1.4) * 55
-          + Math.cos(v * 0.035 + t * 0.7) * 35
-          + Math.sin((u + v) * 0.013 + t * 1.1) * 25
-        const pz = v + Math.sin(u * 0.025 + t * 0.9) * 25
+        // Pure Organic Waves
+        const py = Math.sin(u * 0.015 + t * 1.2) * 45
+                 + Math.cos(v * 0.025 + t * 0.8) * 35
+                 + Math.sin((u + v) * 0.01 + t * 1.5) * 20
+        const pz = v + Math.sin(u * 0.02 + t) * 20
 
-        // Rotate X
+        // Final 3D Transformation
         const y1 = py * cRx - pz * sRx
         const z1 = py * sRx + pz * cRx
-
-        // Rotate Y
         const x2 = u * cRy + z1 * sRy
         const z2 = -u * sRy + z1 * cRy
 
-        // Project
-        const d = z2 + 500
-        const s = 600 / (d > 80 ? d : 80)
+        const s = 700 / (z2 + 500)
         const idx = r * COLS + c
         pxArr[idx] = W * 0.5 + x2 * s
         pyArr[idx] = H * 0.5 + y1 * s
@@ -140,114 +116,63 @@ function initWireframeMesh() {
 
     ctx.clearRect(0, 0, W, H)
 
-    // --- BATCH DRAW: horizontal lines ---
-    // Group by alpha ranges for fewer style changes
-    const alphaSteps = 5
-    for (let ai = 0; ai < alphaSteps; ai++) {
-      const aMin = ai / alphaSteps * 0.4
-      const aMax = (ai + 1) / alphaSteps * 0.4
-      const aMid = (aMin + aMax) * 0.5 + 0.02
+    // Vibrant 'Emerald Matrix' theme for Dark Mode
+    const dark = isDark.value
+    const c1 = dark ? '0, 255, 136' : '0, 88, 190' // Emerald vs Blue
+    const c2 = dark ? '180, 255, 220' : '0, 180, 160'
 
+    const drawBatch = (type: 'h' | 'v' | 'd', alpha: number, weight: number) => {
       ctx.beginPath()
       for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS - 1; c++) {
-          const idx = r * COLS + c
-          const depth = (depthArr[idx]! + 300) / 600
-          const a = Math.max(0.04, 0.45 - depth * 0.35)
-          if (a >= aMin && a < aMax) {
-            ctx.moveTo(pxArr[idx]!, pyArr[idx]!)
-            ctx.lineTo(pxArr[idx + 1]!, pyArr[idx + 1]!)
-          }
-        }
-      }
-      ctx.strokeStyle = `rgba(${lr},${lg},${lb},${aMid})`
-      ctx.lineWidth = 0.6
-      ctx.stroke()
-    }
-
-    // --- BATCH DRAW: vertical lines ---
-    for (let ai = 0; ai < alphaSteps; ai++) {
-      const aMin = ai / alphaSteps * 0.35
-      const aMax = (ai + 1) / alphaSteps * 0.35
-      const aMid = (aMin + aMax) * 0.5 + 0.02
-
-      ctx.beginPath()
-      for (let r = 0; r < ROWS - 1; r++) {
         for (let c = 0; c < COLS; c++) {
           const idx = r * COLS + c
-          const idx2 = (r + 1) * COLS + c
-          const depth = (depthArr[idx]! + 300) / 600
-          const a = Math.max(0.03, 0.4 - depth * 0.35)
-          if (a >= aMin && a < aMax) {
+          if (type === 'h' && c < COLS - 1) {
             ctx.moveTo(pxArr[idx]!, pyArr[idx]!)
-            ctx.lineTo(pxArr[idx2]!, pyArr[idx2]!)
+            ctx.lineTo(pxArr[idx+1]!, pyArr[idx+1]!)
+          } else if (type === 'v' && r < ROWS - 1) {
+            ctx.moveTo(pxArr[idx]!, pyArr[idx]!)
+            ctx.lineTo(pxArr[idx+COLS]!, pyArr[idx+COLS]!)
+          } else if (type === 'd' && r < ROWS - 1 && c < COLS - 1) {
+            ctx.moveTo(pxArr[idx]!, pyArr[idx]!)
+            ctx.lineTo(pxArr[idx+COLS+1]!, pyArr[idx+COLS+1]!)
           }
         }
       }
-      ctx.strokeStyle = `rgba(${lr},${lg},${lb},${aMid})`
-      ctx.lineWidth = 0.5
+      ctx.strokeStyle = `rgba(${c1}, ${alpha})`
+      ctx.lineWidth = weight
       ctx.stroke()
     }
 
-    // --- BATCH DRAW: diagonal lines ---
-    ctx.beginPath()
-    for (let r = 0; r < ROWS - 1; r++) {
-      for (let c = 0; c < COLS - 1; c++) {
-        const idx = r * COLS + c
-        const idx2 = (r + 1) * COLS + c + 1
-        ctx.moveTo(pxArr[idx]!, pyArr[idx]!)
-        ctx.lineTo(pxArr[idx2]!, pyArr[idx2]!)
-      }
-    }
-    ctx.strokeStyle = `rgba(${lr},${lg},${lb},0.08)`
-    ctx.lineWidth = 0.3
-    ctx.stroke()
+    // Layered Depth Rendering
+    drawBatch('h', 0.25, 0.8)
+    drawBatch('v', 0.2, 0.6)
+    drawBatch('d', 0.08, 0.4)
 
-    // --- BATCH DRAW: node glows ---
-    const nr = dark ? 100 : 0
-    const ng = dark ? 255 : 150
-    const nb = dark ? 240 : 210
-
-    ctx.beginPath()
+    // Node Highlights (Glows & Pulsing)
     for (let r = 0; r < ROWS; r += 3) {
       for (let c = 0; c < COLS; c += 4) {
         const idx = r * COLS + c
-        const px = pxArr[idx]!
-        const py = pyArr[idx]!
-        const depth = (depthArr[idx]! + 300) / 600
-        const a = Math.max(0.05, 0.5 - depth * 0.4) + Math.sin(t * 2.5 + c * 0.4 + r * 0.3) * 0.1
-        const sz = 1.2 + Math.sin(t * 2 + c + r) * 0.4
-        ctx.moveTo(px + sz * 3.5, py)
+        const px = pxArr[idx]!, py = pyArr[idx]!
+        const sz = 1.2 + Math.sin(t * 2 + idx) * 0.5
+        
+        ctx.beginPath()
         ctx.arc(px, py, sz * 3.5, 0, Math.PI * 2)
-      }
-    }
-    ctx.fillStyle = `rgba(${lr},${lg + 20},${lb + 10},0.06)`
-    ctx.fill()
-
-    // --- BATCH DRAW: node cores ---
-    ctx.beginPath()
-    for (let r = 0; r < ROWS; r += 3) {
-      for (let c = 0; c < COLS; c += 4) {
-        const idx = r * COLS + c
-        const px = pxArr[idx]!
-        const py = pyArr[idx]!
-        const sz = 1.2 + Math.sin(t * 2 + c + r) * 0.4
-        ctx.moveTo(px + sz, py)
+        ctx.fillStyle = `rgba(${c2}, ${0.12})`
+        ctx.fill()
+        
+        ctx.beginPath()
         ctx.arc(px, py, sz, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(${dark ? '255,255,255' : c1}, 0.5)`
+        ctx.fill()
       }
     }
-    ctx.fillStyle = `rgba(${nr},${ng},${nb},0.5)`
-    ctx.fill()
 
     lastRafTime = performance.now()
     rafId = requestAnimationFrame(draw)
   }
 
-  // Primary loop: requestAnimationFrame (smooth, vsync'd)
   rafId = requestAnimationFrame(draw)
 
-  // Watchdog: if rAF hasn't fired in 50ms (scroll throttling),
-  // force a new rAF request to wake it up
   watchdogInterval = setInterval(() => {
     if (destroyed) return
     if (performance.now() - lastRafTime > 50) {
