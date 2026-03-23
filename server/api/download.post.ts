@@ -52,6 +52,7 @@ async function execYtdlp(url: string, flags: Record<string, any>): Promise<{ std
   if (flags.youtubeSkipHlsManifest) args.push('--youtube-skip-hls-manifest')
   if (flags.noPlaylist) args.push('--no-playlist')
   if (flags.noCacheDir) args.push('--no-cache-dir')
+  if (flags.forceIpv4) args.push('--force-ipv4')
   if (flags.ignoreErrors) args.push('--ignore-errors')
   if (flags.flatPlaylist) args.push('--flat-playlist')
   if (flags.format) args.push('--format', flags.format)
@@ -108,6 +109,7 @@ export default defineEventHandler(async (event) => {
   try {
     // ===================== MODE: INFO =====================
     if (mode === 'info') {
+      const startTime = Date.now()
       const dataRaw = await execYtdlp(url, {
         dumpSingleJson: true,
         noWarnings: true,
@@ -116,8 +118,11 @@ export default defineEventHandler(async (event) => {
         youtubeSkipHlsManifest: true,
         noPlaylist: true,
         noCacheDir: true,
+        forceIpv4: true,
         ignoreErrors: true,
       })
+      const duration = Date.now() - startTime
+      console.log(`[FetchInfo] Success in ${duration}ms for: ${url}`)
 
       const data = parseYtdlpOutput(dataRaw.stdout)
 
@@ -181,6 +186,7 @@ export default defineEventHandler(async (event) => {
         duration: data.duration || null,
         uploader: data.uploader || data.channel || null,
         qualities,
+        fetchDuration: duration,
       }
     }
 

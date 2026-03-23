@@ -154,25 +154,6 @@
     </div>
 
 
-    <!-- Supported Platforms -->
-    <div class="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div
-        v-for="platform in platforms"
-        :key="platform.name"
-        class="glass-panel rounded-2xl p-5 text-center transition-all duration-300 group hover:scale-[1.02] cursor-pointer overflow-hidden border"
-        :class="isDark 
-          ? 'border-white/5 hover:border-primary/30 bg-white/[0.02]' 
-          : 'border-slate-100 hover:border-primary/30 bg-slate-50/50'"
-        @click="url = platform.example"
-      >
-        <div class="w-16 h-16 mx-auto mb-4 flex items-center justify-center transition-transform group-hover:scale-110 shadow-lg rounded-md overflow-hidden bg-white">
-          <img :src="platform.icon" :alt="platform.name" class="w-full h-full object-cover" />
-        </div>
-        <p class="font-headline font-bold text-sm" :class="isDark ? 'text-white' : 'text-slate-900'">{{ platform.name }}</p>
-        <p class="text-xs mt-1" :class="isDark ? 'text-gray-500' : 'text-slate-400'">{{ platform.tag }}</p>
-      </div>
-    </div>
-
     <!-- Download History -->
     <div v-if="history.length > 0" class="mt-10">
       <h3 class="font-headline font-bold text-lg mb-4" :class="isDark ? 'text-white' : 'text-slate-900'">Recent Downloads</h3>
@@ -206,32 +187,13 @@ const { increment } = useHistoryCounter()
 const url = ref('')
 const history = ref<{ url: string; platform: string; icon: string; time: string }[]>([])
 
-const platforms = [
-  { 
-    name: 'YouTube', 
-    icon: 'https://static.vecteezy.com/system/resources/thumbnails/018/930/572/small_2x/youtube-logo-youtube-icon-transparent-free-png.png', 
-    tag: 'Videos & Shorts', 
-    example: 'https://youtube.com/watch?v=example' 
-  },
-  { 
-    name: 'TikTok', 
-    icon: 'https://img.freepik.com/premium-vector/tik-tok-logo_578229-290.jpg?semt=ais_hybrid&w=740&q=80', 
-    tag: 'Videos & Slides', 
-    example: 'https://tiktok.com/@user/video/123' 
-  },
-  { 
-    name: 'Instagram', 
-    icon: 'https://unblast.com/wp-content/uploads/2025/07/instagram-logo-colored.jpg', 
-    tag: 'Reels & Posts', 
-    example: 'https://instagram.com/reel/example' 
-  },
-  { 
-    name: 'Twitter/X', 
-    icon: 'https://cdn.worldvectorlogo.com/logos/twitter-logo-2.svg', 
-    tag: 'Videos & Spaces', 
-    example: 'https://x.com/user/status/123' 
-  },
-]
+// Platform configuration for dynamic icon detection
+const PLATFORMS_CONFIG = {
+  YOUTUBE: { name: 'YouTube', icon: 'https://static.vecteezy.com/system/resources/thumbnails/018/930/572/small_2x/youtube-logo-youtube-icon-transparent-free-png.png' },
+  TIKTOK: { name: 'TikTok', icon: 'https://img.freepik.com/premium-vector/tik-tok-logo_578229-290.jpg?semt=ais_hybrid&w=740&q=80' },
+  INSTAGRAM: { name: 'Instagram', icon: 'https://unblast.com/wp-content/uploads/2025/07/instagram-logo-colored.jpg' },
+  TWITTER: { name: 'Twitter/X', icon: 'https://cdn.worldvectorlogo.com/logos/twitter-logo-2.svg' },
+}
 
 const detectedIcon = computed(() => {
   if (!url.value.trim()) return null
@@ -240,10 +202,10 @@ const detectedIcon = computed(() => {
 
 function detectPlatform(link: string): { name: string; icon: string } {
   const lowUrl = link.toLowerCase()
-  if (lowUrl.includes('youtube') || lowUrl.includes('youtu.be')) return { name: 'YouTube', icon: platforms[0]!.icon }
-  if (lowUrl.includes('tiktok')) return { name: 'TikTok', icon: platforms[1]!.icon }
-  if (lowUrl.includes('instagram')) return { name: 'Instagram', icon: platforms[2]!.icon }
-  if (lowUrl.includes('twitter') || lowUrl.includes('x.com')) return { name: 'Twitter/X', icon: platforms[3]!.icon }
+  if (lowUrl.includes('youtube') || lowUrl.includes('youtu.be')) return PLATFORMS_CONFIG.YOUTUBE
+  if (lowUrl.includes('tiktok')) return PLATFORMS_CONFIG.TIKTOK
+  if (lowUrl.includes('instagram')) return PLATFORMS_CONFIG.INSTAGRAM
+  if (lowUrl.includes('twitter') || lowUrl.includes('x.com')) return PLATFORMS_CONFIG.TWITTER
   return { name: 'Web', icon: '' }
 }
 
@@ -309,6 +271,8 @@ async function fetchInfo() {
       } else if (response.qualities.length > 0) {
         selectedFormat.value = response.qualities[0].formatId
       }
+
+      console.log(`[Figo] Fetch Info Success in ${response.fetchDuration}ms`)
     } else {
       error.value = 'Tidak ada format yang tersedia untuk URL ini.'
     }
