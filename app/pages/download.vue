@@ -161,7 +161,7 @@
         <div
           v-for="(item, idx) in history"
           :key="idx"
-          class="glass-panel rounded-xl p-4 flex items-center gap-4"
+          class="glass-panel rounded-2xl p-4 flex items-center gap-4"
           :class="isDark ? 'border border-white/5' : 'border border-slate-100'"
         >
           <div class="w-10 h-10 flex items-center justify-center shrink-0 shadow-sm rounded-md overflow-hidden bg-white">
@@ -186,6 +186,20 @@ const { increment } = useHistoryCounter()
 
 const url = ref('')
 const history = ref<{ url: string; platform: string; icon: string; time: string }[]>([])
+const STORAGE_KEY = 'figo_recent_downloads'
+
+onMounted(() => {
+  if (process.client) {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      try {
+        history.value = JSON.parse(saved)
+      } catch (e) {
+        console.error('Failed to parse history from local storage', e)
+      }
+    }
+  }
+})
 
 // Platform configuration for dynamic icon detection
 const PLATFORMS_CONFIG = {
@@ -330,6 +344,15 @@ async function downloadSelected() {
           history.value.unshift({
             url: targetUrl, platform: name, icon, time: new Date().toLocaleTimeString(),
           })
+          
+          // Persist top 5 to local storage
+          if (history.value.length > 5) {
+            history.value = history.value.slice(0, 5)
+          }
+          if (process.client) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(history.value))
+          }
+
           increment()
           
         } else if (status === 'error') {
