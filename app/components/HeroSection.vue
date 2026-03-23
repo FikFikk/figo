@@ -1,7 +1,10 @@
 <template>
   <section id="hero" class="relative min-h-screen flex flex-col items-center justify-center px-6 hero-grid overflow-hidden pt-24 pb-32 md:pb-48">
+    <!-- 3D Wireframe Mesh Background -->
+    <canvas ref="meshCanvas" class="absolute inset-0 z-0 w-full h-full opacity-60 pointer-events-none"></canvas>
+
     <!-- Background Orbs -->
-    <div class="absolute top-20 right-[10%] w-96 h-96 rounded-full floating-orb"
+    <div class="absolute top-20 right-[10%] w-96 h-96 rounded-full floating-orb opacity-50"
       :class="isDark ? 'bg-primary/15' : 'bg-primary/20'"
     ></div>
     <div class="absolute bottom-20 left-[5%] w-[500px] h-[500px] rounded-full floating-orb"
@@ -22,64 +25,6 @@
         <br class="hidden md:block" />
         <span :class="isDark ? 'font-medium text-white' : 'font-medium text-slate-900'">One platform, zero limits.</span>
       </p>
-
-      <!-- Glassmorphic Card -->
-      <div class="mt-12 md:mt-16">
-        <div class="glass-panel rounded-2xl p-2 max-w-4xl mx-auto transition-transform duration-700 ease-out hover:-translate-y-1"
-          :class="isDark
-            ? 'border border-white/10 shadow-[0_12px_40px_rgba(0,88,190,0.2)]'
-            : 'border border-white/40 shadow-[0_12px_40px_rgba(0,88,190,0.12)]'"
-        >
-          <div class="rounded-[0.5rem] overflow-hidden h-64 md:h-80 relative"
-            :class="isDark ? 'bg-[#0a0e18]' : 'bg-[#e8ecf2]'"
-            style="clip-path: inset(0 round 0.5rem);"
-          >
-            <!-- Image Slider -->
-            <template v-if="hasImages">
-              <div class="absolute inset-0">
-                <img
-                  v-for="(img, idx) in sliderImages"
-                  :key="idx"
-                  :src="img"
-                  :alt="`Slide ${idx + 1}`"
-                  class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
-                  :class="currentSlide === idx ? 'opacity-80' : 'opacity-0'"
-                />
-              </div>
-            </template>
-
-            <!-- 3D Wireframe Mesh -->
-            <template v-else>
-              <canvas ref="meshCanvas" class="matrix-canvas rounded-[0.5rem]"></canvas>
-            </template>
-
-            <!-- Bottom gradient -->
-            <div class="absolute inset-0 pointer-events-none rounded-[0.5rem]"
-              :class="isDark
-                ? 'bg-gradient-to-t from-[#0a0e18] via-[#0a0e18]/30 to-transparent'
-                : 'bg-gradient-to-t from-[#e8ecf2] via-[#e8ecf2]/30 to-transparent'"
-            ></div>
-
-            <div class="absolute bottom-6 md:bottom-8 left-6 md:left-8 right-6 md:right-8 flex justify-between items-end">
-              <div class="text-left">
-                <div class="text-xs uppercase tracking-widest text-primary font-bold mb-1.5">Engine Status</div>
-                <div class="text-lg md:text-2xl font-headline font-bold"
-                  :class="isDark ? 'text-white' : 'text-slate-900'"
-                >Flux Node 01 Active</div>
-              </div>
-              <div class="flex gap-2">
-                <div
-                  v-for="(_, idx) in (hasImages ? sliderImages : [0, 1, 2])"
-                  :key="idx"
-                  class="w-8 md:w-12 h-1 rounded-full transition-colors duration-500 cursor-pointer"
-                  :class="currentSlide === idx ? 'bg-primary' : (isDark ? 'bg-white/20' : 'bg-slate-300')"
-                  @click="currentSlide = idx"
-                ></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Scroll indicator -->
@@ -95,29 +40,10 @@
 <script setup lang="ts">
 const { isDark } = useColorMode()
 
-const sliderImages = ['/slider1.jpg', '/slider2.jpg', '/slider3.jpg']
-const currentSlide = ref(0)
-const hasImages = ref(false)
 const meshCanvas = ref<HTMLCanvasElement | null>(null)
-let slideInterval: ReturnType<typeof setInterval> | null = null
 let watchdogInterval: ReturnType<typeof setInterval> | null = null
 let rafId: number = 0
 let destroyed = false
-
-async function checkImages() {
-  try {
-    const res = await fetch(sliderImages[0]!, { method: 'HEAD' })
-    hasImages.value = res.ok && (res.headers.get('content-type')?.startsWith('image') ?? false)
-  } catch {
-    hasImages.value = false
-  }
-}
-
-function startSlider() {
-  slideInterval = setInterval(() => {
-    currentSlide.value = (currentSlide.value + 1) % sliderImages.length
-  }, 4000)
-}
 
 // =============================================
 // 3D WIREFRAME MESH — Optimized + Always Smooth
@@ -331,19 +257,12 @@ function initWireframeMesh() {
   }, 30)
 }
 
-onMounted(async () => {
-  await checkImages()
-  if (hasImages.value) {
-    startSlider()
-  } else {
-    await nextTick()
-    initWireframeMesh()
-  }
+onMounted(() => {
+  initWireframeMesh()
 })
 
 onUnmounted(() => {
   destroyed = true
-  if (slideInterval) clearInterval(slideInterval)
   if (watchdogInterval) clearInterval(watchdogInterval)
   cancelAnimationFrame(rafId)
 })
