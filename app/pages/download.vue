@@ -22,7 +22,7 @@
         <div class="flex-1 relative">
           <!-- Dynamic Platform Icon -->
           <div class="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center pointer-events-none transition-all duration-300">
-            <img v-if="detectedIcon" :src="detectedIcon" class="w-full h-full object-cover rounded-lg shadow-sm bg-white" />
+            <img v-if="detectedIcon" :src="detectedIcon" class="w-full h-full object-cover rounded-md shadow-sm bg-white" />
             <span v-else class="material-symbols-outlined text-xl"
               :class="isDark ? 'text-gray-500' : 'text-slate-400'"
             >link</span>
@@ -31,7 +31,7 @@
             v-model="url"
             type="url"
             placeholder="Paste URL here... (YouTube, TikTok, Instagram, Twitter)"
-            class="w-full pl-12 pr-12 py-4 rounded-xl text-sm font-medium transition-all outline-none"
+            class="w-full pl-14 pr-12 py-4 rounded-md text-sm font-medium transition-all outline-none"
             :class="isDark
               ? 'bg-white/5 text-white placeholder-gray-600 border border-white/10 focus:border-primary/40 focus:bg-white/8'
               : 'bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 focus:border-primary focus:bg-white'"
@@ -41,14 +41,14 @@
           <!-- Clear Button -->
           <button
             v-if="url"
-            class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
             @click="resetAll"
           >
             <span class="material-symbols-outlined text-lg">close</span>
           </button>
         </div>
         <button
-          class="px-8 py-4 bg-primary text-on-primary rounded-xl font-headline font-bold text-sm hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 whitespace-nowrap"
+          class="px-8 py-4 bg-primary text-on-primary rounded-md font-headline font-bold text-sm hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 whitespace-nowrap"
           @click="fetchInfo"
           :disabled="!url.trim() || isLoading"
           :class="{ 'opacity-50 cursor-not-allowed': !url.trim() || isLoading }"
@@ -71,7 +71,7 @@
       <div class="glass-panel rounded-2xl p-6 md:p-8 border" :class="isDark ? 'border-white/5' : 'border-slate-100'">
         <!-- Video Preview -->
         <div class="flex flex-col md:flex-row gap-6 mb-8">
-          <div class="w-full md:w-64 shrink-0 rounded-xl overflow-hidden shadow-lg aspect-video bg-black/10">
+          <div class="w-full md:w-64 shrink-0 rounded-md overflow-hidden shadow-lg aspect-video bg-black/10">
             <img v-if="videoInfo.thumb" :src="videoInfo.thumb" class="w-full h-full object-cover" alt="Thumbnail" />
             <div v-else class="w-full h-full flex items-center justify-center">
               <span class="material-symbols-outlined text-4xl text-gray-500">movie</span>
@@ -108,7 +108,7 @@
             v-for="q in videoInfo.qualities"
             :key="q.formatId"
             @click="selectedFormat = q.formatId"
-            class="p-4 rounded-xl text-left transition-all border-2 group"
+            class="p-4 rounded-md text-left transition-all border-2 group"
             :class="selectedFormat === q.formatId
               ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10 scale-[1.02]'
               : isDark
@@ -143,12 +143,12 @@
         <button
           @click="downloadSelected"
           :disabled="!selectedFormat || isProcessing"
-          class="w-full py-4 bg-primary text-on-primary font-headline font-bold text-sm rounded-xl hover:scale-[1.01] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.99] flex items-center justify-center gap-2"
+          class="w-full py-4 bg-primary text-on-primary font-headline font-bold text-sm rounded-md hover:scale-[1.01] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.99] flex items-center justify-center gap-2"
           :class="{ 'opacity-50 cursor-not-allowed': !selectedFormat || isProcessing }"
         >
           <span v-if="isProcessing" class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
           <span v-else class="material-symbols-outlined text-lg">download</span>
-          {{ isProcessing ? 'Memproses Video & Audio... (Mungkin butuh waktu 1-3 menit)' : (selectedFormat ? 'Download Selected Quality' : 'Select a quality first') }}
+          {{ isProcessing ? 'Memproses Video & Audio...' : (selectedFormat ? 'Download Selected Quality' : 'Select a quality first') }}
         </button>
       </div>
     </div>
@@ -159,13 +159,13 @@
       <div
         v-for="platform in platforms"
         :key="platform.name"
-        class="glass-panel rounded-xl p-5 text-center transition-all duration-300 group hover:scale-[1.02] cursor-pointer overflow-hidden border"
+        class="glass-panel rounded-2xl p-5 text-center transition-all duration-300 group hover:scale-[1.02] cursor-pointer overflow-hidden border"
         :class="isDark 
           ? 'border-white/5 hover:border-primary/30 bg-white/[0.02]' 
           : 'border-slate-100 hover:border-primary/30 bg-slate-50/50'"
         @click="url = platform.example"
       >
-        <div class="w-16 h-16 mx-auto mb-4 flex items-center justify-center transition-transform group-hover:scale-110 shadow-lg rounded-2xl overflow-hidden bg-white">
+        <div class="w-16 h-16 mx-auto mb-4 flex items-center justify-center transition-transform group-hover:scale-110 shadow-lg rounded-md overflow-hidden bg-white">
           <img :src="platform.icon" :alt="platform.name" class="w-full h-full object-cover" />
         </div>
         <p class="font-headline font-bold text-sm" :class="isDark ? 'text-white' : 'text-slate-900'">{{ platform.name }}</p>
@@ -183,7 +183,7 @@
           class="glass-panel rounded-xl p-4 flex items-center gap-4"
           :class="isDark ? 'border border-white/5' : 'border border-slate-100'"
         >
-          <div class="w-10 h-10 flex items-center justify-center shrink-0 shadow-sm rounded-xl overflow-hidden bg-white">
+          <div class="w-10 h-10 flex items-center justify-center shrink-0 shadow-sm rounded-md overflow-hidden bg-white">
             <img v-if="item.icon" :src="item.icon" class="w-full h-full object-cover" />
             <span v-else class="material-symbols-outlined text-xl text-slate-400">link</span>
           </div>
@@ -293,9 +293,22 @@ async function fetchInfo() {
     }) as any
 
     if (response.qualities && response.qualities.length > 0) {
+      // Filter: Only 360p+ and Audio
+      response.qualities = response.qualities.filter((q: any) => {
+        if (q.resolution === 'Audio') return true
+        const res = parseInt(q.resolution)
+        return !isNaN(res) && res >= 360
+      })
+
       videoInfo.value = response
-      // Auto-select the first combined (audio+video) format
-      selectedFormat.value = response.qualities[0].formatId
+
+      // Default to "Audio" if available, else first quality
+      const audioFormat = response.qualities.find((q: any) => q.resolution === 'Audio')
+      if (audioFormat) {
+        selectedFormat.value = audioFormat.formatId
+      } else if (response.qualities.length > 0) {
+        selectedFormat.value = response.qualities[0].formatId
+      }
     } else {
       error.value = 'Tidak ada format yang tersedia untuk URL ini.'
     }
