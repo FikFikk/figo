@@ -1,5 +1,5 @@
 <template>
-  <section id="hero" class="relative min-h-screen flex flex-col items-center justify-center px-6 hero-grid overflow-hidden pt-20">
+  <section id="hero" class="relative min-h-screen flex flex-col items-center justify-center px-6 hero-grid overflow-hidden pt-24 pb-32 md:pb-48">
     <!-- Background Orbs -->
     <div class="absolute top-20 right-[10%] w-96 h-96 rounded-full floating-orb"
       :class="isDark ? 'bg-primary/15' : 'bg-primary/20'"
@@ -8,7 +8,7 @@
       :class="isDark ? 'bg-tertiary/8' : 'bg-tertiary/10'"
     ></div>
 
-    <div class="max-w-5xl w-full text-center space-y-8 relative z-10">
+    <div class="max-w-5xl w-full mx-auto text-center space-y-8 relative z-10">
       <h1 class="font-headline font-extrabold text-5xl sm:text-6xl md:text-8xl tracking-tighter leading-[1.1]"
         :class="isDark ? 'text-white' : 'text-slate-900'"
       >
@@ -83,8 +83,11 @@
     </div>
 
     <!-- Scroll indicator -->
-    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-      <span class="material-symbols-outlined text-2xl" :class="isDark ? 'text-gray-600' : 'text-slate-400'">keyboard_arrow_down</span>
+    <div class="absolute bottom-28 md:bottom-12 left-0 w-full flex flex-col items-center gap-0 opacity-50 select-none pointer-events-none">
+      <div class="flex flex-col items-center animate-bounce -ml-1.5">
+        <span class="text-[9px] font-black uppercase tracking-widest">Scroll</span>
+        <span class="material-symbols-outlined text-2xl -mt-1" :class="isDark ? 'text-gray-600' : 'text-slate-400'">keyboard_arrow_down</span>
+      </div>
     </div>
   </section>
 </template>

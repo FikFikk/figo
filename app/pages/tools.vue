@@ -123,12 +123,12 @@
 useSeoMeta({ title: 'Toolkit — FiGo' })
 const { isDark } = useColorMode()
 
-const activeTool = ref('safety')
+const activeTool = ref('color')
 
 // Configuration for active tools
 const availableTools = [
-  { id: 'safety', name: 'Link Safety', icon: 'shield_lock' },
   { id: 'color', name: 'Color Palette', icon: 'palette' },
+  { id: 'safety', name: 'Link Safety', icon: 'shield_lock' },
 ]
 
 // Configuration for upcoming tools
