@@ -16,7 +16,7 @@
           v-for="link in navLinks"
           :key="link.to"
           :to="link.to"
-          class="px-4 py-2 rounded-full font-headline text-sm font-medium tracking-tight transition-all duration-300"
+          class="px-4 py-2 rounded-2xl font-headline text-sm font-medium tracking-tight transition-all duration-300"
           :class="isActive(link.to)
             ? (isDark ? 'bg-primary/15 text-primary' : 'bg-primary/10 text-primary')
             : (isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50')"
@@ -29,7 +29,7 @@
       <div class="flex items-center gap-3">
         <!-- Dark/Light toggle (Always in Top Header) -->
         <button
-          class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95"
+          class="w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95"
           :class="isDark ? 'bg-white/10 text-yellow-400 hover:bg-white/15' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
           @click="toggle"
           :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
@@ -40,7 +40,7 @@
         <!-- Get Started -->
         <NuxtLink
           to="/compress"
-          class="px-6 py-2.5 rounded-full font-headline text-sm font-semibold hover:scale-102 transition-all ease-out active:scale-95 hidden md:block shadow-lg"
+          class="px-6 py-2.5 rounded-2xl font-headline text-sm font-semibold hover:scale-102 transition-all ease-out active:scale-95 hidden md:block shadow-lg"
           :class="isDark
             ? 'bg-gradient-to-r from-primary to-[#4d8ef7] text-white shadow-primary/30 hover:shadow-primary/50'
             : 'bg-primary text-on-primary shadow-primary/20 hover:shadow-primary/40'"

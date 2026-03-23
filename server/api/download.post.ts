@@ -49,6 +49,10 @@ async function execYtdlp(url: string, flags: Record<string, any>): Promise<{ std
   if (flags.noWarnings) args.push('--no-warnings')
   if (flags.noCheckCertificates) args.push('--no-check-certificates')
   if (flags.youtubeSkipDashManifest) args.push('--youtube-skip-dash-manifest')
+  if (flags.youtubeSkipHlsManifest) args.push('--youtube-skip-hls-manifest')
+  if (flags.noPlaylist) args.push('--no-playlist')
+  if (flags.noCacheDir) args.push('--no-cache-dir')
+  if (flags.ignoreErrors) args.push('--ignore-errors')
   if (flags.flatPlaylist) args.push('--flat-playlist')
   if (flags.format) args.push('--format', flags.format)
   if (flags.output) args.push('--output', flags.output)
@@ -109,7 +113,10 @@ export default defineEventHandler(async (event) => {
         noWarnings: true,
         noCheckCertificates: true,
         youtubeSkipDashManifest: true,
-        flatPlaylist: true,
+        youtubeSkipHlsManifest: true,
+        noPlaylist: true,
+        noCacheDir: true,
+        ignoreErrors: true,
       })
 
       const data = parseYtdlpOutput(dataRaw.stdout)
