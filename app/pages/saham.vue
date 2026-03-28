@@ -98,11 +98,12 @@
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <!-- Chart (lebih lebar) -->
         <div class="lg:col-span-3">
-          <StockChart :data="chartData" :loading="loadingChart" @fetch="loadChart(selectedSymbol, $event)" @period-change="onPeriodChange" />
+          <StockChart :data="chartData" :loading="loadingChart" :plan="tradingPlan" @fetch="loadChart(selectedSymbol, $event)" @period-change="onPeriodChange" />
         </div>
 
-        <!-- Technical Analysis -->
-        <div class="lg:col-span-2">
+        <!-- Technical Analysis & AI Plan -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
+          <StockTradingPlan :data="chartData" :loading="loadingChart" @update:plan="tradingPlan = $event" />
           <StockTechnical :data="technicalData" :loading="loadingTechnical" @fetch="loadTechnical(selectedSymbol)" />
         </div>
       </div>
@@ -187,6 +188,7 @@ const technicalData = ref<any>(null)
 const bandarmologyData = ref<any>(null)
 const moversData = ref<any>(null)
 const moversTab = ref('gainers')
+const tradingPlan = ref<any>(null)
 
 // Loading state per section
 const loadingInfo = ref(false)
@@ -207,6 +209,7 @@ async function onSelectStock(stock: any) {
   chartData.value = []
   technicalData.value = null
   bandarmologyData.value = null
+  tradingPlan.value = null
 
   // HANYA fetch Overview secara otomatis untuk menghemat limit (1 req)
   // Komponen lain baru di-fetch setelah user mengklik tombol "Tampilkan Data"

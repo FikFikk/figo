@@ -3,20 +3,20 @@
     :class="isDark ? 'border-white/5' : 'border-slate-100'"
   >
     <!-- Header -->
-    <div class="flex items-center justify-between px-5 pt-5 pb-3">
-      <div class="flex items-center gap-2">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 px-5 pt-5 pb-3">
+      <div class="flex items-center gap-2 shrink-0">
         <span class="material-symbols-outlined text-lg text-primary">candlestick_chart</span>
         <h3 class="font-headline font-bold text-sm" :class="isDark ? 'text-white' : 'text-slate-900'">
           Chart OHLCV
         </h3>
       </div>
 
-      <!-- Period selector -->
-      <div class="flex items-center gap-1 rounded-xl p-0.5"
+      <!-- Period selector (Segmented Control Style on Mobile) -->
+      <div class="flex w-full sm:w-auto flex-wrap items-center gap-0.5 sm:gap-1 rounded-xl p-1"
         :class="isDark ? 'bg-white/5' : 'bg-slate-100'"
       >
         <button v-for="p in periods" :key="p.value" @click="changePeriod(p.value)"
-          class="px-3 py-1.5 rounded-2xl text-[10px] font-bold uppercase tracking-wider transition-all"
+          class="flex-1 sm:flex-none px-0.5 sm:px-3 py-1.5 rounded-[10px] sm:rounded-2xl text-[9px] sm:text-[10px] sm:tracking-wider font-bold uppercase transition-all"
           :class="activePeriod === p.value
             ? (isDark ? 'bg-primary/20 text-primary' : 'bg-primary text-white shadow-sm')
             : (isDark ? 'text-gray-500 hover:text-gray-300' : 'text-slate-500 hover:text-slate-700')"
@@ -82,6 +82,7 @@
 const props = defineProps<{
   data: any[]
   loading: boolean
+  plan?: any
 }>()
 
 const emit = defineEmits<{
@@ -140,6 +141,10 @@ function fmtVol(n: number): string {
 
 // Render chart saat data berubah
 watch(() => props.data, () => {
+  nextTick(() => drawChart())
+}, { deep: true })
+
+watch(() => props.plan, () => {
   nextTick(() => drawChart())
 }, { deep: true })
 
@@ -262,6 +267,50 @@ function drawChart() {
     const bodyTop = Math.min(yOpen, yClose)
     const bodyH = Math.max(Math.abs(yClose - yOpen), 1)
     ctx.fillRect(x - barWidth / 2, bodyTop, barWidth, bodyH)
+  }
+
+  // Draw Trading Plan overlays
+  if (props.plan) {
+    const s1 = props.plan.support1
+    const r1 = props.plan.target
+    const sl = props.plan.stopLoss
+    const [bBottom, bTop] = props.plan.buyZone
+
+    const yS1 = padding.top + ((maxPrice - s1) / totalRange) * chartH
+    const yR1 = padding.top + ((maxPrice - r1) / totalRange) * chartH
+    const ySL = padding.top + ((maxPrice - sl) / totalRange) * chartH
+    const yBBottom = Math.min(height - padding.bottom, Math.max(padding.top, padding.top + ((maxPrice - bBottom) / totalRange) * chartH))
+    const yBTop = Math.min(height - padding.bottom, Math.max(padding.top, padding.top + ((maxPrice - bTop) / totalRange) * chartH))
+
+    // Buy Zone Fill
+    if (yBTop >= padding.top && yBBottom <= height - padding.bottom) {
+      ctx.fillStyle = isDark.value ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.15)'
+      ctx.fillRect(padding.left, yBTop, chartW, yBBottom - yBTop)
+    }
+
+    const drawDashedLine = (y: number, color: string, label: string) => {
+      if (y < padding.top || y > height - padding.bottom) return
+      ctx.strokeStyle = color
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.setLineDash([5, 5])
+      ctx.moveTo(padding.left, y)
+      ctx.lineTo(width - padding.right, y)
+      ctx.stroke()
+      ctx.setLineDash([])
+      
+      ctx.fillStyle = isDark.value ? '#1a1d28' : '#ffffff'
+      ctx.fillRect(width - padding.right - 90, y - 10, 85, 12)
+      
+      ctx.fillStyle = color
+      ctx.textAlign = 'right'
+      ctx.font = 'bold 9px Inter, sans-serif'
+      ctx.fillText(label, width - padding.right - 7, y)
+    }
+
+    drawDashedLine(yR1, '#3b82f6', 'TARGET (TP)')
+    drawDashedLine(yS1, '#10b981', 'BUY ZONE')
+    drawDashedLine(ySL, '#ef4444', 'STOP LOSS')
   }
 
   // Tanggal di bawah (setiap 5-10 candle)
