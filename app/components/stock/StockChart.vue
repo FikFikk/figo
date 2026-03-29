@@ -11,17 +11,21 @@
         </h3>
       </div>
 
-      <!-- Period selector (Segmented Control Style on Mobile) -->
+      <!-- Timeframe selector -->
       <div class="flex w-full sm:w-auto flex-wrap items-center gap-0.5 sm:gap-1 rounded-xl p-1"
         :class="isDark ? 'bg-white/5' : 'bg-slate-100'"
       >
-        <button v-for="p in periods" :key="p.value" @click="changePeriod(p.value)"
+        <button v-for="p in periods" :key="p.interval" @click="changePeriod(p.interval)"
           class="flex-1 sm:flex-none px-0.5 sm:px-3 py-1.5 rounded-[10px] sm:rounded-2xl text-[9px] sm:text-[10px] sm:tracking-wider font-bold uppercase transition-all"
-          :class="activePeriod === p.value
+          :class="activePeriod === p.interval
             ? (isDark ? 'bg-primary/20 text-primary' : 'bg-primary text-white shadow-sm')
             : (isDark ? 'text-gray-500 hover:text-gray-300' : 'text-slate-500 hover:text-slate-700')"
         >{{ p.label }}</button>
       </div>
+    </div>
+    <!-- Candle timeframe indicator -->
+    <div v-if="data?.length" class="px-5 pb-1">
+      <span class="text-[9px] font-bold uppercase tracking-wider opacity-40">📊 Setiap candle = {{ activeCandle }}</span>
     </div>
 
     <!-- Unlocked State -->
@@ -31,20 +35,28 @@
       </div>
       <h4 class="font-bold text-sm mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">Chart OHLCV</h4>
       <p class="text-[10px] opacity-60 mb-4 max-w-[280px]">Klik untuk memuat grafik pergerakan harga historis guna menghemat kuota API.</p>
-      <button @click="$emit('fetch', activePeriod)" class="px-5 py-2 rounded-2xl text-xs font-bold transition-all" :class="isDark ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'bg-primary text-white hover:bg-primary/90 shadow-sm'">
+      <button @click="$emit('fetch', getActivePeriodParams())" class="px-5 py-2 rounded-2xl text-xs font-bold transition-all" :class="isDark ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'bg-primary text-white hover:bg-primary/90 shadow-sm'">
         Tampilkan Chart
       </button>
     </div>
 
     <!-- Chart Canvas -->
     <div v-else class="relative px-2 pb-4" style="height: 320px;">
-      <!-- Loading -->
-      <div v-if="loading" class="absolute inset-0 flex items-center justify-center">
+      <!-- Loading (Hanya untuk initial load, bukan loadMore) -->
+      <div v-if="loading && !isLoadingMore" class="absolute inset-0 flex items-center justify-center">
         <span class="material-symbols-outlined text-primary animate-spin text-2xl">progress_activity</span>
       </div>
 
       <!-- Canvas -->
-      <canvas ref="canvasRef" class="w-full h-full touch-none" :class="{ 'opacity-0': loading }"></canvas>
+      <canvas ref="canvasRef" class="w-full h-full touch-none" :class="{ 'opacity-0': loading && !isLoadingMore, 'opacity-50 blur-[1px] cursor-wait': loading && isLoadingMore }"></canvas>
+
+      <!-- Loading indicator saat auto-load more -->
+      <div v-if="atLeftEdge && loading" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-bold backdrop-blur-md"
+        :class="isDark ? 'bg-white/5 text-primary border border-white/10' : 'bg-slate-100 text-slate-600 border border-slate-200'"
+      >
+        <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+        Memuat...
+      </div>
 
       <!-- Type Toggle & Pattern Analyzer -->
       <div v-if="data?.length" class="absolute bottom-[30px] right-2 flex items-center bg-white/50 dark:bg-black/50 backdrop-blur-md rounded-xl p-0.5 z-20 border border-slate-200 dark:border-white/10 shadow-sm">
@@ -105,7 +117,7 @@
 <script setup lang="ts">
 /**
  * Komponen chart OHLCV — candlestick menggunakan canvas
- * Menampilkan data harian dengan hover tooltip
+ * Menampilkan data dengan pilihan timeframe intraday dan daily
  */
 const props = defineProps<{
   data: any[]
@@ -114,31 +126,59 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  periodChange: [limit: number]
-  fetch: [limit: number]
+  periodChange: [params: { interval: string; range: string }]
+  fetch: [params: { interval: string; range: string }]
+  loadMore: []
 }>()
 
 const { isDark } = useColorMode()
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 
-// Hitung hari trading untuk YTD (sekitar 5/7 dari hari kalender sejak 1 Januari)
-const ytdDays = Math.max(5, Math.floor(Math.ceil(Math.abs(new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24)) * 5 / 7))
+// Computed: apakah sudah mentok di kiri
+const atLeftEdge = computed(() => {
+  if (!props.data?.length) return false
+  const totalLen = props.data.length
+  const maxVisible = Math.min(visibleCandles.value, totalLen)
+  const maxPan = Math.max(0, totalLen - maxVisible)
+  return panOffset.value >= maxPan && maxPan > 0
+})
 
-const periods = [
-  { label: '1D', value: 2 }, // Mengambil 2 hari agar terlihat sedkit konteks pergerakan (hari ini vs kemarin)
-  { label: '1W', value: 5 },
-  { label: '1M', value: 21 },
-  { label: '3M', value: 63 },
-  { label: 'YTD', value: ytdDays },
-  { label: '1Y', value: 252 },
-  { label: '3Y', value: 756 },
-  { label: '5Y', value: 1260 },
+// Konfigurasi timeframe — setiap opsi punya interval dan range
+interface TimeframePeriod {
+  label: string
+  interval: string
+  range: string
+  candleLabel: string // Keterangan per candle
+}
+
+const periods: TimeframePeriod[] = [
+  { label: '5m', interval: '5m', range: '1d', candleLabel: '5 menit' },
+  { label: '15m', interval: '15m', range: '5d', candleLabel: '15 menit' },
+  { label: '30m', interval: '30m', range: '5d', candleLabel: '30 menit' },
+  { label: '1H', interval: '60m', range: '1mo', candleLabel: '1 jam' },
+  { label: '1D', interval: '1d', range: '3mo', candleLabel: '1 hari' },
+  { label: '1W', interval: '1wk', range: '1y', candleLabel: '1 minggu' },
+  { label: '1M', interval: '1mo', range: '5y', candleLabel: '1 bulan' },
 ]
 
-const activePeriod = ref(63) // Default 3M
+// Default: 1 hari per candle, 3 bulan range
+const activePeriod = ref('1d')
+const activeCandle = computed(() => periods.find(p => p.interval === activePeriod.value)?.candleLabel || '1 hari')
+
 const chartType = ref('candle')
 const isAnalyzingPattern = ref(false)
+
+// Pan/Scroll state
+const panOffset = ref(0) // jumlah candle offset dari kanan (0 = paling terbaru)
+const visibleCandles = ref(60) // jumlah candle yg terlihat
+let isDragging = false
+let dragStartX = 0
+let dragStartPan = 0
+let isMobileLongPress = false
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+const isLoadingMore = ref(false) // flag: reaktif untuk dipakai di template
+let anchorTimestamp: number | null = null // timestamp candle terkiri sebelum loadMore
 
 interface CanvasPattern {
   type: string
@@ -162,9 +202,16 @@ const tooltip = reactive({
   volume: '',
 })
 
-function changePeriod(days: number) {
-  activePeriod.value = days
-  emit('periodChange', days)
+// Ambil params berdasarkan active period
+function getActivePeriodParams(): { interval: string; range: string } {
+  const p = periods.find(p => p.interval === activePeriod.value)
+  return { interval: p?.interval || '1d', range: p?.range || '3mo' }
+}
+
+function changePeriod(interval: string) {
+  activePeriod.value = interval
+  const p = periods.find(p => p.interval === interval)
+  if (p) emit('periodChange', { interval: p.interval, range: p.range })
 }
 
 // Format angka
@@ -180,10 +227,60 @@ function fmtVol(n: number): string {
 }
 
 // Render chart saat data berubah
-watch(() => props.data, () => {
+watch(() => props.data, (newData, oldData) => {
   detectedPatterns.value = []
+  if (isLoadingMore.value && oldData?.length && newData?.length) {
+    // Data bertambah dari loadMore: cari posisi anchor timestamp
+    if (anchorTimestamp !== null) {
+      // Cari index dari anchor di data baru
+      const newDataSorted = [...newData].sort((a: any, b: any) => {
+        const tA = a.timestamp || new Date(a.date || a.Date || 0).getTime()
+        const tB = b.timestamp || new Date(b.date || b.Date || 0).getTime()
+        return tA - tB
+      })
+      const anchorIdx = newDataSorted.findIndex(d => {
+        const t = d.timestamp || new Date(d.date || d.Date || 0).getTime()
+        return t === anchorTimestamp
+      })
+      if (anchorIdx !== -1) {
+        // panOffset dihitung dari KANAN (newDataSorted.length - 1)
+        // Jika anchorIdx adalah candle terkiri yang terlihat, maka offset kanan:
+        // offset = newDataSorted.length - anchorIdx - visibleCandles
+        panOffset.value = Math.max(0, newDataSorted.length - anchorIdx - visibleCandles.value)
+      } else {
+        // Fallback jika tidak ketemu
+        const addedCount = newData.length - oldData.length
+        if (addedCount > 0) panOffset.value += addedCount
+      }
+    }
+    isLoadingMore.value = false
+    anchorTimestamp = null
+  } else {
+    // Data baru (ganti saham/timeframe): reset ke posisi terbaru
+    panOffset.value = 0
+  }
   nextTick(() => drawChart())
 }, { deep: true })
+
+// Auto-trigger loadMore saat pan mentok kiri
+watch(atLeftEdge, (isEdge) => {
+  if (isEdge && !props.loading && !isLoadingMore.value && props.data?.length) {
+    // Simpan timestamp dari candle terkiri yang sedang terlihat sebagai anchor
+    const sorted = [...props.data].sort((a: any, b: any) => {
+      const tA = a.timestamp || new Date(a.date || a.Date || 0).getTime()
+      const tB = b.timestamp || new Date(b.date || b.Date || 0).getTime()
+      return tA - tB
+    })
+    const leftVisibleIdx = Math.max(0, sorted.length - visibleCandles.value - panOffset.value)
+    const anchorCandle = sorted[leftVisibleIdx]
+    if (anchorCandle) {
+      anchorTimestamp = anchorCandle.timestamp || new Date(anchorCandle.date || anchorCandle.Date || 0).getTime()
+    }
+    
+    isLoadingMore.value = true
+    emit('loadMore')
+  }
+})
 
 watch(() => props.plan, () => {
   nextTick(() => drawChart())
@@ -230,7 +327,23 @@ function drawChart() {
   ctx.scale(dpr, dpr)
   ctx.clearRect(0, 0, width, height)
 
-  const items = [...props.data].reverse() // Data API biasanya terbaru di index 0
+  // Sort chronologically (oldest → newest) agar chart terbaca kiri → kanan
+  const allItems = [...props.data].sort((a, b) => {
+    const tA = a.timestamp || new Date(a.date || a.Date || 0).getTime()
+    const tB = b.timestamp || new Date(b.date || b.Date || 0).getTime()
+    return tA - tB
+  })
+
+  // Viewport: hanya tampilkan candle yang visible berdasarkan panOffset
+  const totalLen = allItems.length
+  const maxVisible = Math.min(visibleCandles.value, totalLen)
+  const maxPan = Math.max(0, totalLen - maxVisible)
+  panOffset.value = Math.max(0, Math.min(panOffset.value, maxPan))
+  
+  const startIdx = totalLen - maxVisible - panOffset.value
+  const endIdx = startIdx + maxVisible
+  const items = allItems.slice(Math.max(0, startIdx), endIdx)
+
   const padding = { top: 10, right: 60, bottom: 30, left: 10 }
   const chartW = width - padding.left - padding.right
   const chartH = height - padding.top - padding.bottom
@@ -375,7 +488,8 @@ function drawChart() {
     drawDashedLine(ySL, '#ef4444', 'STOP LOSS')
   }
 
-  // Tanggal di bawah (setiap 5-10 candle)
+  // Tanggal/Waktu di bawah (setiap 5-10 candle)
+  const isIntraday = ['5m', '15m', '30m', '60m'].includes(activePeriod.value)
   ctx.fillStyle = textColor
   ctx.textAlign = 'center'
   ctx.font = 'bold 9px Inter, sans-serif'
@@ -385,7 +499,14 @@ function drawChart() {
     const dateStr = d.date || d.Date || d.timestamp || ''
     if (dateStr) {
       const x = padding.left + barGap * i + barGap / 2
-      const label = new Date(dateStr).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })
+      const dt = typeof dateStr === 'number' ? new Date(dateStr * 1000) : new Date(dateStr)
+      let label: string
+      if (isIntraday) {
+        // Tampilkan jam:menit untuk intraday
+        label = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+      } else {
+        label = dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })
+      }
       ctx.fillText(label, x, height - 5)
     }
   }
@@ -468,24 +589,9 @@ function drawChart() {
     }
   }
 
-  // Interactive handlers (Mouse + Touch)
-  function handleInteraction(e: MouseEvent | TouchEvent) {
+  // --- Tooltip helper ---
+  function showTooltipAt(clientX: number, clientY: number, isTouch: boolean) {
     const rect = canvas.getBoundingClientRect()
-    let clientX = 0
-    let clientY = 0
-    let isTouch = false
-
-    if ('touches' in e && e.touches.length > 0) {
-      clientX = e.touches[0].clientX
-      clientY = e.touches[0].clientY
-      isTouch = true
-    } else if ('clientX' in e) {
-      clientX = (e as MouseEvent).clientX
-      clientY = (e as MouseEvent).clientY
-    } else {
-      return
-    }
-
     const mx = clientX - rect.left
     const idx = Math.floor((mx - padding.left) / barGap)
 
@@ -494,8 +600,6 @@ function drawChart() {
       tooltip.show = true
       tooltip.cx = padding.left + barGap * idx + barGap / 2
       
-      // Di mobile (touch), tooltip OHLCV selalu terkunci di atas (top: 25px) agar tidak tertutup jari,
-      // namun secara horizontal (X) akan mengikuti posisi jari/crosshair
       if (isTouch) {
         tooltip.x = Math.min(Math.max(tooltip.cx - 65, 10), width - 140)
         tooltip.y = 25 
@@ -505,7 +609,12 @@ function drawChart() {
       }
       
       const rawDate = d.date || d.Date || d.timestamp || ''
-      tooltip.dateFormatted = rawDate ? new Date(rawDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+      const dt = typeof rawDate === 'number' ? new Date(rawDate * 1000) : new Date(rawDate)
+      if (isIntraday) {
+        tooltip.dateFormatted = rawDate ? dt.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-'
+      } else {
+        tooltip.dateFormatted = rawDate ? dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+      }
       tooltip.date = rawDate
       tooltip.open = fmt(d.open || d.Open || d.o || 0)
       tooltip.high = fmt(d.high || d.High || d.h || 0)
@@ -517,21 +626,79 @@ function drawChart() {
     }
   }
 
-  canvas.onmousemove = handleInteraction
-  canvas.ontouchstart = (e) => {
-    // Hindari perambatan scroll native yang membatalkan event berlanjut
-    if (e.cancelable) e.preventDefault()
-    handleInteraction(e)
+  // --- Mouse: hover = tooltip, drag = pan ---
+  canvas.onmousedown = (e: MouseEvent) => {
+    isDragging = true
+    dragStartX = e.clientX
+    dragStartPan = panOffset.value
+    tooltip.show = false
   }
-  canvas.ontouchmove = (e) => {
-    // Hindari scroll layar saat swipe timeline
-    if (e.cancelable) e.preventDefault()
-    handleInteraction(e)
+  canvas.onmousemove = (e: MouseEvent) => {
+    if (isDragging) {
+      const dx = e.clientX - dragStartX
+      const candlesMoved = Math.round(dx / barGap)
+      panOffset.value = Math.max(0, Math.min(dragStartPan + candlesMoved, maxPan))
+      drawChart()
+    } else {
+      showTooltipAt(e.clientX, e.clientY, false)
+    }
+  }
+  canvas.onmouseup = () => { isDragging = false }
+  canvas.onmouseleave = () => {
+    isDragging = false
+    tooltip.show = false
   }
 
-  canvas.onmouseleave = () => { tooltip.show = false }
-  canvas.ontouchend = () => { tooltip.show = false }
-  canvas.ontouchcancel = () => { tooltip.show = false }
+  // --- Touch: quick drag = pan, long press (300ms) = tooltip mode ---
+  canvas.ontouchstart = (e: TouchEvent) => {
+    if (!e.touches.length) return
+    const t = e.touches[0]
+    dragStartX = t.clientX
+    dragStartPan = panOffset.value
+    isDragging = false
+    isMobileLongPress = false
+
+    // Long press timer: jika hold 300ms tanpa bergerak → mode tooltip
+    if (longPressTimer) clearTimeout(longPressTimer)
+    longPressTimer = setTimeout(() => {
+      isMobileLongPress = true
+      if (e.cancelable) e.preventDefault()
+      showTooltipAt(t.clientX, t.clientY, true)
+    }, 300)
+  }
+  canvas.ontouchmove = (e: TouchEvent) => {
+    if (!e.touches.length) return
+    const t = e.touches[0]
+    const dx = t.clientX - dragStartX
+
+    if (isMobileLongPress) {
+      // Mode tooltip — geser jari = geser crosshair
+      if (e.cancelable) e.preventDefault()
+      showTooltipAt(t.clientX, t.clientY, true)
+    } else {
+      // Mode pan — geser chart
+      if (Math.abs(dx) > 5) {
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
+        isDragging = true
+        if (e.cancelable) e.preventDefault()
+        const candlesMoved = Math.round(dx / barGap)
+        panOffset.value = Math.max(0, Math.min(dragStartPan + candlesMoved, maxPan))
+        drawChart()
+      }
+    }
+  }
+  canvas.ontouchend = () => {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
+    isDragging = false
+    isMobileLongPress = false
+    tooltip.show = false
+  }
+  canvas.ontouchcancel = () => {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
+    isDragging = false
+    isMobileLongPress = false
+    tooltip.show = false
+  }
 }
 
 // Logic Analisa Pola (Pattern Recognition)
@@ -549,8 +716,12 @@ function analyzeChartPatterns() {
   setTimeout(() => {
     detectedPatterns.value = []
     
-    // items is reversed: index 0 = oldest
-    const items = [...props.data].reverse()
+    // Sort chronologically: index 0 = oldest
+    const items = [...props.data].sort((a, b) => {
+      const tA = a.timestamp || new Date(a.date || a.Date || 0).getTime()
+      const tB = b.timestamp || new Date(b.date || b.Date || 0).getTime()
+      return tA - tB
+    })
     const closes = items.map(d => Number(d.close || d.Close || d.c || 0))
     const highs = items.map(d => Number(d.high || d.High || d.h || 0))
     const lows = items.map(d => Number(d.low || d.Low || d.l || 0))

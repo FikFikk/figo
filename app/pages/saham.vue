@@ -3,20 +3,33 @@
 
     <!-- Page Header -->
     <div class="mb-8">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="w-10 h-10 rounded-2xl flex items-center justify-center"
-          :class="isDark ? 'bg-primary/15' : 'bg-blue-50'"
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl flex items-center justify-center"
+            :class="isDark ? 'bg-primary/15' : 'bg-blue-50'"
+          >
+            <span class="material-symbols-outlined text-xl text-primary">candlestick_chart</span>
+          </div>
+          <div>
+            <h1 class="text-2xl md:text-3xl font-headline font-black tracking-tight"
+              :class="isDark ? 'text-white' : 'text-slate-900'"
+            >Analisa Saham IDX</h1>
+            <p class="text-xs" :class="isDark ? 'text-gray-500' : 'text-slate-400'">
+              Real-time market data, technical signals &amp; bandarmology
+            </p>
+          </div>
+        </div>
+        <!-- API Source Toggle -->
+        <button v-if="isPinVerified" @click="toggleApi"
+          class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all border"
+          :class="stockApi.apiSource.value === 'yahoo'
+            ? (isDark ? 'bg-purple-500/15 text-purple-400 border-purple-500/20 hover:bg-purple-500/25' : 'bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100')
+            : (isDark ? 'bg-amber-500/15 text-amber-400 border-amber-500/20 hover:bg-amber-500/25' : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100')"
         >
-          <span class="material-symbols-outlined text-xl text-primary">candlestick_chart</span>
-        </div>
-        <div>
-          <h1 class="text-2xl md:text-3xl font-headline font-black tracking-tight"
-            :class="isDark ? 'text-white' : 'text-slate-900'"
-          >Analisa Saham IDX</h1>
-          <p class="text-xs" :class="isDark ? 'text-gray-500' : 'text-slate-400'">
-            Real-time market data, technical signals &amp; bandarmology
-          </p>
-        </div>
+          <span class="material-symbols-outlined text-sm">{{ stockApi.apiSource.value === 'yahoo' ? 'public' : 'api' }}</span>
+          {{ stockApi.apiSource.value === 'yahoo' ? 'Yahoo Finance' : 'RapidAPI IDX' }}
+          <span class="material-symbols-outlined text-xs opacity-50">swap_horiz</span>
+        </button>
       </div>
     </div>
 
@@ -113,7 +126,7 @@
       <StockOverview :symbol="selectedSymbol" :info="stockInfo" :loading="loadingInfo" />
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div class="lg:col-span-3">
-          <StockChart :data="chartData" :loading="loadingChart" :plan="tradingPlan" @fetch="loadChart(selectedSymbol, $event)" @period-change="onPeriodChange" />
+          <StockChart :data="chartData" :loading="loadingChart" :plan="tradingPlan" @fetch="loadChart(selectedSymbol, $event)" @period-change="onPeriodChange" @load-more="onChartLoadMore" />
         </div>
         <div class="lg:col-span-2 flex flex-col gap-6">
           <StockTradingPlan :data="chartData" :loading="loadingChart" @update:plan="tradingPlan = $event" />
@@ -158,7 +171,7 @@
 
     <!-- Footer -->
     <div class="mt-10 text-center opacity-20">
-      <p class="text-[9px] font-bold uppercase tracking-[0.3em]">Data from IDX via RapidAPI</p>
+      <p class="text-[9px] font-bold uppercase tracking-[0.3em]">{{ stockApi.apiSource.value === 'yahoo' ? 'Chart via Yahoo Finance' : 'Data via RapidAPI IDX' }}</p>
     </div>
   </div>
 </template>
@@ -216,6 +229,7 @@ const moversData = ref<any>(null)
 const moversTab = ref('gainers')
 const moversOpen = ref(false) // Default collapsed untuk hemat API
 const tradingPlan = ref<any>(null)
+const currentChartParams = ref({ interval: '1d', range: '3mo' })
 
 // Loading state per section
 const loadingInfo = ref(false)
@@ -243,12 +257,17 @@ async function onSelectStock(stock: any) {
   await loadStockInfo(selectedSymbol.value)
 }
 
-// Fetch: Info emiten
+// Fetch: Info emiten — dual API support
 async function loadStockInfo(symbol: string) {
   loadingInfo.value = true
   try {
-    const data = await $fetch('/api/stock/info', { params: { symbol } })
-    stockInfo.value = data
+    if (stockApi.apiSource.value === 'yahoo') {
+      const data = await $fetch('/api/stock/yahoo-info', { params: { symbol } })
+      stockInfo.value = data
+    } else {
+      const data = await $fetch('/api/stock/info', { params: { symbol } })
+      stockInfo.value = data
+    }
   } catch (err: any) {
     globalError.value = err?.data?.statusMessage || 'Gagal memuat info saham'
   } finally {
@@ -256,21 +275,42 @@ async function loadStockInfo(symbol: string) {
   }
 }
 
-// Fetch: Chart OHLCV
-async function loadChart(symbol: string, limit: number) {
+// Toggle API dan refresh data saham yang aktif
+function toggleApi() {
+  stockApi.toggleApiSource()
+  // Jika ada saham yang dipilih, refresh datanya
+  if (selectedSymbol.value) {
+    loadStockInfo(selectedSymbol.value)
+    loadChart(selectedSymbol.value, { interval: '1d', range: '3mo' })
+  }
+}
+
+// Fetch: Chart OHLCV — dual API support (Yahoo Finance default)
+async function loadChart(symbol: string, params: { interval: string; range: string }) {
   loadingChart.value = true
   try {
-    const data = await $fetch<any>('/api/stock/chart', { params: { symbol, limit } })
-    // API format: { success, data: { data: { chartbit: [...] } } }
-    const chartbit = data?.data?.data?.chartbit
-      || data?.data?.chartbit
-      || data?.chartbit
-    if (Array.isArray(chartbit)) chartData.value = chartbit
-    else if (Array.isArray(data)) chartData.value = data
-    else if (data?.data && Array.isArray(data.data)) chartData.value = data.data
-    else chartData.value = []
+    if (stockApi.apiSource.value === 'yahoo') {
+      const data = await $fetch<any>('/api/stock/yahoo-chart', {
+        params: { symbol, interval: params.interval, range: params.range }
+      })
+      // StockChart akan sort chronologically sendiri
+      if (Array.isArray(data?.data)) chartData.value = data.data
+      else if (Array.isArray(data)) chartData.value = data
+      else chartData.value = []
+    } else {
+      // RapidAPI IDX — hanya daily, convert range/interval ke limit
+      const limitMap: Record<string, number> = { '1d': 2, '5d': 5, '1mo': 21, '3mo': 63, '1y': 252, '5y': 1260 }
+      const limit = limitMap[params.range] || 63
+      const data = await $fetch<any>('/api/stock/chart', { params: { symbol, limit } })
+      const chartbit = data?.data?.data?.chartbit || data?.data?.chartbit || data?.chartbit
+      if (Array.isArray(chartbit)) chartData.value = chartbit
+      else if (Array.isArray(data)) chartData.value = data
+      else if (data?.data && Array.isArray(data.data)) chartData.value = data.data
+      else chartData.value = []
+    }
   } catch (err: any) {
     console.error('Chart error:', err)
+    chartData.value = []
   } finally {
     loadingChart.value = false
   }
@@ -315,11 +355,48 @@ async function loadMovers(type: string) {
   }
 }
 
-// Handler: Period chart berubah
-function onPeriodChange(limit: number) {
+// Handler: Period chart berubah (dari StockChart component)
+function onPeriodChange(params: { interval: string; range: string }) {
   if (selectedSymbol.value) {
-    loadChart(selectedSymbol.value, limit)
+    currentChartParams.value = { ...params }
+    loadChart(selectedSymbol.value, params)
   }
+}
+
+// Handler: Load more data historis (chart di-pan mentok kiri)
+function onChartLoadMore() {
+  if (!selectedSymbol.value || loadingChart.value) return
+  
+  const currentRange = currentChartParams.value.range
+  const interval = currentChartParams.value.interval
+  
+  // Escalasi range disesuaikan dengan limit Yahoo Finance per interval
+  const escalationMap: Record<string, string[]> = {
+    '1m': ['1d', '5d', '7d'],
+    '5m': ['1d', '5d', '1mo', '60d'],
+    '15m': ['5d', '1mo', '60d'],
+    '30m': ['5d', '1mo', '60d'],
+    '60m': ['1mo', '3mo', '1y', '2y'],
+    '1d': ['3mo', '1y', '5y', 'max'],
+    '1wk': ['1y', '5y', 'max'],
+    '1mo': ['5y', 'max']
+  }
+  
+  const seq = escalationMap[interval] || ['1mo', '3mo', '1y', '5y', 'max']
+  const idx = seq.indexOf(currentRange)
+  
+  let nextRange = currentRange
+  if (idx >= 0 && idx < seq.length - 1) {
+    nextRange = seq[idx + 1]
+  } else if (idx === -1 && seq.length > 0) {
+    // Jika range awal tidak standar, lompat ke step terakhir yang valid
+    nextRange = seq[seq.length - 1]
+  }
+
+  if (nextRange === currentRange) return // sudah max
+  
+  currentChartParams.value.range = nextRange
+  loadChart(selectedSymbol.value, currentChartParams.value)
 }
 
 // Handler: Tab movers berubah

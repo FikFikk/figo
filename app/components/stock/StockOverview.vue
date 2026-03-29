@@ -107,9 +107,10 @@ watch(() => props.symbol, () => {
   logoError.value = false
 })
 
-// Normalize: data mungkin nested di { data: { ... } } atau { success, data: { ... } }
+// Normalize: data bisa dari Yahoo Finance atau RapidAPI IDX
 const stockData = computed(() => {
   if (!props.info) return null
+  // Yahoo Finance: data langsung, RapidAPI: mungkin nested di { data: {...} }
   return props.info?.data || props.info
 })
 
@@ -130,8 +131,8 @@ const changeValue = computed(() => {
 const changePct = computed(() => {
   if (!stockData.value) return 0
   const d = stockData.value
-  // API mengembalikan percentage sebagai number -2.55
-  return parseFloat(d.percentage) || d.changePct || d.percent || 0
+  // Yahoo: changePercent, RapidAPI: percentage
+  return parseFloat(d.changePercent) || parseFloat(d.percentage) || d.changePct || d.percent || 0
 })
 
 // Stats grid
@@ -143,7 +144,7 @@ const stats = computed(() => {
     {
       label: 'Previous',
       icon: 'history',
-      value: formatPrice(d.previous || d.prevClose || 0),
+      value: formatPrice(d.previousClose || d.previous || d.prevClose || 0),
     },
     {
       label: 'Volume',
@@ -153,12 +154,12 @@ const stats = computed(() => {
     {
       label: 'Sektor',
       icon: 'factory',
-      value: d.sector || d.sub_sector || '-',
+      value: d.sector || d.sub_sector || d.exchange || '-',
     },
     {
-      label: 'Status',
-      icon: 'info',
-      value: d.status || '-',
+      label: d.source === 'yahoo' ? 'Source' : 'Status',
+      icon: d.source === 'yahoo' ? 'public' : 'info',
+      value: d.source === 'yahoo' ? 'Yahoo Finance' : (d.status || '-'),
     },
   ].filter(s => s.value !== '0' && s.value !== '-')
 })

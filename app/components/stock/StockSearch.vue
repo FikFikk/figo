@@ -85,9 +85,16 @@
               </span>
             </div>
             <div class="flex-1 text-left min-w-0">
-              <p class="font-headline font-bold text-sm truncate"
-                :class="isDark ? 'text-white' : 'text-slate-900'"
-              >{{ stock.symbol || stock.code }}</p>
+              <div class="flex items-center gap-1.5">
+                <p class="font-headline font-bold text-sm truncate"
+                  :class="isDark ? 'text-white' : 'text-slate-900'"
+                >{{ stock.symbol || stock.code }}</p>
+                <!-- Badge IDX / Exchange -->
+                <span v-if="stock.isIDX || stock.tag === 'IDX'" class="px-1.5 py-0.5 rounded text-[8px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">IDX</span>
+                <span v-else-if="stock.tag" class="px-1.5 py-0.5 rounded text-[8px] font-black opacity-40 border"
+                  :class="isDark ? 'border-white/10' : 'border-slate-200'"
+                >{{ stock.tag }}</span>
+              </div>
               <p class="text-[11px] truncate"
                 :class="isDark ? 'text-gray-500' : 'text-slate-400'"
               >{{ stock.name || stock.company || '' }}</p>
@@ -158,11 +165,20 @@ function onSearch() {
   searchTimeout = setTimeout(async () => {
     isTyping.value = false
     const data = await searchStock(query.value)
-    // Search API format: { success, data: { data: { company: [...] } } }
-    const companies = extractSearchResults(data)
-    results.value = companies.map((c: any) => ({
-      symbol: c.name || c.symbol || c.code || '',
-      name: c.desc || c.description || c.company || '',
+
+    // Yahoo Finance: mengembalikan array langsung [{symbol, name}]
+    // RapidAPI IDX: mengembalikan { data: { data: { company: [...] } } }
+    let items: any[] = []
+    if (Array.isArray(data)) {
+      items = data
+    } else {
+      const companies = extractSearchResults(data)
+      items = companies
+    }
+
+    results.value = items.map((c: any) => ({
+      symbol: c.symbol || c.name || c.code || '',
+      name: c.name || c.longname || c.desc || c.description || c.company || '',
       ...c,
     }))
   }, 2000)

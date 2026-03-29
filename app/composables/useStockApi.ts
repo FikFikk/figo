@@ -1,24 +1,26 @@
 /**
- * Composable untuk semua operasi fetch data saham IDX
- * Menyediakan fungsi-fungsi untuk mengambil data dari server proxy
+ * Composable untuk semua operasi fetch data saham
+ * Mendukung dual API: Yahoo Finance (default) dan RapidAPI IDX
+ * State apiSource disimpan secara global agar konsisten antar komponen
  */
 
-interface StockSearchResult {
-  symbol: string
-  name: string
-  [key: string]: any
-}
+// State global: sumber API yang aktif (persisten antar komponen)
+const apiSource = ref<'yahoo' | 'rapidapi'>('yahoo')
 
 interface UseStockApiReturn {
   // Loading & error state
   loading: Ref<boolean>
   error: Ref<string>
 
+  // API Source toggle
+  apiSource: Ref<'yahoo' | 'rapidapi'>
+  toggleApiSource: () => void
+
   // Fungsi fetch
   searchStock: (query: string) => Promise<any>
   getTrending: () => Promise<any>
   getStockInfo: (symbol: string) => Promise<any>
-  getChart: (symbol: string, limit?: number) => Promise<any>
+  getChart: (symbol: string, params?: { interval?: string; range?: string; limit?: number }) => Promise<any>
   getTechnical: (symbol: string) => Promise<any>
   getMovers: (type: 'gainers' | 'losers' | 'volume') => Promise<any>
   getBandarmology: (symbol: string) => Promise<any>
@@ -47,37 +49,55 @@ export function useStockApi(): UseStockApiReturn {
     }
   }
 
-  // Cari saham berdasarkan keyword
+  // Toggle antara Yahoo Finance dan RapidAPI IDX
+  function toggleApiSource() {
+    apiSource.value = apiSource.value === 'yahoo' ? 'rapidapi' : 'yahoo'
+  }
+
+  // Cari saham berdasarkan keyword — gunakan API yang aktif
   async function searchStock(query: string) {
+    if (apiSource.value === 'yahoo') {
+      return fetchWithState('/api/stock/yahoo-search', { q: query })
+    }
     return fetchWithState('/api/stock/search', { q: query })
   }
 
-  // Ambil daftar saham trending
+  // Ambil daftar saham trending (hanya RapidAPI IDX)
   async function getTrending() {
     return fetchWithState('/api/stock/trending')
   }
 
-  // Ambil info detail emiten (harga, volume, market cap)
+  // Ambil info detail emiten — gunakan API yang aktif
   async function getStockInfo(symbol: string) {
+    if (apiSource.value === 'yahoo') {
+      return fetchWithState('/api/stock/yahoo-info', { symbol })
+    }
     return fetchWithState('/api/stock/info', { symbol })
   }
 
-  // Ambil data chart OHLCV
-  async function getChart(symbol: string, limit: number = 60) {
-    return fetchWithState('/api/stock/chart', { symbol, limit })
+  // Ambil data chart OHLCV — gunakan API yang aktif
+  async function getChart(symbol: string, params?: { interval?: string; range?: string; limit?: number }) {
+    if (apiSource.value === 'yahoo') {
+      return fetchWithState('/api/stock/yahoo-chart', {
+        symbol,
+        interval: params?.interval || '1d',
+        range: params?.range || '3mo'
+      })
+    }
+    return fetchWithState('/api/stock/chart', { symbol, limit: params?.limit || 63 })
   }
 
-  // Ambil sinyal teknikal
+  // Ambil sinyal teknikal (hanya RapidAPI IDX)
   async function getTechnical(symbol: string) {
     return fetchWithState('/api/stock/technical', { symbol })
   }
 
-  // Ambil market movers
+  // Ambil market movers (hanya RapidAPI IDX)
   async function getMovers(type: 'gainers' | 'losers' | 'volume' = 'gainers') {
     return fetchWithState('/api/stock/movers', { type })
   }
 
-  // Ambil data bandarmology (akumulasi + smart money)
+  // Ambil data bandarmology (hanya RapidAPI IDX)
   async function getBandarmology(symbol: string) {
     return fetchWithState('/api/stock/bandarmology', { symbol })
   }
@@ -85,6 +105,8 @@ export function useStockApi(): UseStockApiReturn {
   return {
     loading,
     error,
+    apiSource,
+    toggleApiSource,
     searchStock,
     getTrending,
     getStockInfo,
