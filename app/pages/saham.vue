@@ -1,46 +1,6 @@
 <template>
-  <div>
-    <!-- PIN Protection Screen -->
-    <div v-if="!isPinVerified" class="min-h-screen flex flex-col items-center justify-center p-4">
-      <div class="glass-panel border rounded-3xl p-8 md:p-12 text-center max-w-sm w-full"
-        :class="isDark ? 'bg-[#1a1d28]/80 border-white/5' : 'bg-white/80 border-slate-100 shadow-xl'"
-      >
-        <div class="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-6 transition-all duration-500"
-          :class="[
-            isDark ? 'bg-primary/20 text-primary' : 'bg-primary text-white shadow-lg shadow-primary/30',
-            pinError ? 'bg-red-500/20 text-red-500 animate-bounce' : ''
-          ]"
-        >
-          <span class="material-symbols-outlined text-3xl">{{ pinError ? 'lock_open_right' : 'lock' }}</span>
-        </div>
-        <h2 class="text-xl font-bold font-headline mb-2" :class="isDark ? 'text-white' : 'text-slate-900'">Akses Terbatas</h2>
-        <p class="text-[11px] opacity-60 mb-8 px-4">Masukkan 6 digit PIN rahasia untuk membuka fitur Analisa Saham.</p>
+  <div class="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto min-h-screen">
 
-        <form @submit.prevent="checkPin" class="flex flex-col gap-6">
-          <div>
-            <input 
-              v-model="pinInput"
-              type="password" 
-              inputmode="numeric"
-              maxlength="6"
-              pattern="\d*"
-              placeholder="••••••"
-              class="w-full text-center text-4xl tracking-[0.3em] font-mono font-bold bg-transparent border-b-2 outline-none pb-3 transition-all placeholder:opacity-20"
-              :class="[
-                isDark ? 'border-white/10 text-white focus:border-primary' : 'border-slate-200 text-slate-900 focus:border-primary',
-                pinError ? '!border-red-500 !text-red-500' : ''
-              ]"
-              @input="handlePinInput"
-            />
-            <p v-if="pinError" class="text-[10px] font-bold text-red-500 mt-3 animate-pulse">PIN salah. Silakan coba lagi.</p>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Main Content -->
-    <div v-else class="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto min-h-screen transform transition-all animate-fade-in">
-    
     <!-- Page Header -->
     <div class="mb-8">
       <div class="flex items-center gap-3 mb-3">
@@ -54,16 +14,76 @@
             :class="isDark ? 'text-white' : 'text-slate-900'"
           >Analisa Saham IDX</h1>
           <p class="text-xs" :class="isDark ? 'text-gray-500' : 'text-slate-400'">
-            Real-time market data, technical signals & bandarmology
+            Real-time market data, technical signals &amp; bandarmology
           </p>
         </div>
       </div>
     </div>
 
-    <!-- Search Bar -->
-    <div class="mb-8">
+    <!-- Search Bar (selalu tampil, overlay PIN jika belum verified) -->
+    <div class="mb-8 relative">
+      <div v-if="!isPinVerified" @click="showPinModal = true"
+        class="absolute inset-0 z-30 rounded-2xl flex items-center justify-center cursor-pointer"
+        :class="isDark ? 'bg-black/40 backdrop-blur-sm' : 'bg-white/40 backdrop-blur-sm'"
+      >
+        <div class="flex items-center gap-2 px-4 py-2 rounded-xl"
+          :class="isDark ? 'bg-white/10 text-white' : 'bg-slate-800/80 text-white'"
+        >
+          <span class="material-symbols-outlined text-sm">lock</span>
+          <span class="text-xs font-bold">Masukkan PIN untuk mengakses</span>
+        </div>
+      </div>
       <StockSearch @select="onSelectStock" />
     </div>
+
+    <!-- PIN Modal -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div v-if="showPinModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="showPinModal = false">
+          <div class="glass-panel border rounded-3xl p-8 md:p-10 text-center max-w-sm w-full"
+            :class="isDark ? 'bg-[#1a1d28] border-white/10' : 'bg-white border-slate-200 shadow-2xl'"
+          >
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 transition-all duration-500"
+              :class="[
+                isDark ? 'bg-primary/20 text-primary' : 'bg-primary text-white shadow-lg shadow-primary/30',
+                pinError ? '!bg-red-500/20 !text-red-500 animate-bounce' : ''
+              ]"
+            >
+              <span class="material-symbols-outlined text-2xl">{{ pinError ? 'lock_open_right' : 'lock' }}</span>
+            </div>
+            <h2 class="text-lg font-bold font-headline mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">Masukkan PIN</h2>
+            <p class="text-[10px] opacity-50 mb-6">6 digit PIN rahasia untuk membuka fitur Analisa.</p>
+
+            <form @submit.prevent="checkPin">
+              <input 
+                v-model="pinInput"
+                type="password" 
+                inputmode="numeric"
+                maxlength="6"
+                pattern="\d*"
+                placeholder="••••••"
+                class="w-full text-center text-3xl tracking-[0.3em] font-mono font-bold bg-transparent border-b-2 outline-none pb-3 transition-all placeholder:opacity-20 mb-3"
+                :class="[
+                  isDark ? 'border-white/10 text-white focus:border-primary' : 'border-slate-200 text-slate-900 focus:border-primary',
+                  pinError ? '!border-red-500 !text-red-500' : ''
+                ]"
+                @input="handlePinInput"
+              />
+              <p v-if="pinError" class="text-[10px] font-bold text-red-500 animate-pulse">PIN salah.</p>
+            </form>
+
+            <button @click="showPinModal = false" class="mt-4 text-[10px] opacity-40 hover:opacity-80 transition-opacity">Tutup</button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- Error Global -->
     <Transition
@@ -88,54 +108,58 @@
       </div>
     </Transition>
 
-    <!-- Konten Utama: Saat saham sudah dipilih -->
-    <div v-if="selectedSymbol" class="space-y-6">
-      
-      <!-- Overview -->
+    <!-- Konten Utama: Saat saham sudah dipilih (PIN required) -->
+    <div v-if="isPinVerified && selectedSymbol" class="space-y-6">
       <StockOverview :symbol="selectedSymbol" :info="stockInfo" :loading="loadingInfo" />
-
-      <!-- Chart & Technical — Side by Side di Desktop -->
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <!-- Chart (lebih lebar) -->
         <div class="lg:col-span-3">
           <StockChart :data="chartData" :loading="loadingChart" :plan="tradingPlan" @fetch="loadChart(selectedSymbol, $event)" @period-change="onPeriodChange" />
         </div>
-
-        <!-- Technical Analysis & AI Plan -->
         <div class="lg:col-span-2 flex flex-col gap-6">
           <StockTradingPlan :data="chartData" :loading="loadingChart" @update:plan="tradingPlan = $event" />
           <StockTechnical :data="technicalData" :loading="loadingTechnical" @fetch="loadTechnical(selectedSymbol)" />
         </div>
       </div>
-
-      <!-- Bandarmology -->
       <StockBandarmology :data="bandarmologyData" :loading="loadingBandarmology" @fetch="loadBandarmology(selectedSymbol)" />
     </div>
 
-    <!-- Market Movers (tampil jika belum ada saham yang dipilih) -->
-    <div v-if="!selectedSymbol" class="mt-8">
-      <div class="flex items-center gap-2 mb-4">
-        <span class="material-symbols-outlined text-lg text-primary">leaderboard</span>
-        <h2 class="font-headline font-bold text-lg"
-          :class="isDark ? 'text-white' : 'text-slate-900'"
-        >Market Movers</h2>
+    <!-- Bagian Publik (tanpa PIN) -->
+    <div v-if="!selectedSymbol" class="mt-2 space-y-6">
+
+      <!-- Market Movers (PIN required, collapsible) -->
+      <div v-if="isPinVerified" class="glass-panel rounded-2xl border overflow-hidden"
+        :class="isDark ? 'border-white/5' : 'border-slate-100'"
+      >
+        <button @click="moversOpen = !moversOpen"
+          class="w-full flex items-center justify-between p-5 text-left transition-colors"
+          :class="isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'"
+        >
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-lg text-primary">leaderboard</span>
+            <h2 class="font-headline font-bold text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">Market Movers</h2>
+          </div>
+          <span class="material-symbols-outlined text-lg transition-transform duration-300" :class="moversOpen ? 'rotate-180' : ''" style="opacity: 0.4">expand_more</span>
+        </button>
+        <div v-show="moversOpen" class="px-5 pb-5">
+          <StockMovers :data="moversData" :loading="loadingMovers" :active-tab="moversTab"
+            @select-stock="onSelectStock" @tab-change="onMoversTabChange" @update-tab="moversTab = $event" @fetch="loadMovers(moversTab)" />
+        </div>
       </div>
-      <StockMovers 
-        :data="moversData" 
-        :loading="loadingMovers" 
-        :active-tab="moversTab"
-        @select-stock="onSelectStock"
-        @tab-change="onMoversTabChange"
-        @update-tab="moversTab = $event"
-        @fetch="loadMovers(moversTab)"
-      />
+
+      <!-- Ensiklopedia Pola Saham (PUBLIK) -->
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <span class="material-symbols-outlined text-lg text-primary">auto_awesome</span>
+          <h2 class="font-headline font-bold text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">Ensiklopedia Pola Saham</h2>
+        </div>
+        <StockPatterns />
+      </div>
     </div>
 
     <!-- Footer -->
     <div class="mt-10 text-center opacity-20">
       <p class="text-[9px] font-bold uppercase tracking-[0.3em]">Data from IDX via RapidAPI</p>
     </div>
-  </div>
   </div>
 </template>
 
@@ -156,12 +180,14 @@ const stockApi = useStockApi()
 const isPinVerified = ref(false)
 const pinInput = ref('')
 const pinError = ref(false)
+const showPinModal = ref(false)
 const CORRECT_PIN = '112233'
 
 function checkPin() {
   if (pinInput.value === CORRECT_PIN) {
     isPinVerified.value = true
     pinError.value = false
+    showPinModal.value = false
   } else {
     pinError.value = true
     pinInput.value = ''
@@ -188,6 +214,7 @@ const technicalData = ref<any>(null)
 const bandarmologyData = ref<any>(null)
 const moversData = ref<any>(null)
 const moversTab = ref('gainers')
+const moversOpen = ref(false) // Default collapsed untuk hemat API
 const tradingPlan = ref<any>(null)
 
 // Loading state per section
