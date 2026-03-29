@@ -1,6 +1,7 @@
-// Warna dasar candle
-const G = '#10b981', R = '#ef4444', GR = '#64748b'
+// 8 kategori utama ensiklopedia saham — Types & re-exports
+// Data di-split ke file terpisah per kategori untuk maintainability
 
+// ═══ TYPE DEFINITIONS ═══
 export interface CandleDef { wickTop: number; bodyTop: number; bodyBot: number; wickBot: number; color: string; hollow?: boolean; w?: number }
 export interface DetailSection { title: string; body: string }
 export interface HarmonicPoint { label: string; x: number; y: number }
@@ -8,199 +9,13 @@ export interface HarmonicFib { text: string; x: number; y: number; align?: strin
 export interface HarmonicDef { points: HarmonicPoint[]; fibs: HarmonicFib[] }
 export interface PatternDef { name: string; label: string; labelColor: string; desc: string; signal: string; candles: CandleDef[]; detail: DetailSection[]; harmonic?: HarmonicDef }
 export interface CategoryDef { title: string; subtitle: string; open: boolean; patterns: PatternDef[] }
-
-// Kategori "konsep" tidak punya candles, hanya detail
 export interface ConceptDef { name: string; icon: string; desc: string; detail: DetailSection[] }
 export interface ConceptCategoryDef { title: string; subtitle: string; open: boolean; concepts: ConceptDef[] }
 
-export const patternCategories: CategoryDef[] = [
-  // 1. TREN UTAMA
-  { title: 'Tren Utama Pasar', subtitle: 'FONDASI ANALISA — 3 KONDISI DASAR', open: false, patterns: [
-    { name:'Uptrend (Naik)', label:'Higher High · Higher Low', labelColor:'text-emerald-500', desc:'Harga membentuk puncak & lembah yang semakin tinggi.', signal:'Bullish',
-      candles:[{wickTop:5,bodyTop:25,bodyBot:48,wickBot:55,color:G},{wickTop:2,bodyTop:18,bodyBot:40,wickBot:50,color:G},{wickTop:0,bodyTop:10,bodyBot:32,wickBot:42,color:G}],
-      detail:[{title:'Apa itu?',body:'Uptrend terjadi ketika harga secara konsisten membuat puncak yang semakin tinggi (Higher High) dan lembah yang semakin tinggi (Higher Low). Buyer mendominasi pasar.'},{title:'Cara Mengenali',body:'Hubungkan minimal 2 titik lembah yang menaik → itulah garis tren naik. Selama harga masih di atas garis ini, tren naik masih valid.'},{title:'Strategi',body:'"Buy on Dip" — beli ketika harga turun sementara (pullback) mendekati trendline atau support. Jangan beli di puncak.'},{title:'Kapan Berakhir?',body:'Tren naik selesai ketika harga menembus ke bawah garis trendline dengan volume besar, atau membuat Lower Low pertama kali.'}]},
-    { name:'Downtrend (Turun)', label:'Lower High · Lower Low', labelColor:'text-red-500', desc:'Harga membentuk puncak & lembah yang semakin rendah.', signal:'Bearish',
-      candles:[{wickTop:5,bodyTop:10,bodyBot:32,wickBot:42,color:R},{wickTop:12,bodyTop:18,bodyBot:40,wickBot:50,color:R},{wickTop:20,bodyTop:28,bodyBot:48,wickBot:58,color:R}],
-      detail:[{title:'Apa itu?',body:'Kebalikan uptrend. Seller mendominasi. Harga membuat Lower High dan Lower Low. Penjual rela menjual di harga makin murah.'},{title:'Strategi',body:'Hindari membeli selama downtrend aktif. Gunakan "Sell on Rally" jika ingin trading.'},{title:'Kapan Berakhir?',body:'Saat harga menembus garis tren turun dengan volume tinggi, atau terbentuk pola reversal bullish.'}]},
-    { name:'Sideways', label:'Support · Resistance', labelColor:'text-gray-400', desc:'Harga bergerak mendatar dalam kisaran sempit.', signal:'Netral',
-      candles:[{wickTop:8,bodyTop:20,bodyBot:38,wickBot:50,color:G},{wickTop:10,bodyTop:22,bodyBot:40,wickBot:48,color:R},{wickTop:6,bodyTop:18,bodyBot:36,wickBot:52,color:G}],
-      detail:[{title:'Apa itu?',body:'Harga memantul antara Support dan Resistance. Tidak ada dominasi buyer maupun seller — pasar sedang "istirahat".'},{title:'Strategi',body:'Beli di Support, jual di Resistance. Atau tunggu breakout dengan volume besar.'},{title:'Peringatan',body:'Hati-hati False Breakout — harga sempat tembus tapi langsung balik. Konfirmasi dengan volume.'}]},
-  ]},
-  // 2. POLA SATU CANDLE
-  { title: 'Pola Satu Candle', subtitle: 'POLA CEPAT — KONFIRMASI ENTRY/EXIT', open: false, patterns: [
-    { name:'Hammer', label:'Hammer', labelColor:'text-emerald-500', desc:'Ekor bawah panjang, body kecil di atas. Reversal naik.', signal:'Bullish', candles:[{wickTop:18,bodyTop:20,bodyBot:28,wickBot:58,color:G}],
-      detail:[{title:'Bentuk',body:'Body kecil di atas, ekor bawah minimal 2x panjang body. Ekor atas sangat pendek/tidak ada.'},{title:'Arti',body:'Seller dorong harga turun jauh (ekor), tapi buyer dorong kembali naik. Buyer mulai ambil kendali.'},{title:'Kapan Valid?',body:'Hanya valid di akhir downtrend. Di puncak uptrend = Hanging Man (bearish).'},{title:'Konfirmasi',body:'Tunggu candle hijau berikutnya menutup di atas body Hammer.'}]},
-    { name:'Inverted Hammer', label:'Inv. Hammer', labelColor:'text-emerald-500', desc:'Ekor atas panjang, body kecil di bawah. Potensi reversal.', signal:'Bullish', candles:[{wickTop:2,bodyTop:32,bodyBot:40,wickBot:45,color:G}],
-      detail:[{title:'Bentuk',body:'Kebalikan Hammer — body kecil di bawah, ekor atas panjang.'},{title:'Arti',body:'Buyer sempat dorong harga naik tapi seller masih kuat. Namun usaha ini tanda tekanan beli muncul.'},{title:'Konfirmasi',body:'Perlu candle hijau besar berikutnya menutup di atas high Inverted Hammer.'}]},
-    { name:'Shooting Star', label:'Shooting Star', labelColor:'text-red-500', desc:'Ekor atas panjang di puncak uptrend. Sinyal turun.', signal:'Bearish', candles:[{wickTop:2,bodyTop:32,bodyBot:40,wickBot:45,color:R}],
-      detail:[{title:'Bentuk',body:'Identik dengan Inv. Hammer tapi muncul di PUNCAK uptrend.'},{title:'Arti',body:'Buyer dorong naik tapi seller dorong balik kuat. Tekanan jual melampaui beli.'},{title:'Tips',body:'Volume tinggi = lebih akurat. Volume rendah = mungkin noise biasa.'}]},
-    { name:'Hanging Man', label:'Hanging Man', labelColor:'text-red-500', desc:'Seperti hammer tapi di puncak. Bearish reversal.', signal:'Bearish', candles:[{wickTop:18,bodyTop:20,bodyBot:28,wickBot:58,color:R}],
-      detail:[{title:'Bentuk',body:'Bentuk sama seperti Hammer tapi muncul di PUNCAK uptrend.'},{title:'Arti',body:'Ekor panjang = seller sempat dorong turun jauh. Peringatan momentum beli melemah.'},{title:'Konfirmasi',body:'Candle merah berikutnya menutup di bawah body Hanging Man.'}]},
-    { name:'Doji', label:'Doji', labelColor:'text-gray-400', desc:'Open ≈ Close. Ketidakpastian, sering muncul sebelum reversal.', signal:'Netral', candles:[{wickTop:5,bodyTop:28,bodyBot:32,wickBot:55,color:GR}],
-      detail:[{title:'Bentuk',body:'Body sangat kecil (hampir garis) karena Open ≈ Close. Ekor bisa panjang kedua sisi.'},{title:'Arti',body:'Pasar ragu-ragu. Di puncak → potensi turun. Di dasar → potensi naik.'},{title:'Konfirmasi',body:'Doji sendiri BUKAN sinyal. Selalu tunggu candle berikutnya untuk konfirmasi arah.'}]},
-    { name:'Gravestone Doji', label:'Gravestone', labelColor:'text-red-500', desc:'Open=Low=Close, ekor atas panjang. Bearish kuat.', signal:'Bearish Kuat', candles:[{wickTop:2,bodyTop:42,bodyBot:45,wickBot:45,color:R}],
-      detail:[{title:'Bentuk',body:'Open, Low, dan Close berada di level sama (bawah candle). Ekor atas sangat panjang.'},{title:'Arti',body:'Buyer dorong harga naik tinggi tapi seller tolak total. "Nisan" bagi buyer. Sinyal bearish kuat di puncak.'}]},
-    { name:'Marubozu', label:'Marubozu', labelColor:'text-emerald-500', desc:'Body besar tanpa ekor. Dominasi penuh satu pihak.', signal:'Bullish Kuat', candles:[{wickTop:12,bodyTop:12,bodyBot:50,wickBot:50,color:G}],
-      detail:[{title:'Bentuk',body:'Body sangat besar TANPA ekor atas maupun bawah.'},{title:'Arti',body:'Sinyal momentum paling kuat. Hijau = buyer dominasi total. Merah = seller dominasi total.'},{title:'Tips',body:'Jangan kejar harga setelah Marubozu. Tunggu pullback kecil untuk entry lebih baik.'}]},
-    { name:'Spinning Top', label:'Spinning Top', labelColor:'text-gray-400', desc:'Body kecil, ekor panjang kedua sisi. Keraguan.', signal:'Netral', candles:[{wickTop:5,bodyTop:25,bodyBot:33,wickBot:55,color:GR}],
-      detail:[{title:'Bentuk',body:'Body kecil dengan ekor relatif panjang di kedua sisi. Mirip Doji tapi body sedikit lebih besar.'},{title:'Arti',body:'Pertarungan seimbang buyer vs seller. Di tengah tren kuat = momentum mulai hilang.'}]},
-    { name:'Dragonfly Doji', label:'Dragonfly', labelColor:'text-emerald-500', desc:'Open=High=Close, ekor bawah panjang. Bullish kuat.', signal:'Bullish Kuat', candles:[{wickTop:15,bodyTop:15,bodyBot:18,wickBot:55,color:G}],
-      detail:[{title:'Bentuk',body:'Open, High, Close sama (atas candle). Ekor bawah sangat panjang.'},{title:'Arti',body:'Seller dorong turun jauh tapi buyer dorong kembali total. Rejection sangat kuat dari bawah.'},{title:'Akurasi',body:'Di dasar downtrend = salah satu sinyal reversal bullish paling kuat.'}]},
-    { name:'Long-Legged Doji', label:'Long-Legged', labelColor:'text-gray-400', desc:'Body kecil tengah, ekor panjang kedua sisi. Volatil tapi ragu.', signal:'Netral', candles:[{wickTop:2,bodyTop:27,bodyBot:33,wickBot:58,color:GR}],
-      detail:[{title:'Bentuk',body:'Mirip Doji biasa tapi ekor atas DAN bawah sangat panjang. Menunjukkan range harian yang sangat besar.'},{title:'Arti',body:'Volatilitas tinggi tapi hasil akhirnya seimbang. Pasar sangat tidak pasti. Sering muncul sebelum perubahan tren besar.'}]},
-  ]},
-  // 3. POLA DUA CANDLE
-  { title: 'Pola Dua Candle', subtitle: 'SINYAL LEBIH KUAT — DIKONFIRMASI DUA CANDLE', open: false, patterns: [
-    { name:'Bullish Engulfing', label:'Bull Engulfing', labelColor:'text-emerald-500', desc:'Hijau besar menelan merah. Reversal naik sangat kuat.', signal:'Bullish Kuat',
-      candles:[{wickTop:15,bodyTop:20,bodyBot:35,wickBot:40,color:R},{wickTop:5,bodyTop:12,bodyBot:42,wickBot:48,color:G}],
-      detail:[{title:'Bentuk',body:'Candle merah kecil diikuti candle hijau besar yang body-nya sepenuhnya menelan body merah sebelumnya.'},{title:'Arti',body:'Perpindahan kekuatan dramatis dari seller ke buyer. Semakin besar candle hijau dibanding merah, semakin kuat.'},{title:'Tips',body:'Paling efektif setelah downtrend panjang di dekat support penting.'}]},
-    { name:'Bearish Engulfing', label:'Bear Engulfing', labelColor:'text-red-500', desc:'Merah besar menelan hijau. Reversal turun kuat.', signal:'Bearish Kuat',
-      candles:[{wickTop:10,bodyTop:18,bodyBot:33,wickBot:38,color:G},{wickTop:5,bodyTop:12,bodyBot:42,wickBot:48,color:R}],
-      detail:[{title:'Bentuk',body:'Candle hijau kecil diikuti candle merah besar yang menelan seluruh body hijau.'},{title:'Arti',body:'Seller kalahkan buyer telak. Sering menandai puncak uptrend.'}]},
-    { name:'Bullish Harami', label:'Bull Harami', labelColor:'text-emerald-500', desc:'Candle kecil hijau "hamil" di dalam body merah besar.', signal:'Bullish',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:45,wickBot:50,color:R},{wickTop:20,bodyTop:22,bodyBot:32,wickBot:35,color:G}],
-      detail:[{title:'Bentuk',body:'Candle merah besar diikuti candle hijau kecil yang seluruh body-nya berada DI DALAM body candle merah. "Harami" = hamil (Jepang).'},{title:'Arti',body:'Momentum bearish melemah. Candle kecil menunjukkan seller kehilangan tenaga.'},{title:'Konfirmasi',body:'Candle hijau ketiga yang menutup di atas high Harami memperkuat sinyal.'}]},
-    { name:'Bearish Harami', label:'Bear Harami', labelColor:'text-red-500', desc:'Candle kecil merah di dalam body hijau besar.', signal:'Bearish',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:45,wickBot:50,color:G},{wickTop:20,bodyTop:22,bodyBot:32,wickBot:35,color:R}],
-      detail:[{title:'Bentuk',body:'Candle hijau besar diikuti candle merah kecil yang body-nya berada di dalam body hijau.'},{title:'Arti',body:'Momentum bullish melemah. Buyer kehilangan kendali. Potensi reversal di puncak.'}]},
-    { name:'Dark Cloud Cover', label:'Dark Cloud', labelColor:'text-red-500', desc:'Candle merah membuka di atas high lalu turun >50% body hijau.', signal:'Bearish',
-      candles:[{wickTop:8,bodyTop:12,bodyBot:38,wickBot:42,color:G},{wickTop:5,bodyTop:10,bodyBot:30,wickBot:35,color:R}],
-      detail:[{title:'Bentuk',body:'Candle hijau besar diikuti candle merah yang membuka DI ATAS high candle hijau (gap up) tapi menutup di bawah 50% body hijau.'},{title:'Arti',body:'Kebalikan Piercing Line. Buyer awalnya kuat (gap up) tapi seller ambil alih dan dorong harga turun jauh. Sinyal tren naik melemah.'}]},
-    { name:'Tweezer Bottom', label:'Tweezer Bottom', labelColor:'text-emerald-500', desc:'Dua candle dengan low sama. Rejection support kuat.', signal:'Bullish',
-      candles:[{wickTop:10,bodyTop:15,bodyBot:35,wickBot:50,color:R},{wickTop:10,bodyTop:18,bodyBot:38,wickBot:50,color:G}],
-      detail:[{title:'Bentuk',body:'Dua candle berturutan dengan harga terendah yang sama/sangat mirip.'},{title:'Arti',body:'Pasar uji support dua kali tapi gagal tembus. Ada buyer kuat yang jaga level tersebut.'}]},
-    { name:'Tweezer Top', label:'Tweezer Top', labelColor:'text-red-500', desc:'Dua candle dengan high sama. Rejection resistance kuat.', signal:'Bearish',
-      candles:[{wickTop:8,bodyTop:15,bodyBot:35,wickBot:42,color:G},{wickTop:8,bodyTop:18,bodyBot:38,wickBot:45,color:R}],
-      detail:[{title:'Bentuk',body:'Dua candle berturutan dengan harga tertinggi yang sama/sangat mirip.'},{title:'Arti',body:'Pasar uji resistance dua kali tapi gagal tembus. Seller kuat di level atas.'}]},
-    { name:'Piercing Line', label:'Piercing Line', labelColor:'text-emerald-500', desc:'Hijau buka di bawah low, tutup >50% body merah.', signal:'Bullish',
-      candles:[{wickTop:8,bodyTop:12,bodyBot:38,wickBot:45,color:R},{wickTop:30,bodyTop:32,bodyBot:48,wickBot:50,color:G}],
-      detail:[{title:'Bentuk',body:'Candle merah besar lalu candle hijau yang buka di bawah low merah tapi tutup di atas 50% body merah.'},{title:'Arti',body:'Gap down awal = seller masih kuat, tapi buyer balikkan arah menembus setengah body. Momentum bearish melemah.'}]},
-  ]},
-  // 4. POLA TIGA CANDLE
-  { title: 'Pola Tiga Candle', subtitle: 'PALING RELIABLE — TIGA SESI BERTURUTAN', open: false, patterns: [
-    { name:'Morning Star', label:'Morning Star', labelColor:'text-emerald-500', desc:'Merah → doji → hijau. Reversal naik paling dipercaya.', signal:'Bullish Sangat Kuat',
-      candles:[{wickTop:5,bodyTop:10,bodyBot:35,wickBot:40,color:R},{wickTop:32,bodyTop:38,bodyBot:42,wickBot:50,color:GR},{wickTop:12,bodyTop:15,bodyBot:40,wickBot:45,color:G}],
-      detail:[{title:'Bentuk',body:'C1: Merah besar. C2: Body kecil/doji (gap down). C3: Hijau besar (gap up).'},{title:'Arti',body:'Pola "fajar". Seller dorong turun, momentum berhenti, buyer masuk kuat. Transisi bearish → bullish.'},{title:'Kondisi Ideal',body:'Setelah downtrend panjang, volume meningkat progresif, C3 tutup minimal >50% body C1.'}]},
-    { name:'Evening Star', label:'Evening Star', labelColor:'text-red-500', desc:'Hijau → doji → merah. Sinyal puncak harga.', signal:'Bearish Kuat',
-      candles:[{wickTop:12,bodyTop:15,bodyBot:40,wickBot:45,color:G},{wickTop:5,bodyTop:10,bodyBot:15,wickBot:20,color:GR},{wickTop:8,bodyTop:12,bodyBot:38,wickBot:42,color:R}],
-      detail:[{title:'Bentuk',body:'Kebalikan Morning Star. C1: Hijau besar. C2: Doji (gap up). C3: Merah besar.'},{title:'Arti',body:'Pola "senja". Beli capai puncak, mulai ragu, seller ambil alih. Menandai puncak rally.'}]},
-    { name:'3 White Soldiers', label:'3 White Soldiers', labelColor:'text-emerald-500', desc:'Tiga hijau berurutan body besar naik. Sangat bullish.', signal:'Bullish Sangat Kuat',
-      candles:[{wickTop:28,bodyTop:30,bodyBot:48,wickBot:52,color:G},{wickTop:16,bodyTop:18,bodyBot:35,wickBot:38,color:G},{wickTop:4,bodyTop:6,bodyBot:22,wickBot:25,color:G}],
-      detail:[{title:'Bentuk',body:'Tiga candle hijau berturut-turut, setiap candle buka di dalam body sebelumnya dan tutup lebih tinggi.'},{title:'Arti',body:'Buyer dominasi total 3 sesi. Akumulasi pembelian konsisten.'}]},
-    { name:'3 Black Crows', label:'3 Black Crows', labelColor:'text-red-500', desc:'Tiga merah berurutan body besar turun. Sangat bearish.', signal:'Bearish Kuat',
-      candles:[{wickTop:4,bodyTop:6,bodyBot:22,wickBot:25,color:R},{wickTop:16,bodyTop:18,bodyBot:35,wickBot:38,color:R},{wickTop:28,bodyTop:30,bodyBot:48,wickBot:52,color:R}],
-      detail:[{title:'Bentuk',body:'Tiga candle merah berturutan, masing-masing tutup lebih rendah.'},{title:'Arti',body:'Tekanan jual sangat kuat 3 hari. Pertimbangkan cut loss jika muncul pola ini.'}]},
-    { name:'3 Inside Up', label:'3 Inside Up', labelColor:'text-emerald-500', desc:'Merah → harami hijau → konfirmasi hijau. Reversal naik.', signal:'Bullish Kuat',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:42,wickBot:48,color:R},{wickTop:18,bodyTop:20,bodyBot:32,wickBot:35,color:G},{wickTop:3,bodyTop:5,bodyBot:25,wickBot:28,color:G}],
-      detail:[{title:'Bentuk',body:'C1: Merah besar. C2: Hijau kecil di dalam body C1 (Harami). C3: Hijau besar tutup di atas high C1.'},{title:'Arti',body:'Harami + konfirmasi. Lebih andal dari Harami biasa karena candle ketiga membuktikan buyer benar-benar mengambil alih.'}]},
-    { name:'3 Inside Down', label:'3 Inside Down', labelColor:'text-red-500', desc:'Hijau → harami merah → konfirmasi merah. Reversal turun.', signal:'Bearish Kuat',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:42,wickBot:48,color:G},{wickTop:18,bodyTop:20,bodyBot:32,wickBot:35,color:R},{wickTop:25,bodyTop:28,bodyBot:48,wickBot:52,color:R}],
-      detail:[{title:'Bentuk',body:'Kebalikan 3 Inside Up. Harami bearish + candle merah konfirmasi.'},{title:'Arti',body:'Momentum bullish habis, seller mengambil alih secara bertahap terkonfirmasi.'}]},
-    { name:'Abandoned Baby', label:'Abandoned Baby', labelColor:'text-emerald-500', desc:'Gap + Doji terisolasi + Gap balik. Reversal langka & kuat.', signal:'Bullish Sangat Kuat',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:30,wickBot:35,color:R},{wickTop:38,bodyTop:42,bodyBot:45,wickBot:50,color:GR},{wickTop:12,bodyTop:15,bodyBot:35,wickBot:40,color:G}],
-      detail:[{title:'Bentuk',body:'C1: Candle tren. C2: Doji yang GAP dari C1 (tidak overlap). C3: Candle berlawanan yang GAP dari C2.'},{title:'Arti',body:'Sangat langka tapi sangat kuat. Doji terisolasi = "titik balik absolut" dimana pasar benar-benar berbalik arah.'}]},
-  ]},
-  // 5. POLA CHART (CHART PATTERNS)
-  { title: 'Pola Chart Klasik', subtitle: 'TERBENTUK MINGGU-BULAN DI PERGERAKAN HARGA', open: false, patterns: [
-    { name:'Double Bottom (W)', label:'Double Bottom', labelColor:'text-blue-500', desc:'Bentuk "W". Dua lembah sama lalu naik. Reversal bullish.', signal:'Bullish Kuat',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:20,wickBot:25,color:R},{wickTop:20,bodyTop:25,bodyBot:48,wickBot:55,color:R},{wickTop:8,bodyTop:12,bodyBot:28,wickBot:32,color:G},{wickTop:22,bodyTop:28,bodyBot:48,wickBot:55,color:G},{wickTop:5,bodyTop:8,bodyBot:25,wickBot:30,color:G}],
-      detail:[{title:'Apa itu?',body:'Harga turun ke support, naik (bounce), turun LAGI ke support sama, lalu naik menembus neckline. Bentuk "W".'},{title:'Target',body:'Jarak dasar W ke neckline, proyeksikan ke atas dari breakout. Contoh: dasar 100, neckline 120, target = 140.'},{title:'Konfirmasi',body:'Breakout valid saat harga tutup di atas neckline dengan volume tinggi.'}]},
-    { name:'Double Top (M)', label:'Double Top', labelColor:'text-amber-500', desc:'Bentuk "M". Dua puncak sama lalu turun. Reversal bearish.', signal:'Bearish Kuat',
-      candles:[{wickTop:35,bodyTop:38,bodyBot:52,wickBot:55,color:G},{wickTop:5,bodyTop:8,bodyBot:20,wickBot:25,color:G},{wickTop:25,bodyTop:28,bodyBot:42,wickBot:48,color:R},{wickTop:5,bodyTop:8,bodyBot:22,wickBot:28,color:R},{wickTop:30,bodyTop:35,bodyBot:52,wickBot:55,color:R}],
-      detail:[{title:'Apa itu?',body:'Kebalikan Double Bottom. Bentuk "M". Dua puncak gagal tembus resistance, lalu jatuh.'},{title:'Target',body:'Jarak puncak M ke neckline, proyeksikan ke bawah.'}]},
-    { name:'Head & Shoulders', label:'H&S', labelColor:'text-pink-500', desc:'Bahu-Kepala-Bahu. Pola reversal bearish paling andal.', signal:'Bearish Kuat',
-      candles:[{wickTop:15,bodyTop:18,bodyBot:35,wickBot:40,color:G},{wickTop:25,bodyTop:28,bodyBot:42,wickBot:48,color:R},{wickTop:2,bodyTop:5,bodyBot:25,wickBot:30,color:G},{wickTop:22,bodyTop:25,bodyBot:40,wickBot:45,color:R},{wickTop:12,bodyTop:15,bodyBot:32,wickBot:38,color:R}],
-      detail:[{title:'Apa itu?',body:'3 puncak: Bahu kiri → Kepala (tertinggi) → Bahu kanan (lebih rendah). Lembah dihubungkan Neckline.'},{title:'Kenapa Kuat?',body:'Puncak kedua gagal melampaui kepala = buyer makin lemah.'},{title:'Target',body:'Jarak kepala ke neckline, kurangi dari titik breakdown.'},{title:'Variasi',body:'Inverse H&S (terbalik) = sinyal bullish sama kuatnya. Muncul di dasar downtrend.'}]},
-    { name:'Cup & Handle', label:'Cup & Handle', labelColor:'text-cyan-500', desc:'Cangkir melengkung + gagang kecil. Breakout bullish.', signal:'Bullish Kuat',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:22,wickBot:25,color:R},{wickTop:18,bodyTop:22,bodyBot:42,wickBot:48,color:R},{wickTop:30,bodyTop:35,bodyBot:50,wickBot:55,color:G},{wickTop:15,bodyTop:20,bodyBot:38,wickBot:42,color:G},{wickTop:2,bodyTop:5,bodyBot:20,wickBot:22,color:G}],
-      detail:[{title:'Apa itu?',body:'Harga turun membentuk "U" (cup), naik, turun sedikit (handle), lalu breakout.'},{title:'Durasi',body:'Terbentuk minggu-bulan. Semakin lama, semakin kuat breakout.'},{title:'Entry',body:'Masuk saat harga tembus atas handle dengan volume tinggi. Stop loss di bawah handle.'}]},
-    { name:'Triple Bottom', label:'Triple Bottom', labelColor:'text-blue-500', desc:'Tiga lembah di level sama. Lebih kuat dari Double Bottom.', signal:'Bullish Sangat Kuat',
-      candles:[{wickTop:8,bodyTop:12,bodyBot:28,wickBot:32,color:R},{wickTop:18,bodyTop:22,bodyBot:48,wickBot:55,color:R},{wickTop:8,bodyTop:12,bodyBot:28,wickBot:32,color:G},{wickTop:18,bodyTop:22,bodyBot:48,wickBot:55,color:G},{wickTop:5,bodyTop:8,bodyBot:22,wickBot:25,color:G}],
-      detail:[{title:'Apa itu?',body:'Tiga kali uji support yang sama dan tiga kali ditolak. Support terbukti sangat kuat.'},{title:'Keandalan',body:'Lebih jarang muncul tapi JAUH lebih andal dari Double Bottom. Tiga rejection = sinyal sangat kuat.'}]},
-    { name:'Triple Top', label:'Triple Top', labelColor:'text-amber-500', desc:'Tiga puncak di level sama. Lebih kuat dari Double Top.', signal:'Bearish Kuat',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:22,wickBot:28,color:G},{wickTop:20,bodyTop:25,bodyBot:40,wickBot:45,color:G},{wickTop:5,bodyTop:8,bodyBot:22,wickBot:28,color:R},{wickTop:20,bodyTop:25,bodyBot:40,wickBot:45,color:R},{wickTop:25,bodyTop:30,bodyBot:48,wickBot:55,color:R}],
-      detail:[{title:'Apa itu?',body:'Tiga kali uji resistance yang sama dan tiga kali gagal tembus. Resistance sangat kuat, potensi reversal besar.'}]},
-    { name:'Ascending Triangle', label:'Asc. Triangle', labelColor:'text-emerald-500', desc:'Resistance datar + support naik. Potensi breakout naik.', signal:'Bullish',
-      candles:[{wickTop:20,bodyTop:25,bodyBot:48,wickBot:52,color:G},{wickTop:8,bodyTop:10,bodyBot:25,wickBot:28,color:G},{wickTop:18,bodyTop:22,bodyBot:40,wickBot:45,color:G},{wickTop:8,bodyTop:10,bodyBot:22,wickBot:25,color:G},{wickTop:2,bodyTop:5,bodyBot:18,wickBot:20,color:G}],
-      detail:[{title:'Apa itu?',body:'Garis resistance horizontal datar di atas, sementara garis support naik dari bawah. Buyer makin agresif (beli makin tinggi), tekanan ke resistance meningkat.'},{title:'Breakout',body:'Biasanya tembus ke atas. Masuk saat candle tutup di atas resistance dengan volume tinggi.'}]},
-    { name:'Descending Triangle', label:'Desc. Triangle', labelColor:'text-red-500', desc:'Support datar + resistance turun. Potensi breakdown.', signal:'Bearish',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:20,wickBot:22,color:R},{wickTop:15,bodyTop:18,bodyBot:35,wickBot:38,color:R},{wickTop:8,bodyTop:10,bodyBot:25,wickBot:28,color:R},{wickTop:18,bodyTop:20,bodyBot:40,wickBot:45,color:R},{wickTop:25,bodyTop:28,bodyBot:48,wickBot:52,color:R}],
-      detail:[{title:'Apa itu?',body:'Kebalikan Ascending Triangle. Support datar, resistance menurun. Seller makin agresif.'},{title:'Breakdown',body:'Biasanya tembus ke bawah. Hindari saham ini sampai ada konfirmasi reversal.'}]},
-    { name:'Symmetrical Triangle', label:'Sym. Triangle', labelColor:'text-gray-400', desc:'Support naik + resistance turun. Bisa breakout ke mana saja.', signal:'Netral',
-      candles:[{wickTop:2,bodyTop:5,bodyBot:18,wickBot:22,color:G},{wickTop:20,bodyTop:25,bodyBot:48,wickBot:52,color:R},{wickTop:10,bodyTop:14,bodyBot:28,wickBot:32,color:G},{wickTop:18,bodyTop:22,bodyBot:38,wickBot:42,color:R},{wickTop:12,bodyTop:15,bodyBot:32,wickBot:35,color:GR}],
-      detail:[{title:'Apa itu?',body:'Resistance menurun dan support menaik, membentuk segitiga simetris. Range harga menyempit = tekanan meningkat.'},{title:'Breakout',body:'Bisa ke atas ATAU ke bawah. Tunggu breakout dan ikuti arahnya. Volume adalah kunci konfirmasi.'}]},
-    { name:'Rising Wedge', label:'Rising Wedge', labelColor:'text-red-500', desc:'Dua garis naik menyempit. Bearish meski tampak naik.', signal:'Bearish',
-      candles:[{wickTop:30,bodyTop:32,bodyBot:48,wickBot:52,color:G},{wickTop:22,bodyTop:25,bodyBot:40,wickBot:42,color:G},{wickTop:15,bodyTop:18,bodyBot:32,wickBot:35,color:G},{wickTop:10,bodyTop:12,bodyBot:25,wickBot:28,color:R},{wickTop:20,bodyTop:22,bodyBot:42,wickBot:48,color:R}],
-      detail:[{title:'Apa itu?',body:'Support DAN resistance sama-sama naik tapi makin menyempit. Tampak bullish tapi sebenarnya bearish — momentum beli makin lemah.'},{title:'Arti',body:'Buyer makin tidak mampu dorong harga lebih tinggi. Biasanya diikuti breakdown tajam ke bawah.'}]},
-    { name:'Falling Wedge', label:'Falling Wedge', labelColor:'text-emerald-500', desc:'Dua garis turun menyempit. Bullish meski tampak turun.', signal:'Bullish',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:22,wickBot:25,color:R},{wickTop:12,bodyTop:15,bodyBot:30,wickBot:35,color:R},{wickTop:18,bodyTop:20,bodyBot:35,wickBot:38,color:R},{wickTop:22,bodyTop:25,bodyBot:38,wickBot:42,color:G},{wickTop:8,bodyTop:10,bodyBot:28,wickBot:32,color:G}],
-      detail:[{title:'Apa itu?',body:'Support dan resistance sama-sama turun tapi menyempit. Tampak bearish tapi sebenarnya bullish — tekanan jual makin lemah.'},{title:'Arti',body:'Seller kehabisan tenaga. Biasanya diikuti breakout naik yang tajam.'}]},
-    { name:'Bull Flag', label:'Bull Flag', labelColor:'text-emerald-500', desc:'Tiang naik kuat + panji kecil miring turun. Kelanjutan naik.', signal:'Bullish',
-      candles:[{wickTop:25,bodyTop:28,bodyBot:52,wickBot:55,color:G},{wickTop:2,bodyTop:5,bodyBot:22,wickBot:25,color:G},{wickTop:8,bodyTop:10,bodyBot:18,wickBot:20,color:R},{wickTop:12,bodyTop:14,bodyBot:22,wickBot:24,color:R},{wickTop:0,bodyTop:2,bodyBot:15,wickBot:18,color:G}],
-      detail:[{title:'Apa itu?',body:'Tiang (pole) = kenaikan tajam. Bendera (flag) = koreksi miring turun ringan. Setelah konsolidasi selesai, biasanya melanjutkan naik.'},{title:'Target',body:'Panjang tiang diproyeksikan dari titik breakout bendera.'}]},
-    { name:'Bear Flag', label:'Bear Flag', labelColor:'text-red-500', desc:'Tiang turun kuat + panji kecil miring naik. Kelanjutan turun.', signal:'Bearish',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:28,wickBot:32,color:R},{wickTop:28,bodyTop:32,bodyBot:52,wickBot:55,color:R},{wickTop:30,bodyTop:33,bodyBot:42,wickBot:45,color:G},{wickTop:25,bodyTop:28,bodyBot:38,wickBot:40,color:G},{wickTop:32,bodyTop:35,bodyBot:52,wickBot:55,color:R}],
-      detail:[{title:'Apa itu?',body:'Kebalikan Bull Flag. Penurunan tajam diikuti koreksi miring naik kecil, lalu melanjutkan turun.'}]},
-    { name:'Rounding Bottom', label:'Rounding Bottom', labelColor:'text-cyan-500', desc:'Dasar melengkung seperti mangkuk. Reversal bullish lambat.', signal:'Bullish Kuat',
-      candles:[{wickTop:5,bodyTop:8,bodyBot:20,wickBot:22,color:R},{wickTop:15,bodyTop:18,bodyBot:38,wickBot:42,color:R},{wickTop:28,bodyTop:32,bodyBot:48,wickBot:52,color:GR},{wickTop:15,bodyTop:18,bodyBot:38,wickBot:42,color:G},{wickTop:5,bodyTop:8,bodyBot:20,wickBot:22,color:G}],
-      detail:[{title:'Apa itu?',body:'Penurunan bertahap membentuk dasar melengkung U (bukan V tajam), lalu naik perlahan. Seperti Cup & Handle tapi tanpa handle.'},{title:'Durasi',body:'Bisa terbentuk berbulan-bulan. Menunjukkan perubahan sentimen dari bearish ke bullish secara gradual.'}]},
-  ]},
-  // 6. POLA HARMONIC (menggunakan SVG line diagram, bukan candle)
-  { title: 'Pola Harmonic (Fibonacci)', subtitle: 'ADVANCED — BERBASIS RASIO FIBONACCI PRESISI', open: false, patterns: [
-    { name:'ABCD Pattern', label:'ABCD', labelColor:'text-violet-500', desc:'Pola dasar 4 titik. AB=CD yang setara. Entry di titik D.', signal:'Bullish', candles:[],
-      harmonic:{points:[{label:'A',x:15,y:15},{label:'B',x:65,y:100},{label:'C',x:120,y:40},{label:'D',x:185,y:110}],fibs:[{text:'61.8%',x:95,y:58},{text:'127.2%',x:155,y:85}]},
-      detail:[{title:'Apa itu?',body:'Pola harmonic paling dasar. Harga bergerak A→B (turun), koreksi B→C (naik 61.8% AB), lalu lanjut C→D (turun, jarak CD ≈ AB). Titik D = area entry.'},{title:'Fibonacci',body:'BC = retrace 61.8% dari AB. CD = extension 127.2-161.8% dari BC.'},{title:'Tips',body:'Paling mudah dipelajari. Kuasai ini dulu sebelum pola yang lebih kompleks.'}]},
-    { name:'Gartley', label:'Gartley 222', labelColor:'text-violet-500', desc:'Pola XABCD klasik. D di retracement 78.6% XA.', signal:'Bullish', candles:[],
-      harmonic:{points:[{label:'X',x:15,y:105},{label:'A',x:55,y:10},{label:'B',x:95,y:68},{label:'C',x:135,y:28},{label:'D',x:185,y:85}],fibs:[{text:'61.8%',x:70,y:30},{text:'38.2-88.6%',x:118,y:55},{text:'78.6%',x:158,y:50,align:'right'}]},
-      detail:[{title:'Apa itu?',body:'Pola 5 titik XABCD. Diciptakan H.M. Gartley 1935. D berada di 78.6% retracement XA — area entry.'},{title:'Fibonacci',body:'AB = 61.8% XA, BC = 38.2-88.6% AB, CD = 127.2-161.8% BC, D = 78.6% XA.'},{title:'Keandalan',body:'Pola harmonic paling populer. Win rate tinggi jika rasio Fibonacci tepat.'}]},
-    { name:'Butterfly', label:'Butterfly', labelColor:'text-violet-500', desc:'D melampaui X (extension 127.2%). Reversal kuat.', signal:'Bullish Kuat', candles:[],
-      harmonic:{points:[{label:'X',x:15,y:80},{label:'A',x:55,y:10},{label:'B',x:90,y:60},{label:'C',x:130,y:22},{label:'D',x:185,y:110}],fibs:[{text:'78.6%',x:68,y:28},{text:'38.2-88.6%',x:112,y:48},{text:'127.2%',x:155,y:55,align:'right'},{text:'1.618-2.618',x:160,y:78}]},
-      detail:[{title:'Apa itu?',body:'Berbeda dari Gartley: titik D MELAMPAUI titik X (extension). D berada di 127.2% extension XA. Pada gambar, D lebih rendah dari X.'},{title:'Fibonacci',body:'AB = 78.6% XA, BC = 38.2-88.6% AB, CD = 161.8-261.8% BC, D = 127.2% XA.'},{title:'Arti',body:'Pola agresif. Harga melampaui titik awal sebelum reversal. Risk/reward sangat menarik.'}]},
-    { name:'Bat', label:'Bat', labelColor:'text-violet-500', desc:'D di 88.6% XA. Retracement terdalam. Sangat presisi.', signal:'Bullish Kuat', candles:[],
-      harmonic:{points:[{label:'X',x:15,y:105},{label:'A',x:55,y:10},{label:'B',x:90,y:52},{label:'C',x:130,y:22},{label:'D',x:185,y:95}],fibs:[{text:'38.2-50%',x:68,y:22},{text:'38.2-88.6%',x:112,y:42},{text:'88.6%',x:155,y:52,align:'right'}]},
-      detail:[{title:'Apa itu?',body:'Ditemukan Scott Carney 2001. D di level 88.6% retracement XA — sangat deep dan presisi.'},{title:'Fibonacci',body:'AB = 38.2-50% XA, BC = 38.2-88.6% AB, CD = 161.8-261.8% BC, D = 88.6% XA.'},{title:'Keandalan',body:'Paling presisi. Retracement 88.6% memberikan entry sangat dekat dengan stop loss.'}]},
-    { name:'Crab', label:'Crab', labelColor:'text-violet-500', desc:'Extension terdalam 161.8% XA. Presisi tertinggi.', signal:'Bullish Sangat Kuat', candles:[],
-      harmonic:{points:[{label:'X',x:15,y:75},{label:'A',x:50,y:10},{label:'B',x:85,y:48},{label:'C',x:120,y:18},{label:'D',x:185,y:115}],fibs:[{text:'38.2-61.8%',x:62,y:20},{text:'38.2-88.6%',x:105,y:38},{text:'161.8%',x:155,y:60,align:'right'},{text:'224-361.8%',x:155,y:80}]},
-      detail:[{title:'Apa itu?',body:'Extension terdalam: D di 161.8% XA. Harga bergerak sangat jauh melampaui X sebelum reversal.'},{title:'Fibonacci',body:'AB = 38.2-61.8% XA, BC = 38.2-88.6% AB, CD = 224.0-361.8% BC, D = 161.8% XA.'},{title:'Arti',body:'Terlihat menakutkan tapi justru paling presisi. Titik reversal D sangat spesifik.'}]},
-    { name:'Shark', label:'Shark', labelColor:'text-violet-500', desc:'Pola 5 kaki modern (O-X-A-B-C). Struktur unik.', signal:'Bullish', candles:[],
-      harmonic:{points:[{label:'O',x:15,y:100},{label:'X',x:50,y:20},{label:'A',x:85,y:70},{label:'B',x:130,y:8},{label:'C',x:185,y:108}],fibs:[{text:'1.13-1.618',x:62,y:52},{text:'1.618-2.24',x:110,y:45},{text:'0.886-1.13',x:160,y:68}]},
-      detail:[{title:'Apa itu?',body:'Pola modern menggunakan titik O-X-A-B-C. Struktur dan rasio Fibonacci unik berbeda dari XABCD klasik.'},{title:'Kegunaan',body:'Cocok trading jangka pendek. Sering muncul sebagai "jebakan" sebelum reversal tajam.'}]},
-    { name:'Cypher', label:'Cypher', labelColor:'text-violet-500', desc:'Titik C melampaui A (113-141.4%). D di 78.6% XC.', signal:'Bullish', candles:[],
-      harmonic:{points:[{label:'X',x:15,y:105},{label:'A',x:50,y:25},{label:'B',x:85,y:65},{label:'C',x:130,y:8},{label:'D',x:185,y:85}],fibs:[{text:'38.2-61.8%',x:62,y:38},{text:'113-141.4%',x:110,y:22},{text:'78.6%',x:160,y:52,align:'right'}]},
-      detail:[{title:'Apa itu?',body:'C melampaui A (113-141.4% XA). D berada di 78.6% retracement kaki XC. Berbeda dari Gartley/Bat.'},{title:'Keandalan',body:'Sering dikombinasikan dengan support/resistance untuk double-confirmation.'}]},
-  ]},
-]
-
-// Konsep Dasar Trading
-export const conceptCategories: ConceptCategoryDef[] = [
-  { title: 'Konsep Dasar Analisa Teknikal', subtitle: 'WAJIB PAHAM — FONDASI SEBELUM BELAJAR POLA', open: false, concepts: [
-    { name:'Support', icon:'vertical_align_bottom', desc:'Level harga di mana tekanan beli cukup kuat untuk menghentikan penurunan.',
-      detail:[{title:'Apa itu?',body:'Support adalah "lantai" harga — level dimana buyer datang dan menahan harga agar tidak turun lebih jauh. Secara psikologis, banyak trader menganggap harga di level ini "murah" sehingga ramai-ramai membeli.'},{title:'Cara Menentukan',body:'Hubungkan minimal 2 titik lembah (low) yang berada di level harga yang sama/mirip. Semakin sering harga memantul dari level tertentu, semakin kuat support tersebut.'},{title:'Contoh Sederhana',body:'Saham BBCA selalu terlihat memantul di harga 8.500. Berarti 8.500 adalah level support kuat. Jika tembus ke bawah, support bisa berubah menjadi resistance.'}]},
-    { name:'Resistance', icon:'vertical_align_top', desc:'Level harga di mana tekanan jual cukup kuat untuk menghentikan kenaikan.',
-      detail:[{title:'Apa itu?',body:'Resistance adalah "atap" harga — level dimana seller datang dan menahan harga agar tidak naik lebih tinggi. Banyak trader menganggap harga di level ini "mahal" sehingga menjual.'},{title:'Prinsip Penting',body:'Ketika resistance ditembus (breakout), ia berubah menjadi support baru. Begitu juga sebaliknya. Ini disebut "role reversal" — konsep paling penting di analisa teknikal.'}]},
-    { name:'Volume', icon:'bar_chart', desc:'Jumlah saham yang diperdagangkan. Mengkonfirmasi kekuatan pergerakan.',
-      detail:[{title:'Apa itu?',body:'Volume = jumlah lembar saham yang berpindah tangan. Volume tinggi = banyak partisipan aktif. Volume rendah = sedikit yang trading.'},{title:'Kenapa Penting?',body:'Harga naik + volume tinggi = kenaikan kuat dan dipercaya. Harga naik + volume rendah = kenaikan lemah, bisa jebakan. Volume adalah "validator" setiap pergerakan harga.'},{title:'Volume Spike',body:'Lonjakan volume mendadak sering menandai awal pergerakan besar — breakout, reversal, atau climax (puncak kepanikan).'}]},
-    { name:'Breakout', icon:'north_east', desc:'Harga menembus level resistance/support dengan kuat.',
-      detail:[{title:'Apa itu?',body:'Breakout = harga menembus batas yang selama ini menahannya (resistance untuk naik, support untuk turun). Ini sering menjadi awal tren baru.'},{title:'Konfirmasi',body:'Breakout valid harus disertai: (1) Volume lebih tinggi dari rata-rata, (2) Candle penutupan di luar level, bukan hanya menembus sesaat (no wick-only break).'},{title:'False Breakout',body:'Harga tembus sebentar lalu kembali masuk. Sangat berbahaya. Selalu tunggu candle tutup di luar level sebelum masuk posisi.'}]},
-    { name:'Pullback', icon:'south_west', desc:'Harga kembali turun sementara ke area support setelah breakout.',
-      detail:[{title:'Apa itu?',body:'Setelah breakout naik, harga sering "mundur sebentar" (pullback) ke level resistance yang kini menjadi support baru. Ini bukan sinyal buruk — justru entry point terbaik.'},{title:'Kenapa Terjadi?',body:'Trader yang beli saat breakout mengambil profit sementara. Setelah pullback, buyer baru masuk dan harga melanjutkan naik.'}]},
-    { name:'Gap (Celah Harga)', icon:'open_in_full', desc:'Jarak kosong antara harga penutupan dan pembukaan hari berikutnya.',
-      detail:[{title:'Apa itu?',body:'Gap terjadi ketika harga pembukaan hari ini sangat berbeda dari penutupan kemarin — ada "lubang" kosong di chart tanpa perdagangan.'},{title:'Jenis Gap',body:'Gap Up = buka lebih tinggi (sentimen bullish kuat). Gap Down = buka lebih rendah (sentimen bearish/berita buruk). Exhaustion Gap = gap di akhir tren yang sering ditutup (filled).'}]},
-    { name:'Overbought & Oversold', icon:'swap_vert', desc:'Kondisi harga sudah "terlalu mahal" atau "terlalu murah" secara statistik.',
-      detail:[{title:'Overbought',body:'Harga sudah naik terlalu cepat/banyak → potensi koreksi turun. RSI di atas 70 dianggap overbought. BUKAN berarti harus langsung jual — di tren kuat, harga bisa overbought berhari-hari.'},{title:'Oversold',body:'Harga sudah turun terlalu cepat/banyak → potensi rebound. RSI di bawah 30 dianggap oversold. Bisa jadi peluang beli tapi HANYA jika ada konfirmasi reversal (candle pattern).'}]},
-    { name:'Divergence', icon:'call_split', desc:'Harga dan indikator bergerak berlawanan. Sinyal peringatan dini.',
-      detail:[{title:'Apa itu?',body:'Divergence = harga bergerak ke satu arah tapi indikator (RSI, MACD) bergerak ke arah berlawanan. Ini "peringatan dini" bahwa momentum melemah.'},{title:'Bullish Divergence',body:'Harga buat low baru yang lebih rendah, tapi RSI buat low yang lebih tinggi → "sisi dalam" pasar sebenarnya menguat.'},{title:'Bearish Divergence',body:'Harga buat high baru yang lebih tinggi, tapi RSI buat high yang lebih rendah → momentum naik sebenarnya melemah.'}]},
-  ]},
-  { title: 'Indikator Teknikal Populer', subtitle: 'TOOLS BANTU — DIGUNAKAN BERSAMA POLA CHART', open: false, concepts: [
-    { name:'Moving Average (MA)', icon:'show_chart', desc:'Garis rata-rata harga selama N hari. Penghalus tren.',
-      detail:[{title:'Apa itu?',body:'Moving Average menghitung rata-rata harga penutupan selama N hari terakhir, lalu menghubungkannya menjadi garis halus. Gunanya: menyaring noise dan menunjukkan arah tren.'},{title:'SMA vs EMA',body:'SMA (Simple) = rata-rata biasa. EMA (Exponential) = memberi bobot lebih pada harga terbaru sehingga lebih responsif. EMA lebih populer untuk trading jangka pendek.'},{title:'Golden Cross & Death Cross',body:'Golden Cross = MA50 memotong ke atas MA200 → sinyal bullish kuat. Death Cross = sebaliknya → sinyal bearish kuat. Dua sinyal MA paling populer di dunia.'}]},
-    { name:'RSI (Relative Strength Index)', icon:'speed', desc:'Mengukur kecepatan pergerakan harga. Skala 0-100.',
-      detail:[{title:'Apa itu?',body:'RSI mengukur seberapa cepat dan seberapa besar harga bergerak naik vs turun dalam 14 hari terakhir. Nilainya 0-100.'},{title:'Cara Baca',body:'Di atas 70 = overbought (potensial turun). Di bawah 30 = oversold (potensial naik). 50 = netral. Tapi di tren kuat, RSI bisa bertahan di zona ekstrem cukup lama.'},{title:'Divergence',body:'RSI paling powerful saat menunjukkan divergence dengan harga. Ini sinyal peringatan dini yang sangat akurat.'}]},
-    { name:'MACD', icon:'stacked_line_chart', desc:'Moving Average Convergence Divergence. Sinyal momentum & tren.',
-      detail:[{title:'Apa itu?',body:'MACD = EMA12 dikurangi EMA26. Signal line = EMA9 dari MACD. Histogram = selisih MACD dan Signal line.'},{title:'Cara Baca',body:'MACD cross di atas signal line = bullish. Cross di bawah = bearish. Histogram dari negatif ke positif = momentum berubah naik.'},{title:'Tips',body:'MACD paling berguna di pasar yang sedang trending. Di sideways, MACD sering memberikan sinyal palsu (whipsaw).'}]},
-    { name:'Bollinger Bands', icon:'density_medium', desc:'Pita di atas/bawah MA. Mengukur volatilitas.',
-      detail:[{title:'Apa itu?',body:'Tiga garis: MA20 (tengah), Band atas (MA+2σ), Band bawah (MA-2σ). Secara statistik, ~95% harga berada di dalam bands.'},{title:'Cara Baca',body:'Bands menyempit (squeeze) = volatilitas rendah, siap-siap breakout. Bands melebar = volatilitas tinggi. Harga menyentuh band atas = potensial overbought, band bawah = potensial oversold.'},{title:'Bollinger Bounce',body:'Harga cenderung memantul kembali ke garis tengah (MA20) setelah menyentuh band luar. Ini bisa dijadikan strategi entry/exit sederhana.'}]},
-    { name:'Fibonacci Retracement', icon:'straighten', desc:'Level 23.6%, 38.2%, 50%, 61.8% untuk prediksi koreksi.',
-      detail:[{title:'Apa itu?',body:'Berdasarkan deret Fibonacci. Setelah pergerakan besar, harga cenderung koreksi ke level-level tertentu: 23.6%, 38.2%, 50%, dan 61.8% dari pergerakan sebelumnya.'},{title:'Cara Pakai',body:'Tarik Fibonacci dari titik awal tren ke titik akhir tren. Level-level yang muncul adalah area potensial dimana harga bisa memantul (support/resistance).'},{title:'Level Kunci',body:'61.8% = "Golden Ratio", level paling dipercaya. 50% juga sering menjadi titik balik. Jika tembus 78.6%, tren sebelumnya dianggap gagal.'}]},
-  ]},
-]
+// ═══ RE-EXPORTS dari file data ═══
+// Kategori 1-3: Pola Candlestick (18 single + 17 double + 23 triple = 58)
+export { candleCategories } from './candlePatternsData'
+// Kategori 4-5: Pola Chart Klasik (26) + Harmonic (8) = 34
+export { chartCategories } from './chartPatternsData'
+// Kategori 6-8: Indikator (44) + SMC (16) + Teori (13) + Jenis Chart (8) = 81
+export { advancedConceptCategories } from './advancedConceptsData'
