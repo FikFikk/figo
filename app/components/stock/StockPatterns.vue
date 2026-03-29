@@ -21,7 +21,7 @@
         <h3 class="font-headline font-bold text-sm" :class="isDark?'text-white':'text-slate-900'">{{ cc.title }}</h3>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-5 pb-5">
-        <div v-for="c in cc.concepts" :key="c.name" @click="activeConcept=c" class="rounded-2xl border p-4 flex flex-col items-center transition-all hover:scale-[1.02] cursor-pointer" :class="isDark?'bg-white/[0.03] border-white/10 hover:border-white/20':'bg-slate-50 border-slate-200 hover:border-slate-300'">
+        <div v-for="c in cc.concepts" :key="c.name" @click="openConcept(c,cc.title)" class="rounded-2xl border p-4 flex flex-col items-center transition-all hover:scale-[1.02] cursor-pointer" :class="isDark?'bg-white/[0.03] border-white/10 hover:border-white/20':'bg-slate-50 border-slate-200 hover:border-slate-300'">
           <span class="material-symbols-outlined text-2xl mb-2 text-primary">{{ c.icon }}</span>
           <p class="text-xs font-bold font-headline text-center mb-1" :class="isDark?'text-white':'text-slate-900'">{{ c.name }}</p>
           <p class="text-[9px] leading-relaxed text-center" :class="isDark?'text-gray-500':'text-slate-500'">{{ c.desc }}</p>
@@ -82,7 +82,7 @@
       </button>
       <div v-show="cc.open">
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-5 pb-5">
-          <div v-for="c in cc.concepts" :key="c.name" @click="activeConcept=c" class="rounded-2xl border p-4 flex flex-col items-center transition-all hover:scale-[1.02] cursor-pointer" :class="isDark?'bg-white/[0.03] border-white/10 hover:border-white/20':'bg-slate-50 border-slate-200 hover:border-slate-300'">
+          <div v-for="c in cc.concepts" :key="c.name" @click="openConcept(c,cc.title)" class="rounded-2xl border p-4 flex flex-col items-center transition-all hover:scale-[1.02] cursor-pointer" :class="isDark?'bg-white/[0.03] border-white/10 hover:border-white/20':'bg-slate-50 border-slate-200 hover:border-slate-300'">
             <span class="material-symbols-outlined text-2xl mb-2 text-primary">{{c.icon}}</span>
             <p class="text-xs font-bold font-headline text-center mb-1" :class="isDark?'text-white':'text-slate-900'">{{c.name}}</p>
             <p class="text-[9px] leading-relaxed text-center" :class="isDark?'text-gray-500':'text-slate-500'">{{c.desc}}</p>
@@ -178,7 +178,7 @@
       </Transition>
     </Teleport>
 
-    <!-- Modal Detail Konsep -->
+    <!-- Modal Detail Konsep (dengan ilustrasi + panduan) -->
     <Teleport to="body">
       <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100"
         leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
@@ -187,11 +187,58 @@
             <span class="material-symbols-outlined text-4xl text-primary block text-center mb-3">{{activeConcept.icon}}</span>
             <h3 class="text-lg font-headline font-black text-center mb-1" :class="isDark?'text-white':'text-slate-900'">{{activeConcept.name}}</h3>
             <p class="text-xs leading-relaxed mb-4 text-center" :class="isDark?'text-gray-400':'text-slate-600'">{{activeConcept.desc}}</p>
+
+            <!-- ★ Ilustrasi Chart SVG (procedural per kategori) ★ -->
+            <div v-if="cIllust" class="rounded-2xl p-3 mb-4" :class="isDark?'bg-white/[0.03]':'bg-slate-50'">
+              <p class="text-[9px] font-black uppercase tracking-wider mb-2" :class="isDark?'text-gray-500':'text-slate-400'">📊 Ilustrasi Visual</p>
+              <svg width="100%" viewBox="0 0 300 120" class="w-full" style="height:140px">
+                <!-- Grid -->
+                <line v-for="gy in [30,55,80]" :key="gy" x1="0" :y1="gy" x2="300" :y2="gy" :stroke="isDark?'#ffffff06':'#00000006'" stroke-width="1"/>
+                <!-- Zona S/R -->
+                <template v-if="cIllust.zones">
+                  <rect v-for="(z,zi) in cIllust.zones" :key="'zr'+zi" x="0" :y="z.y" width="300" height="10" :fill="z.color" opacity="0.12" rx="2"/>
+                  <line v-for="(z,zi) in cIllust.zones" :key="'zl'+zi" x1="0" :y1="z.y+5" x2="300" :y2="z.y+5" :stroke="z.color" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+                  <text v-for="(z,zi) in cIllust.zones" :key="'zt'+zi" x="6" :y="z.y-2" :fill="z.color" font-size="7" font-weight="bold" opacity="0.8">{{z.label}}</text>
+                </template>
+                <!-- Candles -->
+                <template v-for="(mc,mi) in cIllust.candles" :key="'cc'+mi">
+                  <line :x1="mc.cx" :y1="mc.hy" :x2="mc.cx" :y2="mc.ly" :stroke="mc.color" stroke-width="1"/>
+                  <rect :x="mc.cx-4" :y="Math.min(mc.oy,mc.cy)" width="8" :height="Math.max(2,Math.abs(mc.oy-mc.cy))" rx="1" :fill="mc.color" opacity="0.7"/>
+                </template>
+                <!-- Overlay line (MA / indicator) -->
+                <path v-if="cIllust.line" :d="cIllust.line" fill="none" stroke="#a78bfa" stroke-width="1.8" opacity="0.85" stroke-linecap="round"/>
+                <path v-if="cIllust.line2" :d="cIllust.line2" fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.5" stroke-dasharray="3,3"/>
+                <path v-if="cIllust.line3" :d="cIllust.line3" fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.5" stroke-dasharray="3,3"/>
+                <!-- Oscillator subplot -->
+                <template v-if="cIllust.oscLine">
+                  <line x1="0" y1="85" x2="300" y2="85" :stroke="isDark?'#ffffff15':'#00000010'" stroke-width="1"/>
+                  <rect x="0" y="88" width="300" height="2" :fill="isDark?'#ef444420':'#ef444410'"/>
+                  <rect x="0" y="112" width="300" height="2" :fill="isDark?'#10b98120':'#10b98110'"/>
+                  <text x="4" y="96" fill="#ef4444" font-size="6" opacity="0.6">Overbought</text>
+                  <text x="4" y="118" fill="#10b981" font-size="6" opacity="0.6">Oversold</text>
+                  <path :d="cIllust.oscLine" fill="none" stroke="#a78bfa" stroke-width="1.5" opacity="0.8"/>
+                </template>
+                <!-- Label -->
+                <text v-for="(lb,li) in (cIllust.labels||[])" :key="'lb'+li" :x="lb.x" :y="lb.y" :text-anchor="lb.anchor||'middle'" :fill="lb.color||'#94a3b8'" :font-size="lb.size||8" font-weight="bold" :font-style="lb.italic?'italic':'normal'">{{lb.text}}</text>
+              </svg>
+            </div>
+
             <div class="border-t mb-4" :class="isDark?'border-white/10':'border-slate-200'"></div>
-            <div class="space-y-3">
+            <!-- Detail spesifik (dari data) -->
+            <div class="space-y-3 mb-4">
               <div v-for="(s,si) in activeConcept.detail" :key="si">
                 <p class="text-[10px] font-black uppercase tracking-wider mb-1 text-primary">{{s.title}}</p>
                 <p class="text-[11px] leading-relaxed" :class="isDark?'text-gray-400':'text-slate-600'">{{s.body}}</p>
+              </div>
+            </div>
+            <!-- ★ Panduan Universal Konsep (auto-generated) ★ -->
+            <div v-if="conceptGuide.length" class="border-t pt-4 space-y-3" :class="isDark?'border-white/10':'border-slate-200'">
+              <p class="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">school</span> Panduan Praktis
+              </p>
+              <div v-for="(g,gi) in conceptGuide" :key="gi">
+                <p class="text-[10px] font-black uppercase tracking-wider mb-1" :class="isDark?'text-gray-500':'text-slate-400'">{{g.icon}} {{g.title}}</p>
+                <p class="text-[11px] leading-relaxed" :class="isDark?'text-gray-400':'text-slate-600'">{{g.body}}</p>
               </div>
             </div>
             <button @click="activeConcept=null" class="mt-6 w-full py-2.5 rounded-xl text-xs font-bold transition-colors" :class="isDark?'bg-white/5 text-white hover:bg-white/10':'bg-slate-100 text-slate-700 hover:bg-slate-200'">Tutup</button>
@@ -220,6 +267,8 @@ const baseConcepts = reactive([advancedConceptCategories.find(c => c.title.inclu
 const advConcepts = reactive(advancedConceptCategories.filter(c => !c.title.includes('Price Action')))
 const activePattern = ref<PatternDef | null>(null)
 const activeConcept = ref<ConceptDef | null>(null)
+const activeConceptCat = ref('')
+function openConcept(c: ConceptDef, catTitle: string) { activeConcept.value = c; activeConceptCat.value = catTitle }
 
 // ─── Statistik header ───
 const stats = computed(() => {
@@ -357,6 +406,139 @@ const tradingGuide = computed(() => {
     { icon:'🎯', title:'Cara Trading', body:'TUNGGU. Jangan entry saat muncul pola netral. Perhatikan candle selanjutnya dan padukan dengan indikator (RSI, MACD) untuk menentukan arah. Pola netral di dekat support lebih cenderung bullish, dekat resistance lebih cenderung bearish.' },
     { icon:'⚠️', title:'Peringatan', body:'Pola netral di tengah tren kuat bisa jadi hanya noise. Selalu lihat konteks besar (timeframe lebih tinggi) sebelum membuat keputusan.' },
   ]
+})
+
+// ─── Ilustrasi SVG untuk Konsep (procedural per kategori) ───
+interface IllustC { cx:number; hy:number; ly:number; oy:number; cy:number; color:string }
+interface IllustZone { y:number; color:string; label:string }
+interface IllustLabel { x:number; y:number; text:string; color?:string; size?:number; anchor?:string; italic?:boolean }
+
+const cIllust = computed(() => {
+  const c = activeConcept.value
+  const cat = activeConceptCat.value
+  if (!c) return null
+  const rng = seededRng(c.name)
+
+  // Buat candle chart dasar (16 candle)
+  const raw: {o:number;h:number;l:number;c:number}[] = []
+  let pr = 55
+  for (let i = 0; i < 16; i++) {
+    const dir = (rng() > 0.5 ? 1 : -1) * (0.5 + rng() * 2.5)
+    const o = pr; const cc = o + dir + (rng()-0.5)*2
+    raw.push({ o, c: cc, h: Math.max(o,cc) + rng()*3, l: Math.min(o,cc) - rng()*3 })
+    pr = cc
+  }
+  let minP = Infinity, maxP = -Infinity
+  raw.forEach(p => { if(p.l<minP) minP=p.l; if(p.h>maxP) maxP=p.h })
+  const rr = maxP - minP || 1
+  const toY = (v:number) => 80 - ((v-minP)/rr)*65 - 5
+  const sp = 300/16
+  const candles: IllustC[] = raw.map((p,i) => ({
+    cx: i*sp+sp/2, hy: toY(p.h), ly: toY(p.l), oy: toY(p.o), cy: toY(p.c),
+    color: p.c > p.o ? '#10b981' : '#ef4444'
+  }))
+
+  let zones: IllustZone[]|null = null
+  let line = '', line2 = '', line3 = '', oscLine = ''
+  const labels: IllustLabel[] = []
+
+  if (cat.includes('Price Action')) {
+    // Zona Support & Resistance
+    const mids = raw.map(p => (p.o+p.c)/2).sort((a,b)=>a-b)
+    const sLvl = mids[Math.floor(mids.length*0.2)]
+    const rLvl = mids[Math.floor(mids.length*0.8)]
+    zones = [
+      { y: toY(sLvl)-5, color:'#10b981', label:'Support Zone' },
+      { y: toY(rLvl)-5, color:'#ef4444', label:'Resistance Zone' }
+    ]
+    labels.push(
+      { x:280, y:toY(sLvl)+3, text:'↑ Buyer masuk', color:'#10b981', size:7, anchor:'end' },
+      { x:280, y:toY(rLvl)+3, text:'↓ Seller masuk', color:'#ef4444', size:7, anchor:'end' }
+    )
+  } else if (cat.includes('Indikator')) {
+    // Deteksi tipe indikator
+    const isOsc = ['RSI','Stochastic','CCI','Williams','Momentum','ROC','TSI','Ultimate','Awesome','DPO','KST','MFI','Force','Klinger','Chaikin'].some(o => c.name.includes(o))
+    const isBand = ['Bollinger','Keltner','Donchian','Channel'].some(o => c.name.includes(o))
+
+    if (isOsc) {
+      // Oscillator subplot (RSI-like)
+      const oscVals: number[] = []
+      let ov = 50
+      for (let i = 0; i < 16; i++) {
+        ov += (rng()-0.48) * 15
+        ov = Math.max(15, Math.min(85, ov))
+        oscVals.push(ov)
+      }
+      oscLine = oscVals.map((v,i) => `${i===0?'M':'L'}${candles[i].cx},${112 - v*0.3}`).join(' ')
+      labels.push({ x:150, y:96, text:c.name.split('(')[0].trim(), color:'#a78bfa', size:7 })
+    } else if (isBand) {
+      // Band overlay (upper + lower)
+      const ma: number[] = []
+      for (let i = 0; i < 16; i++) {
+        const s = Math.max(0,i-4)
+        ma.push(raw.slice(s,i+1).reduce((a,p)=>a+(p.o+p.c)/2,0)/(i-s+1))
+      }
+      const bw = 4 + rng()*3
+      line2 = ma.map((v,i) => `${i===0?'M':'L'}${candles[i].cx},${toY(v+bw+rng()*1.5)}`).join(' ')
+      line3 = ma.map((v,i) => `${i===0?'M':'L'}${candles[i].cx},${toY(v-bw-rng()*1.5)}`).join(' ')
+      line = ma.map((v,i) => `${i===0?'M':'L'}${candles[i].cx},${toY(v)}`).join(' ')
+      labels.push({ x:260, y:16, text:'Upper Band', color:'#f59e0b', size:7 },{ x:260, y:78, text:'Lower Band', color:'#f59e0b', size:7 })
+    } else {
+      // MA overlay line
+      const prd = c.name.includes('EMA') ? 4 : 6
+      const ma: number[] = []
+      for (let i = 0; i < 16; i++) {
+        const s = Math.max(0,i-prd+1)
+        ma.push(raw.slice(s,i+1).reduce((a,p)=>a+(p.o+p.c)/2,0)/(i-s+1))
+      }
+      line = ma.map((v,i) => `${i===0?'M':'L'}${candles[i].cx},${toY(v)}`).join(' ')
+      labels.push({ x:candles[15].cx, y:toY(ma[15])-6, text:c.name.split('(')[0].trim(), color:'#a78bfa', size:7, anchor:'end' })
+    }
+  } else {
+    // Teori & Jenis Chart: MA line + label fase
+    const ma: number[] = []
+    for (let i = 0; i < 16; i++) {
+      const s = Math.max(0,i-5)
+      ma.push(raw.slice(s,i+1).reduce((a,p)=>a+(p.o+p.c)/2,0)/(i-s+1))
+    }
+    line = ma.map((v,i) => `${i===0?'M':'L'}${candles[i].cx},${toY(v)}`).join(' ')
+    if (cat.includes('Teori')) {
+      labels.push({ x:50, y:12, text:'Fase 1', color:'#64748b', size:7, italic:true },{ x:150, y:12, text:'Fase 2', color:'#64748b', size:7, italic:true },{ x:250, y:12, text:'Fase 3', color:'#64748b', size:7, italic:true })
+    }
+  }
+
+  return { candles, zones, line, line2, line3, oscLine, labels }
+})
+
+// ─── Panduan Universal Konsep (auto-generated berdasarkan kategori) ───
+const conceptGuide = computed(() => {
+  const cat = activeConceptCat.value
+  const c = activeConcept.value
+  if (!c) return []
+
+  if (cat.includes('Price Action')) return [
+    { icon:'📍', title:'Cara Menentukan', body:'Cari level harga di mana harga memantul minimal 2-3 kali. Semakin sering diuji (disentuh tapi tidak tembus), semakin kuat level tersebut. Gunakan timeframe lebih tinggi (Daily/Weekly) untuk level utama.' },
+    { icon:'🎯', title:'Cara Trading', body:'BUY: Saat harga mendekati support + muncul candle reversal bullish (hammer, engulfing). SELL: Saat harga mendekati resistance + muncul candle reversal bearish. Selalu tunggu KONFIRMASI — jangan entry hanya karena menyentuh level.' },
+    { icon:'📐', title:'Contoh Perhitungan', body:'Misal saham BBCA memantul 3x di harga 8.500 (support) dan ditolak 3x di 9.200 (resistance). Range = 700. Entry beli: 8.550 setelah hammer. Stop loss: 8.450 (di bawah support). Target: 9.150 (dekat resistance). Risk = 100, Reward = 600. Risk:Reward = 1:6 — sangat baik!' },
+    { icon:'⚠️', title:'Peringatan', body:'Level yang sering diuji AKHIRNYA akan ditembus. Saat tembus, level berubah peran (support → resistance, resistance → support). Jangan keras kepala mempertahankan level yang sudah break.' },
+  ]
+  if (cat.includes('Indikator')) return [
+    { icon:'📐', title:'Contoh Perhitungan', body:`Misal indikator ${c.name.split('(')[0].trim()}: Jika menggunakan periode 14, ambil data 14 hari terakhir. Hitung sesuai rumus indikator. Contoh SMA 14 = (Harga hari 1 + hari 2 + ... + hari 14) ÷ 14. Jika total = 140.000, maka SMA = 10.000. Besok: buang hari terlama, tambah hari baru.` },
+    { icon:'🎯', title:'Cara Membaca Sinyal', body:'Aturan umum: (1) Crossover — saat garis indikator memotong garis sinyal/level tertentu = sinyal entry/exit. (2) Divergence — indikator bergerak berlawanan dengan harga = peringatan dini reversal. (3) Overbought/Oversold — indikator di zona ekstrem = potensi pembalikan.' },
+    { icon:'🔗', title:'Kombinasi Terbaik', body:'Jangan gunakan 1 indikator saja! Kombinasi yang populer: (1) Trend indicator (MA/Supertrend) + Momentum (RSI/MACD) untuk konfirmasi. (2) Bollinger Bands + RSI: harga sentuh band bawah + RSI <30 = sinyal beli kuat. (3) MACD crossover + Volume naik = konfirmasi tren baru.' },
+    { icon:'⚠️', title:'Kesalahan Umum', body:'(1) Terlalu banyak indikator = "analysis paralysis". Cukup 2-3. (2) Menggunakan indikator yang sama jenisnya (misalnya RSI + Stochastic = redundan, keduanya momentum). (3) Tidak memahami bahwa indikator LAGGING — mereka mengikuti harga, bukan memprediksi.' },
+  ]
+  if (cat.includes('Teori')) return [
+    { icon:'📚', title:'Prinsip Utama', body:'Setiap teori/metode di atas adalah KERANGKA BERPIKIR, bukan formula ajaib. Mereka membantu menyusun analisis secara sistematis. Gunakan sebagai panduan, bukan aturan kaku. Konfirmasi selalu dengan price action (candle pattern) dan volume.' },
+    { icon:'📐', title:'Contoh Aplikasi', body:'Misal menggunakan Fibonacci Retracement: Harga naik dari 1.000 ke 2.000 (range 1.000). Level 61.8% = 2.000 - (1.000 × 0.618) = 1.382. Artinya jika harga koreksi ke 1.382, itu area potensial untuk rebound. Tunggu candle bullish di level ini untuk entry.' },
+    { icon:'⚠️', title:'Keterbatasan', body:'Tidak ada teori yang 100% akurat. Elliott Wave sangat subjektif (beda analis beda hitungan). Fibonacci bukan sains eksak — ini "area", bukan titik pasti. Wyckoff butuh pengalaman bertahun-tahun. Mulai dari yang sederhana (Dow Theory, Fibonacci) sebelum yang kompleks.' },
+  ]
+  if (cat.includes('Chart')) return [
+    { icon:'🎯', title:'Kapan Digunakan', body:'Setiap jenis chart memiliki kekuatan unik. Candlestick = paling populer, detail OHLC lengkap. Heikin Ashi = melihat tren tanpa noise. Renko = murni pergerakan harga tanpa waktu. Pilih berdasarkan gaya trading: scalper → Tick Chart, swing trader → Candlestick/Heikin Ashi.' },
+    { icon:'✅', title:'Kelebihan', body:'Chart alternatif seperti Renko dan Kagi sangat baik untuk filter noise dan melihat tren bersih. P&F chart sangat baik untuk menentukan target harga. Volume chart (Tick, CandleVolume) menunjukkan aktivitas pasar yang sesungguhnya.' },
+    { icon:'⚠️', title:'Kekurangan', body:'Semua chart non-candlestick memiliki LAG (keterlambatan). Renko/Kagi/P&F tidak menunjukkan waktu — Anda tidak tahu berapa lama pola terbentuk. Heikin Ashi mengubah Open/Close sehingga TIDAK cocok untuk menentukan entry/exit presisi.' },
+  ]
+  return []
 })
 
 // ─── Helper warna badge ───
