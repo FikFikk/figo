@@ -61,12 +61,17 @@
               {{ signalIcon(ind.signal) }}
             </span>
           </div>
-          <div class="min-w-0">
-            <p class="text-[11px] font-bold uppercase tracking-wider truncate"
-              :class="isDark ? 'text-gray-300' : 'text-slate-700'"
-            >{{ ind.name }}</p>
-            <p class="text-[10px] font-mono" :class="isDark ? 'text-gray-500' : 'text-slate-400'">
-              {{ ind.value }}
+          <div class="min-w-0 pt-0.5">
+            <div class="flex items-center gap-1.5 mb-0.5">
+              <p class="text-[11px] font-bold uppercase tracking-wider"
+                :class="isDark ? 'text-gray-200' : 'text-slate-800'"
+              >{{ ind.name }}</p>
+              <span class="text-[9px] font-mono px-1.5 rounded bg-black/5 dark:bg-white/10 opacity-70">
+                {{ ind.value }}
+              </span>
+            </div>
+            <p class="text-[10px] leading-relaxed pr-2" :class="isDark ? 'text-gray-400' : 'text-slate-500'">
+              {{ ind.desc }}
             </p>
           </div>
         </div>
@@ -101,15 +106,14 @@ const { isDark } = useColorMode()
 interface Indicator {
   name: string
   value: string
+  desc: string
   signal: string
 }
 
 // Parse data dari API ke format display
-// API format: { success, data: { data: { symbol, indicators: { sma: {...}, rsi: {...}, macd: {...} } } } }
 const indicators = computed<Indicator[]>(() => {
   if (!props.data) return []
 
-  // Cari indicators dari nested response
   const rawIndicators = props.data?.data?.data?.indicators
     || props.data?.data?.indicators
     || props.data?.indicators
@@ -122,33 +126,93 @@ const indicators = computed<Indicator[]>(() => {
   for (const [key, val] of Object.entries(rawIndicators as Record<string, any>)) {
     if (!val || typeof val !== 'object') continue
 
-    // Indikator yang punya signal langsung (RSI, MACD, Stochastic, VWAP)
+    // Indikator dengan signal langsung (RSI, MACD, dll)
     if ('signal' in val || 'value' in val) {
       let displayValue = ''
-      if (key === 'rsi') displayValue = `${formatNum(val.value)} (period: ${val.period || 14})`
-      else if (key === 'macd') displayValue = `Line: ${formatNum(val.macdLine)}, Signal: ${formatNum(val.signalLine)}`
-      else if (key === 'stochastic') displayValue = `K: ${formatNum(val.k)}, D: ${formatNum(val.d)}`
-      else if (key === 'atr') displayValue = `${formatNum(val.value)} (${val.volatility || ''})`
-      else if (key === 'obv') displayValue = `${formatVolNum(val.value)}`
-      else if (key === 'vwap') displayValue = formatNum(val.value)
-      else displayValue = formatNum(val.value ?? val.current ?? 0)
+      let desc = ''
+      const sig = normalizeSignal(val.signal ?? val.trend ?? val.action ?? 'NEUTRAL')
+
+      const lowerKey = key.toLowerCase()
+      if (lowerKey === 'rsi') {
+        const r = Number(val.value)
+        displayValue = formatNum(r)
+        if (r > 70) desc = "Mahal (Overbought). Harga rawan turun/koreksi."
+        else if (r < 30) desc = "Murah (Oversold). Potensi besar untuk naik."
+        else desc = "Aktivitas beli dan jual sedang seimbang."
+      }
+      else if (lowerKey === 'macd') {
+        displayValue = formatNum(val.macdLine)
+        if (sig === 'BUY') desc = "Garis MACD menanjak naik. Indikasi momentum Beli kuat."
+        else if (sig === 'SELL') desc = "Garis MACD menukik turun. Momentum harga melemah."
+        else desc = "Tren sedang mendatar (sideways)."
+      }
+      else if (lowerKey === 'stochastic') {
+        const k = Number(val.k); const d = Number(val.d)
+        displayValue = `K:${formatNum(k)} D:${formatNum(d)}`
+        if (k > 80 && d > 80) desc = "Sangat jenuh beli. Hati-hati harga berbalik arah tiba-tiba."
+        else if (k < 20 && d < 20) desc = "Sangat jenuh jual. Banyak yang antre untuk jaring bawah."
+        else desc = "Momentum pergerakan harga di area tengah."
+      }
+      else if (lowerKey === 'atr') {
+        displayValue = formatNum(val.value)
+        const v = String(val.volatility || '').toUpperCase()
+        if (v.includes('HIGH')) desc = "Pergerakan harga sangat liar (Volatilitas Tinggi)."
+        else if (v.includes('LOW')) desc = "Pergerakan harga lambat dan stabil."
+        else desc = "Rentang pergerakan harga berfluktuasi normal."
+      }
+      else if (lowerKey === 'obv') {
+        displayValue = formatVolNum(val.value)
+        if (sig === 'BUY') desc = "Volume uang masuk (Akumulasi) lebih besar dari yang keluar."
+        else if (sig === 'SELL') desc = "Lebih banyak buang barang (Distribusi) dibanding yang beli."
+        else desc = "Arus volume uang masuk dan keluar sejajar."
+      }
+      else if (lowerKey === 'vwap') {
+        displayValue = `Rp ${formatNum(val.value)}`
+        desc = `Rata-rata harga bandar hari ini. (Sinyal: ${sig})`
+      }
+      else {
+        displayValue = formatNum(val.value ?? val.current ?? 0)
+        desc = `Indikator tambahan membaca sinyal: ${sig}.`
+      }
 
       result.push({
         name: key.toUpperCase(),
         value: displayValue,
-        signal: normalizeSignal(val.signal ?? val.trend ?? val.action ?? 'NEUTRAL'),
+        desc,
+        signal: sig,
       })
     }
-    // Indikator yang berisi sub-values (SMA, EMA: {sma5, sma10, sma20, ...})
+    // Indikator tanpa signal langsung tapi kumpulan data (SMA, EMA)
     else {
-      // Ambil nilai terakhir yang bukan null
-      const entries = Object.entries(val).filter(([_, v]) => v !== null)
-      if (entries.length > 0) {
-        const values = entries.map(([k, v]) => `${k}: ${formatNum(v as number)}`).join(' | ')
+      const isSMA = key.toLowerCase() === 'sma'
+      const isEMA = key.toLowerCase() === 'ema'
+      
+      if (isSMA || isEMA) {
+        const short = val[`${key}5`] || val[`${key}10`]
+        const mid = val[`${key}20`] || val[`${key}50`]
+        
+        // Cukup tampilkan 2 angka rata2
+        const entries = Object.entries(val).filter(([_, v]) => v !== null).slice(0, 2)
+        const displayValue = entries.map(([k, v]) => `${k.toUpperCase()}=${formatNum(v)}`).join(', ')
+        
+        let desc = 'Data rata-rata harga historis.'
+        let sig = 'NEUTRAL'
+        
+        if (short && mid) {
+          if (short > mid) {
+            desc = "Garis tren jangka pendek DI ATAS menengah. Fase Naik (Uptrend)."
+            sig = 'BUY'
+          } else {
+            desc = "Garis tren jangka pendek DI BAWAH menengah. Fase Turun (Downtrend)."
+            sig = 'SELL'
+          }
+        }
+        
         result.push({
           name: key.toUpperCase(),
-          value: values,
-          signal: 'NEUTRAL',
+          value: displayValue || '-',
+          desc,
+          signal: sig
         })
       }
     }

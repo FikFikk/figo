@@ -40,21 +40,21 @@
       leave-from-class="opacity-100 translate-y-0"
       leave-to-class="opacity-0 -translate-y-2"
     >
-      <div v-if="showDropdown && (query.length > 0 || trendingStocks.length > 0)"
+      <div v-if="showDropdown && query.length > 0"
         class="absolute top-full left-0 right-0 mt-2 rounded-2xl shadow-2xl z-50 max-h-80 overflow-y-auto border"
         :class="isDark ? 'bg-[#1a1d28] border-white/10' : 'bg-white border-slate-200'"
       >
-        <!-- Label: Trending atau Hasil Pencarian -->
+        <!-- Label: Hasil Pencarian -->
         <div class="px-4 pt-3 pb-2">
           <p class="text-[10px] font-black uppercase tracking-[0.2em]"
             :class="isDark ? 'text-gray-600' : 'text-slate-400'"
           >
-            {{ query.length > 0 ? `Hasil untuk "${query}"` : '🔥 Trending Hari Ini' }}
+            Hasil untuk "{{ query }}"
           </p>
         </div>
 
         <!-- Loading State -->
-        <div v-if="query.length > 0 && (isTyping || loading)" class="px-4 py-8 text-center flex flex-col items-center justify-center">
+        <div v-if="isTyping || loading" class="px-4 py-8 text-center flex flex-col items-center justify-center">
           <span class="material-symbols-outlined text-primary animate-spin text-3xl mb-3 inline-block">progress_activity</span>
           <p class="text-xs font-bold opacity-70">{{ isTyping ? 'Menunggu...' : 'Mencari saham...' }}</p>
         </div>
@@ -129,29 +129,17 @@ const emit = defineEmits<{
 }>()
 
 const { isDark } = useColorMode()
-const { searchStock, getTrending, loading } = useStockApi()
+const { searchStock, loading } = useStockApi()
 
 const query = ref('')
 const results = ref<any[]>([])
-const trendingStocks = ref<any[]>([])
 const showDropdown = ref(false)
 const isTyping = ref(false)
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
-// Daftar yang ditampilkan: hasil pencarian atau trending
+// Daftar yang ditampilkan: hasil pencarian
 const displayList = computed(() => {
-  if (query.value.length > 0) return results.value
-  return trendingStocks.value.slice(0, 10)
-})
-
-// Ambil trending saat komponen mount
-onMounted(async () => {
-  const data = await getTrending()
-  // API format: { success, data } atau { success, data: { data: [...] } }
-  const list = extractArray(data)
-  if (list.length > 0) {
-    trendingStocks.value = list.slice(0, 15)
-  }
+  return results.value
 })
 
 // Debounced search
