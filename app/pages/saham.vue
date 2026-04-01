@@ -134,6 +134,7 @@
         </div>
       </div>
       <StockBandarmology :data="bandarmologyData" :loading="loadingBandarmology" @fetch="loadBandarmology(selectedSymbol)" />
+      <StockInsights :data="insightData" :loading="loadingInsights" @fetch="loadInsights(selectedSymbol)" />
     </div>
 
     <!-- Bagian Publik (tanpa PIN) -->
@@ -228,6 +229,7 @@ const stockInfo = ref<any>(null)
 const chartData = ref<any[]>([])
 const technicalData = ref<any>(null)
 const bandarmologyData = ref<any>(null)
+const insightData = ref<any>(null)
 const moversData = ref<any>(null)
 const moversTab = ref('gainers')
 const moversOpen = ref(false) // Default collapsed untuk hemat API
@@ -239,6 +241,7 @@ const loadingInfo = ref(false)
 const loadingChart = ref(false)
 const loadingTechnical = ref(false)
 const loadingBandarmology = ref(false)
+const loadingInsights = ref(false)
 const loadingMovers = ref(false)
 
 // Handler: Saham dipilih (dari search atau movers table)
@@ -253,6 +256,7 @@ async function onSelectStock(stock: any) {
   chartData.value = []
   technicalData.value = null
   bandarmologyData.value = null
+  insightData.value = null
   tradingPlan.value = null
 
   // HANYA fetch Overview secara otomatis untuk menghemat limit (1 req)
@@ -342,6 +346,19 @@ async function loadBandarmology(symbol: string) {
     console.error('Bandarmology error:', err)
   } finally {
     loadingBandarmology.value = false
+  }
+}
+
+// Fetch: Insights
+async function loadInsights(symbol: string) {
+  loadingInsights.value = true
+  try {
+    const data = await $fetch('/api/stock/insights', { params: { symbol } })
+    insightData.value = data
+  } catch (err: any) {
+    console.error('Insights error:', err)
+  } finally {
+    loadingInsights.value = false
   }
 }
 
