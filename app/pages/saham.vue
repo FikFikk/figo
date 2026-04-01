@@ -159,6 +159,9 @@
         </div>
       </div>
 
+      <!-- Momentum IPO (PIN required) -->
+      <StockIpo v-if="isPinVerified" />
+
       <!-- Ensiklopedia Pola Saham (PUBLIK) -->
       <div>
         <div class="flex items-center gap-2 mb-4">
