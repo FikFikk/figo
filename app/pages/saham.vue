@@ -163,6 +163,9 @@
       <!-- Momentum IPO (PIN required) -->
       <StockIpo v-if="isPinVerified" />
 
+      <!-- Kalender Ekonomi (LOCKED) -->
+      <StockEconomicCalendar v-if="isPinVerified" />
+
       <!-- Ensiklopedia Pola Saham (PUBLIK) -->
       <div>
         <div class="flex items-center gap-2 mb-4">
@@ -407,10 +410,10 @@ function onChartLoadMore() {
   
   let nextRange = currentRange
   if (idx >= 0 && idx < seq.length - 1) {
-    nextRange = seq[idx + 1]
+    nextRange = seq[idx + 1] || currentRange
   } else if (idx === -1 && seq.length > 0) {
     // Jika range awal tidak standar, lompat ke step terakhir yang valid
-    nextRange = seq[seq.length - 1]
+    nextRange = seq[seq.length - 1] || currentRange
   }
 
   if (nextRange === currentRange) return // sudah max

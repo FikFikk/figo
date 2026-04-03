@@ -6,7 +6,7 @@
 // Base URL untuk IDX API via RapidAPI
 export const IDX_BASE_URL = 'https://indonesia-stock-exchange-idx.p.rapidapi.com'
 
-// Header default untuk RapidAPI
+// Header default untuk RapidAPI IDX
 export function getIdxHeaders(): Record<string, string> {
   const apiKey = process.env.RAPIDAPI_KEY || ''
   if (!apiKey) {
@@ -18,6 +18,25 @@ export function getIdxHeaders(): Record<string, string> {
   return {
     'x-rapidapi-key': apiKey,
     'x-rapidapi-host': 'indonesia-stock-exchange-idx.p.rapidapi.com',
+    'Content-Type': 'application/json',
+  }
+}
+
+// Base URL untuk Economic Calendar API via RapidAPI
+export const ECONOMIC_CALENDAR_BASE_URL = 'https://economic-calendar-api.p.rapidapi.com'
+
+// Header untuk Economic Calendar API
+export function getEconomicCalendarHeaders(): Record<string, string> {
+  const apiKey = process.env.RAPIDAPI_KEY || ''
+  if (!apiKey) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'RAPIDAPI_KEY belum dikonfigurasi di environment variables',
+    })
+  }
+  return {
+    'x-rapidapi-key': apiKey,
+    'x-rapidapi-host': 'economic-calendar-api.p.rapidapi.com',
     'Content-Type': 'application/json',
   }
 }
