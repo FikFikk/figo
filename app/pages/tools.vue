@@ -8,7 +8,7 @@
           <button 
             v-for="tool in availableTools"
             :key="tool.id"
-            @click="activeTool = tool.id"
+            @click="handleToolClick(tool.id)"
             class="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap"
             :style="activeTool === tool.id ? 'transform: scale(1.05)' : ''"
             :class="activeTool === tool.id 
@@ -40,7 +40,7 @@
             <button 
               v-for="tool in availableTools"
               :key="tool.id"
-              @click="activeTool = tool.id"
+              @click="handleToolClick(tool.id)"
               class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden"
               :class="activeTool === tool.id 
                 ? (isDark ? 'bg-primary/20 text-white border border-primary/30' : 'bg-primary text-white shadow-lg shadow-primary/20')
@@ -122,14 +122,24 @@
  */
 useSeoMeta({ title: 'Toolkit — FiGo' })
 const { isDark } = useColorMode()
+const router = useRouter()
 
 const activeTool = ref('color')
 
 // Configuration for active tools
 const availableTools = [
+  { id: 'calendar', name: 'Calendar 2026', icon: 'calendar_month' },
   { id: 'color', name: 'Color Palette', icon: 'palette' },
   { id: 'safety', name: 'Link Safety', icon: 'shield_lock' },
 ]
+
+function handleToolClick(id: string) {
+  if (id === 'calendar') {
+    router.push('/kalender')
+  } else {
+    activeTool.value = id
+  }
+}
 
 // Configuration for upcoming tools
 const soonTools = [
