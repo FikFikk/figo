@@ -72,14 +72,7 @@
     </div>
 
     <!-- Date Detail Modal -->
-    <DateDetailModal 
-      :is-open="isModalOpen" 
-      :date="selectedDate" 
-      @close="isModalOpen = false" 
-    />
-
-    <!-- Date Detail Modal -->
-    <DateDetailModal 
+    <CalendarDateDetailModal 
       :is-open="isModalOpen" 
       :date="selectedDate" 
       @close="isModalOpen = false" 

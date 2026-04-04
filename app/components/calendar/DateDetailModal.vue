@@ -7,93 +7,86 @@
     leave-from-class="opacity-100"
     leave-to-class="opacity-0"
   >
-    <div v-if="isOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm" @click.self="$emit('close')">
+    <div v-if="isOpen && date" class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60" @click.self="$emit('close')">
       <div 
-        class="glass-panel w-full max-w-md rounded-[40px] overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-300"
-        :class="isDark ? 'bg-neutral-900/90 border border-white/10' : 'bg-white/95 border border-slate-200 shadow-slate-200/50'"
+        class="modal-body w-full max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+        :class="isDark ? 'bg-neutral-900' : 'bg-white'"
       >
-        <!-- Header Image/Pattern -->
-        <div class="h-32 bg-gradient-to-br from-primary to-primary-container relative overflow-hidden">
-          <div class="absolute inset-0 opacity-20 pattern-grid"></div>
-          <button @click="$emit('close')" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center text-white transition-colors">
-            <span class="material-symbols-outlined text-xl">close</span>
-          </button>
-          
-          <div class="absolute bottom-6 left-8">
-            <h2 class="text-white font-headline font-black text-2xl tracking-tight">Detail Tanggal</h2>
+        <!-- Tanggal besar sebagai hero -->
+        <div class="px-7 pt-7 pb-5">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-6xl font-black leading-none tracking-tight" :class="isDark ? 'text-white' : 'text-slate-900'">
+                {{ date.getDate() }}
+              </p>
+              <p class="text-sm font-medium mt-1.5" :class="isDark ? 'text-white/50' : 'text-slate-400'">
+                {{ monthNames[date.getMonth()] }} {{ date.getFullYear() }}
+              </p>
+            </div>
+            <button @click="$emit('close')" class="w-8 h-8 rounded-full flex items-center justify-center opacity-30 hover:opacity-100 transition-opacity mt-1">
+              <span class="material-symbols-outlined text-lg">close</span>
+            </button>
+          </div>
+
+          <!-- Holiday -->
+          <div v-if="holidayName" class="mt-4 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/15">
+            <p class="text-xs font-bold text-red-500">{{ holiday?.type === 'joint_leave' ? 'Cuti Bersama' : 'Hari Libur' }}</p>
+            <p class="text-sm font-bold mt-0.5" :class="isDark ? 'text-white' : 'text-slate-900'">{{ holidayName }}</p>
           </div>
         </div>
 
-        <!-- Content -->
-        <div class="p-8 space-y-8">
-          <!-- Masehi Section -->
-          <div class="flex items-start gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-outlined text-primary">calendar_today</span>
-            </div>
-            <div>
-              <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Masehi</p>
-              <p class="font-headline font-bold text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">
-                {{ info.masehi }}
-              </p>
-            </div>
+        <!-- Divider -->
+        <div class="h-px mx-7" :class="isDark ? 'bg-white/5' : 'bg-slate-100'"></div>
+
+        <!-- Scrollable info -->
+        <div class="px-7 py-5 space-y-5 max-h-[55vh] overflow-y-auto overscroll-contain">
+
+          <!-- Hijriah -->
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-1" :class="isDark ? 'text-white/25' : 'text-slate-300'">Hijriah</p>
+            <p class="text-sm font-bold" :class="isDark ? 'text-white' : 'text-slate-800'">{{ info.hijri }}</p>
           </div>
 
-          <!-- Hijri Section -->
-          <div class="flex items-start gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-tertiary/10 flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-outlined text-tertiary">foundation</span>
-            </div>
-            <div>
-              <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Hijriah</p>
-              <p class="font-headline font-bold text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">
-                {{ info.hijri }}
-              </p>
-              <p v-if="isIslamicHoliday" class="text-xs text-red-500 font-bold mt-1">
-                {{ holidayName }} (Estimasi)
-              </p>
-            </div>
+          <!-- Tanggal Jawa -->
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-1" :class="isDark ? 'text-white/25' : 'text-slate-300'">Tanggal Jawa</p>
+            <p class="text-sm font-bold" :class="isDark ? 'text-white' : 'text-slate-800'">{{ info.tanggalJawa }}</p>
+            <p class="text-xs mt-0.5" :class="isDark ? 'text-white/35' : 'text-slate-400'">
+              Tahun {{ info.tahunJawa }} · Windu {{ info.winduJawa }}
+            </p>
           </div>
 
-          <!-- Javanese Section -->
-          <div class="flex items-start gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-outlined text-secondary">history_edu</span>
-            </div>
-            <div class="flex-1">
-              <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Penanggalan Jawa</p>
-              <p class="font-headline font-bold text-lg mb-2" :class="isDark ? 'text-white' : 'text-slate-900'">
-                {{ info.jawa }}
-              </p>
-              
-              <div class="grid grid-cols-2 gap-4 pt-4 border-t border-black/5 dark:border-white/5">
-                <div>
-                  <p class="text-[9px] font-black uppercase opacity-30">Neptu</p>
-                  <p class="font-bold text-sm" :class="isDark ? 'text-white' : 'text-slate-900'">{{ info.neptu }}</p>
-                </div>
-                <div>
-                  <p class="text-[9px] font-black uppercase opacity-30">Wuku</p>
-                  <p class="font-bold text-sm" :class="isDark ? 'text-white' : 'text-slate-900'">{{ info.wuku }}</p>
-                </div>
-              </div>
-            </div>
+          <!-- Weton -->
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-1" :class="isDark ? 'text-white/25' : 'text-slate-300'">Weton</p>
+            <p class="text-sm font-bold" :class="isDark ? 'text-white' : 'text-slate-800'">{{ info.jawa }}</p>
+            <p class="text-xs mt-0.5" :class="isDark ? 'text-white/35' : 'text-slate-400'">
+              Neptu: {{ info.neptu }}
+            </p>
           </div>
 
-          <!-- Holiday Badge -->
-          <div v-if="!isIslamicHoliday && holidayName" class="p-4 rounded-2xl bg-red-500/5 border border-red-500/10">
-            <div class="flex items-center gap-2 text-red-500 mb-1">
-              <span class="material-symbols-outlined text-sm">event_busy</span>
-              <span class="text-[10px] font-black uppercase tracking-widest">Hari Libur Nasional</span>
-            </div>
-            <p class="font-bold text-sm" :class="isDark ? 'text-white' : 'text-slate-900'">{{ holidayName }}</p>
+          <!-- Wuku -->
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-1" :class="isDark ? 'text-white/25' : 'text-slate-300'">Wuku</p>
+            <p class="text-sm font-bold" :class="isDark ? 'text-white' : 'text-slate-800'">{{ info.wuku }}</p>
+          </div>
+
+          <!-- Pancasuda -->
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-1" :class="isDark ? 'text-white/25' : 'text-slate-300'">Pancasuda</p>
+            <p class="text-sm font-bold" :class="getPancasudaColor(info.pancasuda?.name)">{{ info.pancasuda?.name }}</p>
+            <p class="text-xs mt-0.5" :class="isDark ? 'text-white/35' : 'text-slate-400'">
+              {{ info.pancasuda?.description }}
+            </p>
           </div>
         </div>
 
-        <!-- Footer -->
-        <div class="px-8 pb-8">
+        <!-- Close button -->
+        <div class="px-7 pb-7 pt-2">
           <button 
             @click="$emit('close')"
-            class="w-full py-4 rounded-2xl bg-primary text-on-primary font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
+            class="w-full py-3 rounded-2xl text-sm font-bold transition-all active:scale-[0.98]"
+            :class="isDark ? 'bg-white/5 text-white hover:bg-white/10' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'"
           >
             Tutup
           </button>
@@ -104,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { getFullDateInfo } from '~/utils/calendar-converter'
+import { getFullDateInfo, formatToLocalDate } from '~/utils/calendar-converter'
 import { getHolidays } from '~/utils/calendar-data'
 
 const props = defineProps<{
@@ -112,34 +105,68 @@ const props = defineProps<{
   date: Date | null
 }>()
 
-const emit = defineEmits(['close'])
+defineEmits(['close'])
 
 const { isDark } = useColorMode()
 
+const monthNames = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+]
+
 const info = computed(() => {
-  if (!props.date) return { masehi: '', hijri: '', jawa: '', pasaran: '', neptu: 0, wuku: '' }
+  if (!props.date) return {
+    masehi: '', hijri: '', jawa: '', pasaran: '', neptu: 0, wuku: '',
+    tanggalJawa: '', tahunJawa: '', winduJawa: '', bulanJawa: '', tahunAngkaJawa: 0,
+    pancasuda: { name: '', description: '' }
+  }
   return getFullDateInfo(props.date)
 })
 
 const holiday = computed(() => {
   if (!props.date) return null
-  const dateStr = props.date.toISOString().split('T')[0]
+  const dateStr = formatToLocalDate(props.date)
   const holidays = getHolidays(props.date.getFullYear())
-  return holidays.find(h => h.date === dateStr)
+  return holidays.find(h => h.date === dateStr) ?? null
 })
 
-const holidayName = computed(() => holiday.value?.name || '')
-const isIslamicHoliday = computed(() => holidayName.value.includes('Idul') || holidayName.value.includes('Hijri') || holidayName.value.includes('Maulid') || holidayName.value.includes('Isra'))
+const holidayName = computed(() => holiday.value?.name ?? '')
+const isIslamicHoliday = computed(() =>
+  holidayName.value.includes('Idul') ||
+  holidayName.value.includes('Hijri') ||
+  holidayName.value.includes('Maulid') ||
+  holidayName.value.includes('Isra')
+)
+
+function getPancasudaColor(name?: string): string {
+  if (isDark.value) {
+    switch (name) {
+      case 'Sri': return 'text-emerald-400'
+      case 'Lungguh': return 'text-sky-400'
+      case 'Gedhong': return 'text-amber-400'
+      case 'Lara': return 'text-orange-400'
+      case 'Pati': return 'text-red-400'
+      default: return 'text-white'
+    }
+  }
+  switch (name) {
+    case 'Sri': return 'text-emerald-600'
+    case 'Lungguh': return 'text-sky-600'
+    case 'Gedhong': return 'text-amber-600'
+    case 'Lara': return 'text-orange-600'
+    case 'Pati': return 'text-red-600'
+    default: return 'text-slate-800'
+  }
+}
 </script>
 
 <style scoped>
-.glass-panel {
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+.modal-body {
+  animation: slideUp 0.3s ease-out;
 }
 
-.pattern-grid {
-  background-image: radial-gradient(circle, white 1px, transparent 1px);
-  background-size: 20px 20px;
+@keyframes slideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 </style>
