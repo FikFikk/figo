@@ -29,7 +29,7 @@
           </div>
 
           <!-- Holiday -->
-          <div v-if="holidayName" class="mt-4 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/15">
+          <div v-if="holidayName" class="mt-4 px-3.5 py-2.5 rounded-2xl bg-red-500/10 border border-red-500/15">
             <p class="text-xs font-bold text-red-500">{{ holiday?.type === 'joint_leave' ? 'Cuti Bersama' : 'Hari Libur' }}</p>
             <p class="text-sm font-bold mt-0.5" :class="isDark ? 'text-white' : 'text-slate-900'">{{ holidayName }}</p>
           </div>

@@ -81,11 +81,17 @@
               </div>
             </div>
 
-            <!-- Tanggal Jawa -->
-            <div class="pt-1.5 border-t border-white/10">
-              <span class="opacity-40 uppercase tracking-tight text-[8px] block mb-0.5">Tanggal Jawa</span>
-              <span class="font-bold text-[10px] block">{{ dayCache[day - 1]?.info?.tanggalJawa }}</span>
-              <span class="text-[8px] opacity-50">Tahun {{ dayCache[day - 1]?.info?.tahunJawa }} · Windu {{ dayCache[day - 1]?.info?.winduJawa }}</span>
+            <!-- Tanggal Jawa & Hijriah -->
+            <div class="pt-1.5 border-t border-white/10 grid grid-cols-2 gap-x-2 w-full">
+              <div>
+                <span class="opacity-40 uppercase tracking-tight text-[8px] block mb-0.5">Tanggal Jawa</span>
+                <span class="font-bold text-[9px] block">{{ dayCache[day - 1]?.info?.tanggalJawa }}</span>
+                <span class="text-[7.5px] opacity-50 block leading-tight mt-0.5">Th. {{ dayCache[day - 1]?.info?.tahunJawa }}</span>
+              </div>
+              <div class="pl-2 border-l border-white/5">
+                <span class="opacity-40 uppercase tracking-tight text-[8px] block mb-0.5">Hijriah</span>
+                <span class="font-bold text-[10px] block">{{ dayCache[day - 1]?.info?.hijriShort }}</span>
+              </div>
             </div>
           </div>
 

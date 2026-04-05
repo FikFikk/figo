@@ -34,8 +34,8 @@ const PASARAN = ['Legi', 'Pahing', 'Pon', 'Wage', 'Kliwon'] as const
  */
 export function getJavanesePasaran(date: Date): string {
   const jd = toJD(date)
-  const index = ((jd % 5) + 5) % 5
-  return PASARAN[index]!
+  const index = Math.floor(((jd % 5) + 5) % 5)
+  return PASARAN[index] ?? 'Legi'
 }
 
 // =============================================================================
@@ -93,8 +93,14 @@ const HIJRI_MONTHS = [
   'Ramadhan', 'Syawal', 'Dzulkaidah', 'Dzulhijjah'
 ] as const
 
+const HIJRI_MONTHS_SHORT = [
+  'Muh.', 'Saf.', 'R.Awwal', 'R.Akhir',
+  'J.Awwal', 'J.Akhir', 'Raj.', 'Sya.',
+  'Ram.', 'Syaw.', 'Dzulq.', 'Dzulh.'
+] as const
+
 export function toHijri(date: Date) {
-  const jd = toJD(date) + 1
+  const jd = toJD(date)
 
   let l = Math.floor(jd) - 1948440 + 10632
   const n = Math.floor((l - 1) / 10631)
@@ -113,6 +119,7 @@ export function toHijri(date: Date) {
     day: d,
     month: m,
     monthName: HIJRI_MONTHS[m - 1] || 'Unknown',
+    monthNameShort: HIJRI_MONTHS_SHORT[m - 1] || 'Unk.',
     year: y
   }
 }
@@ -291,6 +298,7 @@ export function getFullDateInfo(date: Date) {
 
     // Hijriah
     hijri: `${hijri.day} ${hijri.monthName} ${hijri.year} H`,
+    hijriShort: `${hijri.day} ${hijri.monthNameShort}`,
 
     // Jawa (hari + pasaran)
     jawa: `${hari} ${pasaran}`,

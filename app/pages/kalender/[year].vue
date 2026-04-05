@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen pt-24 pb-20 overflow-x-hidden bg-neutral-950">
+  <div class="min-h-screen pt-24 pb-20 overflow-x-hidden bg-slate-50 dark:bg-neutral-950">
     <ClientOnly>
       <CalendarGrid 
         :year="currentYear" 
