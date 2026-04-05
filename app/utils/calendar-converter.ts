@@ -229,7 +229,7 @@ export function toJavanese(date: Date) {
 }
 
 // =============================================================================
-// PANCASUDA (Neptu % 5 — 5 siklus kehidupan)
+// PANCASUDA (Cermin / Mirrored berdasar total Neptu 7-18)
 // =============================================================================
 
 interface PancasudaResult {
@@ -238,43 +238,55 @@ interface PancasudaResult {
 }
 
 /**
- * Pancasuda: (neptu_hari + neptu_pasaran) dibagi 5, ambil sisa
- * Sisa 0 dianggap 5 (Pati)
- * 
- * Verifikasi: Jumat Kliwon (6+8=14) → 14%5=4 → Lara ✓
+ * Pancasuda berdasarkan nilai neptu total yang dilipat (mirrored) di angka 13.
+ * 7 & 18 = Wasesa Segara
+ * 8 & 17 = Tunggak Semi
+ * 9 & 16 = Satria Wibawa
+ * 10 & 15 = Sumur Sinaba
+ * 11 & 14 = Satria Wirang
+ * 12 & 13 = Bumi Kapetak
  */
-const PANCASUDA_TABLE: PancasudaResult[] = [
-  // Index 0 = sisa 5 (habis dibagi)
-  {
-    name: 'Pati',
-    description: 'Sering menemui jalan buntu, disarankan bersedekah.'
-  },
-  // Index 1 = sisa 1
-  {
-    name: 'Sri',
-    description: 'Penuh keberuntungan, mudah mendapat simpati.'
-  },
-  // Index 2 = sisa 2
-  {
-    name: 'Lungguh',
-    description: 'Berderajat tinggi, cocok menjadi pemimpin.'
-  },
-  // Index 3 = sisa 3
-  {
-    name: 'Gedhong',
-    description: 'Pandai urusan ekonomi, harta tercukupi.'
-  },
-  // Index 4 = sisa 4
-  {
-    name: 'Lara',
-    description: 'Sering menghadapi ujian, perlu usaha ekstra.'
-  },
-]
+const PANCASUDA_TABLE: Record<number, PancasudaResult> = {
+  7: { name: 'Wasesa Segara', description: 'Memiliki wibawa, pemaaf, berbudi luhur, dan rezeki seluas lautan.' },
+  8: { name: 'Tunggak Semi', description: 'Rezeki selalu tumbuh kembali, selalu ada jalan meski sulit.' },
+  9: { name: 'Satria Wibawa', description: 'Dihormati, disegani, memiliki kemuliaan dan derajat tinggi.' },
+  10: { name: 'Sumur Sinaba', description: 'Tempat bertanya, bijaksana, sumber ilmu bagi orang lain.' },
+  11: { name: 'Satria Wirang', description: 'Sering mengalami kesulitan atau rintangan hidup.' },
+  12: { name: 'Bumi Kapetak', description: 'Pekerja keras, tahan banting, meski sering menemui masalah.' },
+}
 
 export function getPancasuda(date: Date): PancasudaResult {
-  const neptu = getNeptu(date)
-  const index = neptu % 5
-  return PANCASUDA_TABLE[index] ?? PANCASUDA_TABLE[0]!
+  let neptu = getNeptu(date)
+  
+  // Fold/Mirror the neptu if it's > 12.
+  if (neptu > 12) {
+    neptu = 25 - neptu
+  }
+
+  return PANCASUDA_TABLE[neptu] || PANCASUDA_TABLE[7]!
+}
+
+// =============================================================================
+// WEWARAN (Siklus Hari - Continuous)
+// =============================================================================
+
+export function getWewaran(date: Date) {
+  const jd = toJD(date)
+  let diff = (jd - WUKU_ANCHOR_JD) % 210
+  if (diff < 0) diff += 210
+
+  // Standard Balinese/Javanese Julian Date Moduli
+  const TRIWARA = ['Pasah', 'Beteng', 'Kajeng']
+  const CATURWARA = ['Sri', 'Laba', 'Jaya', 'Menala']
+  const SADWARA = ['Tungleh', 'Aryang', 'Urukung', 'Paniron', 'Was', 'Maulu']
+  const SANGAWARA = ['Dangu', 'Jagur', 'Gigis', 'Nohan', 'Ogan', 'Erangan', 'Urungan', 'Tulus', 'Dadi']
+
+  return {
+    triwara: TRIWARA[diff % 3]!,
+    caturwara: CATURWARA[diff % 4]!,
+    sadwara: SADWARA[diff % 6]!,
+    sangawara: SANGAWARA[diff % 9]!
+  }
 }
 
 // =============================================================================
@@ -314,6 +326,9 @@ export function getFullDateInfo(date: Date) {
     tahunAngkaJawa: jawa.year,
 
     // Pancasuda
-    pancasuda
+    pancasuda,
+
+    // Wewaran
+    wewaran: getWewaran(date)
   }
 }

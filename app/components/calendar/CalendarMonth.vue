@@ -169,11 +169,12 @@ const dayCache = computed<DayCache[]>(() => {
 /** Warna Pancasuda untuk visual cue */
 function getPancasudaColor(name?: string): string {
   switch (name) {
-    case 'Sri': return 'text-emerald-400'
-    case 'Lungguh': return 'text-sky-400'
-    case 'Gedhong': return 'text-amber-400'
-    case 'Lara': return 'text-orange-400'
-    case 'Pati': return 'text-red-400'
+    case 'Wasesa Segara': return 'text-cyan-400'
+    case 'Tunggak Semi': return 'text-emerald-400'
+    case 'Satria Wibawa': return 'text-amber-400'
+    case 'Sumur Sinaba': return 'text-sky-400'
+    case 'Satria Wirang': return 'text-rose-400'
+    case 'Bumi Kapetak': return 'text-orange-400'
     default: return ''
   }
 }

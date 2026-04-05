@@ -141,20 +141,22 @@ const isIslamicHoliday = computed(() =>
 function getPancasudaColor(name?: string): string {
   if (isDark.value) {
     switch (name) {
-      case 'Sri': return 'text-emerald-400'
-      case 'Lungguh': return 'text-sky-400'
-      case 'Gedhong': return 'text-amber-400'
-      case 'Lara': return 'text-orange-400'
-      case 'Pati': return 'text-red-400'
+      case 'Wasesa Segara': return 'text-cyan-400'
+      case 'Tunggak Semi': return 'text-emerald-400'
+      case 'Satria Wibawa': return 'text-amber-400'
+      case 'Sumur Sinaba': return 'text-sky-400'
+      case 'Satria Wirang': return 'text-rose-400'
+      case 'Bumi Kapetak': return 'text-orange-400'
       default: return 'text-white'
     }
   }
   switch (name) {
-    case 'Sri': return 'text-emerald-600'
-    case 'Lungguh': return 'text-sky-600'
-    case 'Gedhong': return 'text-amber-600'
-    case 'Lara': return 'text-orange-600'
-    case 'Pati': return 'text-red-600'
+    case 'Wasesa Segara': return 'text-cyan-600'
+    case 'Tunggak Semi': return 'text-emerald-600'
+    case 'Satria Wibawa': return 'text-amber-600'
+    case 'Sumur Sinaba': return 'text-sky-600'
+    case 'Satria Wirang': return 'text-rose-600'
+    case 'Bumi Kapetak': return 'text-orange-600'
     default: return 'text-slate-800'
   }
 }

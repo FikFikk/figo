@@ -1,6 +1,8 @@
 <template>
   <div class="min-h-screen pt-24 pb-20 overflow-x-hidden bg-slate-50 dark:bg-neutral-950">
     <ClientOnly>
+      <CalendarTabs class="mt-4" />
+
       <CalendarGrid 
         :year="currentYear" 
         @update:year="navigateYear"
@@ -26,6 +28,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const router = useRouter()
+const { isDark } = useColorMode()
 
 const currentYear = computed(() => {
   const year = parseInt(route.params.year as string)
