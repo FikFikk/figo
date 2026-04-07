@@ -39,27 +39,36 @@ defineEmits(['update:modelValue'])
 .pro-slider {
   -webkit-appearance: none;
   width: 100%;
-  height: 4px;
-  background: rgba(255,255,255,0.05);
+  height: 4.5px;
+  background: rgba(0,0,0,0.1);
   border-radius: 10px;
   outline: none;
   transition: all 0.3s;
 }
 
+:deep(.dark) .pro-slider {
+  background: rgba(255,255,255,0.08);
+}
+
 .pro-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   background: #3b82f6;
   border-radius: 50%;
   cursor: pointer;
-  border: 3px solid #000;
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  border: 3px solid #fff;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+:deep(.dark) .pro-slider::-webkit-slider-thumb {
+  border-color: #000;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+}
+
 .pro-slider:hover::-webkit-slider-thumb {
-  transform: scale(1.3);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+  transform: scale(1.2);
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.8);
 }
 </style>
