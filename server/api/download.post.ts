@@ -3,7 +3,7 @@ import { join, dirname, basename } from 'path'
 import { randomUUID } from 'crypto'
 import { tmpdir } from 'os'
 import { spawn } from 'child_process'
-import { readdirSync } from 'fs'
+import { readdirSync, existsSync, unlinkSync, statSync } from 'fs'
 import { downloadJobs } from '../lib/jobs'
 
 // Blocklist for adult sites
@@ -36,6 +36,64 @@ function parseYtdlpOutput(raw: string): any {
 
 // User-Agent realistis untuk bypass fingerprinting
 const REALISTIC_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+
+// Error yang tidak perlu di-retry (masalah server, bukan YouTube)
+const NON_RETRYABLE_PATTERNS = [
+  'No space left on device',
+  'Permission denied',
+  'ENOSPC',
+  'EACCES',
+]
+
+function isNonRetryableError(msg: string): boolean {
+  return NON_RETRYABLE_PATTERNS.some(p => msg.includes(p))
+}
+
+/**
+ * Bersihkan file figo-* lama di /tmp (lebih dari 30 menit).
+ * Mencegah disk penuh karena partial download yang gagal.
+ */
+function cleanupStaleTempFiles(): { cleaned: number; freedMB: number } {
+  const tmp = tmpdir()
+  let cleaned = 0
+  let freedBytes = 0
+  const maxAge = 30 * 60 * 1000 // 30 menit
+
+  try {
+    const files = readdirSync(tmp)
+    const now = Date.now()
+    for (const f of files) {
+      if (!f.startsWith('figo-')) continue
+      const fullPath = join(tmp, f)
+      try {
+        const info = statSync(fullPath)
+        if (now - info.mtimeMs > maxAge) {
+          freedBytes += info.size
+          unlinkSync(fullPath)
+          cleaned++
+        }
+      } catch {}
+    }
+  } catch {}
+
+  return { cleaned, freedMB: Math.round(freedBytes / 1048576) }
+}
+
+/**
+ * Bersihkan partial files (.part, .ytdl) untuk jobId tertentu.
+ */
+function cleanupPartialFiles(tmpFile: string): void {
+  const dir = dirname(tmpFile)
+  const base = basename(tmpFile).replace(/\.[^.]+$/, '')
+  try {
+    const files = readdirSync(dir)
+    for (const f of files) {
+      if (f.startsWith(base) && (f.endsWith('.part') || f.endsWith('.ytdl') || f.endsWith('.part-Frag0'))) {
+        try { unlinkSync(join(dir, f)) } catch {}
+      }
+    }
+  } catch {}
+}
 
 /**
  * Implementasi native yt-dlp untuk kompatibilitas Nitro/Rollup.
@@ -155,7 +213,20 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
       return await spawnYtdlp(binPath, args, timeoutMs)
     } catch (err: any) {
       lastError = err
-      console.warn(`[Retry] Attempt ${i + 1} gagal: ${err.message?.substring(0, 200)}`)
+      const errMsg = err.message || String(err)
+      console.warn(`[Retry] Attempt ${i + 1} gagal: ${errMsg.substring(0, 200)}`)
+
+      // Error fatal (disk penuh, permission) → jangan retry, langsung gagal
+      if (isNonRetryableError(errMsg)) {
+        console.error(`[Retry] Non-retryable error terdeteksi, berhenti.`)
+        // Cleanup partial files sebelum throw
+        if (flags.output) cleanupPartialFiles(flags.output)
+        throw new Error(`Server error: ${errMsg.includes('No space') ? 'Disk server penuh, coba lagi nanti.' : errMsg}`)
+      }
+
+      // Cleanup partial files sebelum retry berikutnya
+      if (flags.output) cleanupPartialFiles(flags.output)
+
       // Jeda sebelum retry berikutnya (exponential: 1s, 2s, 3s)
       if (i < strategies.length - 1) {
         await new Promise(r => setTimeout(r, (i + 1) * 1000))
@@ -321,6 +392,12 @@ export default defineEventHandler(async (event) => {
       // Background process (fire-and-forget)
       ;(async () => {
         try {
+          // Auto-cleanup file lama sebelum download baru
+          const cleanup = cleanupStaleTempFiles()
+          if (cleanup.cleaned > 0) {
+            console.log(`[Cleanup] Hapus ${cleanup.cleaned} file lama, freed ${cleanup.freedMB}MB`)
+          }
+
           console.log(`[Job ${jobId}] Starting: format=${formatStr}`)
           const flags: any = {
             format: formatStr,
