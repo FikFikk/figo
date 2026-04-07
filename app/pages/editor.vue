@@ -164,7 +164,7 @@
 
     <!-- MOBILE FLOATING CONTROLS (NON-MODAL PREVIEW) -->
     <Transition name="slide-up">
-      <div v-show="imageLoaded" class="lg:hidden fixed bottom-12 left-0 right-0 z-[70] px-4 pointer-events-none">
+      <div v-show="imageLoaded" class="lg:hidden fixed bottom-24 left-0 right-0 z-[70] px-6 pointer-events-none">
         
         <!-- Bottom Sheet (Inline Preview Mode) -->
         <Transition name="sheet-fold">
@@ -177,7 +177,7 @@
              <div class="p-6 pt-2">
                 <header class="flex items-center justify-between mb-6">
                    <h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-primary">{{ sheetTitle }}</h3>
-                   <button @click="activeSheet = null" class="w-8 h-8 rounded-full flex items-center justify-center" :class="isDark ? 'bg-white/5' : 'bg-slate-100'">
+                   <button @click="activeSheet = null" class="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90" :class="isDark ? 'bg-white/5' : 'bg-slate-100'">
                       <span class="material-symbols-outlined text-sm">close</span>
                    </button>
                 </header>
@@ -213,19 +213,19 @@
           </div>
         </Transition>
 
-        <!-- Main Nav Pills -->
-        <div class="bg-black/95 dark:bg-[#111827]/80 backdrop-blur-3xl border border-white/10 rounded-full p-2 flex items-center justify-between shadow-2xl pointer-events-auto max-w-xs mx-auto">
-           <button @click="toggleSheet('models')" class="flex-1 h-12 rounded-full flex flex-col items-center justify-center gap-1 transition-all" :class="activeSheet === 'models' ? 'text-primary' : 'text-gray-400'">
-              <span class="material-symbols-outlined text-lg">neurology</span>
-              <span class="text-[7px] font-black uppercase tracking-tighter">AI Core</span>
+        <!-- Main Nav Pills (RESIZED & MOVED UP) -->
+        <div class="bg-black/90 dark:bg-[#111827]/90 backdrop-blur-3xl border border-white/10 rounded-full p-1.5 flex items-center justify-between shadow-[0_15px_40px_rgba(0,0,0,0.5)] pointer-events-auto max-w-[280px] mx-auto ring-1 ring-white/5 transition-all">
+           <button @click="toggleSheet('models')" class="flex-1 h-10 rounded-full flex flex-col items-center justify-center gap-0.5 transition-all outline-none" :class="activeSheet === 'models' ? 'text-primary' : 'text-gray-400'">
+              <span class="material-symbols-outlined text-base">neurology</span>
+              <span class="text-[6px] font-black uppercase tracking-tighter">AI Core</span>
            </button>
-           <button @click="toggleSheet('tune')" class="flex-1 h-12 rounded-full flex flex-col items-center justify-center gap-1 transition-all" :class="activeSheet === 'tune' ? 'text-primary' : 'text-gray-400'">
-              <span class="material-symbols-outlined text-lg">tune</span>
-              <span class="text-[7px] font-black uppercase tracking-tighter">Adjust</span>
+           <button @click="toggleSheet('tune')" class="flex-1 h-10 rounded-full flex flex-col items-center justify-center gap-0.5 transition-all outline-none" :class="activeSheet === 'tune' ? 'text-primary' : 'text-gray-400'">
+              <span class="material-symbols-outlined text-base">tune</span>
+              <span class="text-[6px] font-black uppercase tracking-tighter">Adjust</span>
            </button>
-           <button @click="toggleSheet('precision')" class="flex-1 h-12 rounded-full flex flex-col items-center justify-center gap-1 transition-all" :class="activeSheet === 'precision' ? 'text-primary' : 'text-gray-400'">
-              <span class="material-symbols-outlined text-lg">auto_fix_high</span>
-              <span class="text-[7px] font-black uppercase tracking-tighter">Detail</span>
+           <button @click="toggleSheet('precision')" class="flex-1 h-10 rounded-full flex flex-col items-center justify-center gap-0.5 transition-all outline-none" :class="activeSheet === 'precision' ? 'text-primary' : 'text-gray-400'">
+              <span class="material-symbols-outlined text-base">auto_fix_high</span>
+              <span class="text-[6px] font-black uppercase tracking-tighter">Detail</span>
            </button>
         </div>
       </div>

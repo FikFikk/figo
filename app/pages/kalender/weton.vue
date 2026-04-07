@@ -194,7 +194,8 @@ function calculateWeton() {
     neptuPasaran: PASARAN_NEPTU[pasaran],
     neptu: info.neptu,
     wuku: info.wuku,
-    pancasuda: info.pancasuda
+    pancasuda: info.pancasuda,
+    wewaran: info.wewaran
   }
 }
 
