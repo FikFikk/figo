@@ -33,23 +33,20 @@ function parseYtdlpOutput(raw: string): any {
   return JSON.parse(raw)
 }
 
-/**
- * Native implementation of yt-dlp execution to replace youtube-dl-exec dependency.
- * This ensures compatibility with Nitro/Rollup production builds.
- */
-async function execYtdlp(url: string, flags: Record<string, any>): Promise<{ stdout: string }> {
-  const isWin = process.platform === 'win32'
-  const binName = isWin ? 'yt-dlp.exe' : 'yt-dlp'
-  const binPath = join(process.cwd(), 'server', 'api', binName)
+// User-Agent realistis untuk bypass fingerprinting
+const REALISTIC_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
-  // Map flags to command line arguments
+/**
+ * Implementasi native yt-dlp untuk kompatibilitas Nitro/Rollup.
+ * Mendukung extractor-args, user-agent, retry, dan rate limiting.
+ */
+function buildYtdlpArgs(url: string, flags: Record<string, any>): string[] {
   const args: string[] = []
-  
+
+  // Flag standar
   if (flags.dumpSingleJson) args.push('--dump-single-json')
   if (flags.noWarnings) args.push('--no-warnings')
   if (flags.noCheckCertificates) args.push('--no-check-certificates')
-  if (flags.youtubeSkipDashManifest) args.push('--youtube-skip-dash-manifest')
-  if (flags.youtubeSkipHlsManifest) args.push('--youtube-skip-hls-manifest')
   if (flags.noPlaylist) args.push('--no-playlist')
   if (flags.noCacheDir) args.push('--no-cache-dir')
   if (flags.forceIpv4) args.push('--force-ipv4')
@@ -59,28 +56,108 @@ async function execYtdlp(url: string, flags: Record<string, any>): Promise<{ std
   if (flags.output) args.push('--output', flags.output)
   if (flags.ffmpegLocation) args.push('--ffmpeg-location', flags.ffmpegLocation)
   if (flags.mergeOutputFormat) args.push('--merge-output-format', flags.mergeOutputFormat)
-  
-  // Add positionals (URL)
-  args.push(url)
 
+  // Pengganti deprecated --youtube-skip-dash-manifest & --youtube-skip-hls-manifest
+  if (flags.extractorArgs) args.push('--extractor-args', flags.extractorArgs)
+
+  // User-Agent realistis agar tidak terdeteksi bot
+  if (flags.userAgent) args.push('--user-agent', flags.userAgent)
+
+  // Rate limiting agar tidak di-flag YouTube
+  if (flags.sleepInterval) args.push('--sleep-interval', String(flags.sleepInterval))
+  if (flags.maxSleepInterval) args.push('--max-sleep-interval', String(flags.maxSleepInterval))
+
+  // Retry bawaan yt-dlp
+  if (flags.retries) args.push('--retries', String(flags.retries))
+  if (flags.fragmentRetries) args.push('--fragment-retries', String(flags.fragmentRetries))
+
+  // Network reconnect via ffmpeg (untuk stream yang putus)
+  if (flags.downloaderArgs) args.push('--downloader-args', flags.downloaderArgs)
+
+  // URL terakhir
+  args.push(url)
+  return args
+}
+
+function spawnYtdlp(binPath: string, args: string[], timeoutMs = 120_000): Promise<{ stdout: string }> {
   return new Promise((resolve, reject) => {
     console.log(`[Spawn] Running: ${binPath} ${args.join(' ')}`)
     const child = spawn(binPath, args)
     let stdout = ''
     let stderr = ''
 
+    // Timeout agar tidak hang selamanya
+    const timer = setTimeout(() => {
+      child.kill('SIGTERM')
+      reject(new Error(`yt-dlp timeout setelah ${timeoutMs / 1000}s`))
+    }, timeoutMs)
+
     child.stdout.on('data', (data) => { stdout += data.toString() })
     child.stderr.on('data', (data) => { stderr += data.toString() })
 
     child.on('close', (code) => {
+      clearTimeout(timer)
       if (code === 0) resolve({ stdout })
       else reject(new Error(stderr || `yt-dlp exited with code ${code}`))
     })
 
     child.on('error', (err) => {
+      clearTimeout(timer)
       reject(err)
     })
   })
+}
+
+/**
+ * Eksekusi yt-dlp dengan progressive retry strategy.
+ * Attempt 1: Default (tanpa cookies, user-agent realistis)
+ * Attempt 2: Dengan player-client=ios (bypass bot detection)
+ * Attempt 3: Dengan player-client=android (fallback terakhir)
+ */
+async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 120_000): Promise<{ stdout: string }> {
+  const isWin = process.platform === 'win32'
+  const binName = isWin ? 'yt-dlp.exe' : 'yt-dlp'
+  const binPath = join(process.cwd(), 'server', 'api', binName)
+
+  // Deteksi apakah URL YouTube untuk apply strategy khusus
+  const isYouTube = /(?:youtube\.com|youtu\.be)/i.test(url)
+
+  // Strategy list: dari paling ringan sampai paling agresif
+  const strategies = isYouTube
+    ? [
+        // Attempt 1: Default dengan extractor-args skip dash/hls
+        { ...flags, extractorArgs: 'youtube:skip=dash,hls', userAgent: REALISTIC_USER_AGENT },
+        // Attempt 2: Pakai iOS client (sering bypass bot detection)
+        { ...flags, extractorArgs: 'youtube:player-client=ios;skip=dash,hls', userAgent: REALISTIC_USER_AGENT },
+        // Attempt 3: Pakai Android client sebagai fallback
+        { ...flags, extractorArgs: 'youtube:player-client=android;skip=dash,hls', userAgent: REALISTIC_USER_AGENT },
+        // Attempt 4: Web client tanpa skip manifest (full access)
+        { ...flags, extractorArgs: 'youtube:player-client=web', userAgent: REALISTIC_USER_AGENT },
+      ]
+    : [
+        // Non-YouTube: cukup 1 attempt dengan user-agent
+        { ...flags, userAgent: REALISTIC_USER_AGENT },
+      ]
+
+  let lastError: Error | null = null
+
+  for (let i = 0; i < strategies.length; i++) {
+    try {
+      const strategyFlags = strategies[i] as Record<string, any>
+      console.log(`[Retry] Attempt ${i + 1}/${strategies.length} — extractorArgs: ${strategyFlags.extractorArgs || 'none'}`)
+      const args = buildYtdlpArgs(url, strategyFlags)
+      return await spawnYtdlp(binPath, args, timeoutMs)
+    } catch (err: any) {
+      lastError = err
+      console.warn(`[Retry] Attempt ${i + 1} gagal: ${err.message?.substring(0, 200)}`)
+      // Jeda sebelum retry berikutnya (exponential: 1s, 2s, 3s)
+      if (i < strategies.length - 1) {
+        await new Promise(r => setTimeout(r, (i + 1) * 1000))
+      }
+    }
+  }
+
+  throw lastError || new Error('Semua strategi download gagal')
 }
 
 export default defineEventHandler(async (event) => {
@@ -114,13 +191,13 @@ export default defineEventHandler(async (event) => {
         dumpSingleJson: true,
         noWarnings: true,
         noCheckCertificates: true,
-        youtubeSkipDashManifest: true,
-        youtubeSkipHlsManifest: true,
         noPlaylist: true,
         noCacheDir: true,
         forceIpv4: true,
         ignoreErrors: true,
-      })
+        retries: 3,
+        fragmentRetries: 3,
+      }, 60_000)
       const duration = Date.now() - startTime
       console.log(`[FetchInfo] Success in ${duration}ms for: ${url}`)
 
@@ -217,10 +294,14 @@ export default defineEventHandler(async (event) => {
             noWarnings: true,
             noCheckCertificates: true,
             ffmpegLocation: ffmpegPath,
+            retries: 5,
+            fragmentRetries: 5,
+            // Reconnect otomatis jika stream terputus
+            downloaderArgs: 'ffmpeg_i:-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
           }
           if (ext === 'mp4') flags.mergeOutputFormat = 'mp4'
 
-          await execYtdlp(url, flags)
+          await execYtdlp(url, flags, 600_000)
           console.log(`[Job ${jobId}] Done!`)
 
           downloadJobs.set(jobId, {
