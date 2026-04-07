@@ -1,8 +1,9 @@
 import { defineEventHandler, readBody, createError } from 'h3'
-import { join } from 'path'
+import { join, dirname, basename } from 'path'
 import { randomUUID } from 'crypto'
 import { tmpdir } from 'os'
 import { spawn } from 'child_process'
+import { readdirSync } from 'fs'
 import { downloadJobs } from '../lib/jobs'
 
 // Blocklist for adult sites
@@ -110,11 +111,10 @@ function spawnYtdlp(binPath: string, args: string[], timeoutMs = 120_000): Promi
 
 /**
  * Eksekusi yt-dlp dengan progressive retry strategy.
- * Attempt 1: Default (tanpa cookies, user-agent realistis)
- * Attempt 2: Dengan player-client=ios (bypass bot detection)
- * Attempt 3: Dengan player-client=android (fallback terakhir)
+ * Mode 'info': skip dash/hls manifest untuk kecepatan
+ * Mode 'download': butuh akses DASH manifest penuh untuk bestvideo+bestaudio
  */
-async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 120_000): Promise<{ stdout: string }> {
+async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 120_000, purpose: 'info' | 'download' = 'info'): Promise<{ stdout: string }> {
   const isWin = process.platform === 'win32'
   const binName = isWin ? 'yt-dlp.exe' : 'yt-dlp'
   const binPath = join(process.cwd(), 'server', 'api', binName)
@@ -122,22 +122,28 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
   // Deteksi apakah URL YouTube untuk apply strategy khusus
   const isYouTube = /(?:youtube\.com|youtu\.be)/i.test(url)
 
-  // Strategy list: dari paling ringan sampai paling agresif
-  const strategies = isYouTube
-    ? [
-        // Attempt 1: Default dengan extractor-args skip dash/hls
-        { ...flags, extractorArgs: 'youtube:skip=dash,hls', userAgent: REALISTIC_USER_AGENT },
-        // Attempt 2: Pakai iOS client (sering bypass bot detection)
-        { ...flags, extractorArgs: 'youtube:player-client=ios;skip=dash,hls', userAgent: REALISTIC_USER_AGENT },
-        // Attempt 3: Pakai Android client sebagai fallback
-        { ...flags, extractorArgs: 'youtube:player-client=android;skip=dash,hls', userAgent: REALISTIC_USER_AGENT },
-        // Attempt 4: Web client tanpa skip manifest (full access)
-        { ...flags, extractorArgs: 'youtube:player-client=web', userAgent: REALISTIC_USER_AGENT },
-      ]
-    : [
-        // Non-YouTube: cukup 1 attempt dengan user-agent
-        { ...flags, userAgent: REALISTIC_USER_AGENT },
-      ]
+  let strategies: Record<string, any>[]
+
+  if (!isYouTube) {
+    // Non-YouTube: cukup 1 attempt dengan user-agent
+    strategies = [{ ...flags, userAgent: REALISTIC_USER_AGENT }]
+  } else if (purpose === 'info') {
+    // Info mode: skip dash/hls untuk kecepatan (tidak perlu download format)
+    strategies = [
+      { ...flags, extractorArgs: 'youtube:skip=dash,hls', userAgent: REALISTIC_USER_AGENT },
+      { ...flags, extractorArgs: 'youtube:player-client=ios;skip=dash,hls', userAgent: REALISTIC_USER_AGENT },
+      { ...flags, extractorArgs: 'youtube:player-client=android;skip=dash,hls', userAgent: REALISTIC_USER_AGENT },
+      { ...flags, extractorArgs: 'youtube:player-client=web', userAgent: REALISTIC_USER_AGENT },
+    ]
+  } else {
+    // Download mode: JANGAN skip dash/hls karena butuh akses DASH untuk bestvideo+bestaudio
+    strategies = [
+      { ...flags, userAgent: REALISTIC_USER_AGENT },
+      { ...flags, extractorArgs: 'youtube:player-client=ios', userAgent: REALISTIC_USER_AGENT },
+      { ...flags, extractorArgs: 'youtube:player-client=android', userAgent: REALISTIC_USER_AGENT },
+      { ...flags, extractorArgs: 'youtube:player-client=web', userAgent: REALISTIC_USER_AGENT },
+    ]
+  }
 
   let lastError: Error | null = null
 
@@ -158,6 +164,35 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
   }
 
   throw lastError || new Error('Semua strategi download gagal')
+}
+
+/**
+ * Cari file hasil download yt-dlp.
+ * yt-dlp kadang mengubah ekstensi (misal .webm jadi .mp4 setelah merge)
+ * atau menambahkan suffix. Fungsi ini cari file yang cocok.
+ */
+function findDownloadedFile(expectedPath: string): string | null {
+  const { existsSync } = require('fs')
+  // Cek path exact dulu
+  if (existsSync(expectedPath)) return expectedPath
+
+  // Cek variasi ekstensi umum
+  const basePath = expectedPath.replace(/\.[^.]+$/, '')
+  const extensions = ['.mp4', '.webm', '.mkv', '.m4a', '.mp3', '.opus']
+  for (const ext of extensions) {
+    if (existsSync(basePath + ext)) return basePath + ext
+  }
+
+  // Cek dengan glob pattern di directory yang sama
+  const dir = dirname(expectedPath)
+  const base = basename(expectedPath).replace(/\.[^.]+$/, '')
+  try {
+    const files = readdirSync(dir)
+    const match = files.find(f => f.startsWith(base) && !f.endsWith('.part'))
+    if (match) return join(dir, match)
+  } catch {}
+
+  return null
 }
 
 export default defineEventHandler(async (event) => {
@@ -300,15 +335,29 @@ export default defineEventHandler(async (event) => {
           }
           if (ext === 'mp4') flags.mergeOutputFormat = 'mp4'
 
-          await execYtdlp(url, flags, 600_000)
-          console.log(`[Job ${jobId}] Done!`)
+          await execYtdlp(url, flags, 600_000, 'download')
+          console.log(`[Job ${jobId}] yt-dlp selesai, verifikasi file...`)
+
+          // Cari file hasil download (handle ekstensi/nama yang beda)
+          const actualFile = findDownloadedFile(tmpFile)
+          if (!actualFile) {
+            throw new Error(`File output tidak ditemukan: ${tmpFile}`)
+          }
+
+          // Deteksi ekstensi aktual
+          const actualExt = actualFile.split('.').pop() || ext
+          const actualMime = actualExt === 'm4a' || actualExt === 'mp3' || actualExt === 'opus'
+            ? 'audio/' + (actualExt === 'm4a' ? 'mp4' : actualExt)
+            : 'video/mp4'
+
+          console.log(`[Job ${jobId}] Done! File: ${actualFile} (${actualExt})`)
 
           downloadJobs.set(jobId, {
             ...(downloadJobs.get(jobId) as any),
             status: 'done',
-            filePath: tmpFile,
-            ext,
-            mimeType: ext === 'm4a' ? 'audio/mp4' : 'video/mp4'
+            filePath: actualFile,
+            ext: actualExt,
+            mimeType: actualMime,
           })
         } catch (err: any) {
           console.error(`[Job ${jobId}] Error:`, err)
