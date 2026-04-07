@@ -2,7 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { join, dirname, basename } from 'path'
 import { randomUUID } from 'crypto'
 import { spawn } from 'child_process'
-import { readdirSync, existsSync, unlinkSync, statSync, mkdirSync } from 'fs'
+import { readdirSync, existsSync, unlinkSync, statSync, mkdirSync, copyFileSync } from 'fs'
 import { downloadJobs } from '../lib/jobs'
 
 /**
@@ -251,22 +251,17 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
 
 /**
  * Cari file hasil download yt-dlp.
- * yt-dlp bisa menghasilkan nama file berbeda tergantung format dan merge.
- * Prioritas: exact match → ekstensi lain → file terbesar yang cocok prefix.
+ * Prioritas: merged file (tanpa fragment pattern) → fragment terbesar.
  */
-function findDownloadedFile(expectedBase: string, jobId: string): string | null {
-  const dir = dirname(expectedBase)
-  const base = basename(expectedBase)
-
-  // List semua file yang cocok dengan jobId di directory
+function findDownloadedFile(downloadDir: string, jobId: string): { file: string | null; fragments: string[]; merged: string | null } {
   let allMatches: { path: string; size: number; name: string }[] = []
   try {
-    const files = readdirSync(dir)
+    const files = readdirSync(downloadDir)
     for (const f of files) {
       if (!f.includes(jobId)) continue
       if (f.endsWith('.part') || f.endsWith('.ytdl')) continue
       try {
-        const fullPath = join(dir, f)
+        const fullPath = join(downloadDir, f)
         const info = statSync(fullPath)
         allMatches.push({ path: fullPath, size: info.size, name: f })
       } catch {}
@@ -274,26 +269,108 @@ function findDownloadedFile(expectedBase: string, jobId: string): string | null 
   } catch {}
 
   if (allMatches.length === 0) {
-    console.error(`[FindFile] Tidak ada file ditemukan untuk job ${jobId} di ${dir}`)
-    return null
+    console.error(`[FindFile] Tidak ada file untuk job ${jobId} di ${downloadDir}`)
+    return { file: null, fragments: [], merged: null }
   }
 
-  console.log(`[FindFile] Files ditemukan: ${allMatches.map(m => `${m.name} (${(m.size / 1048576).toFixed(1)}MB)`).join(', ')}`)
+  console.log(`[FindFile] Ditemukan: ${allMatches.map(m => `${m.name} (${(m.size / 1048576).toFixed(1)}MB)`).join(', ')}`)
 
-  // Filter fragment files (punya .f###. di nama)
   const fragmentPattern = /\.f\d+\./
   const mergedFiles = allMatches.filter(m => !fragmentPattern.test(m.name))
+  const fragmentFiles = allMatches.filter(m => fragmentPattern.test(m.name))
 
-  // Prioritas 1: File merged (tanpa fragment pattern) — ambil yang terbesar
   if (mergedFiles.length > 0) {
     mergedFiles.sort((a, b) => b.size - a.size)
-    return mergedFiles[0].path
+    return { file: mergedFiles[0].path, fragments: fragmentFiles.map(f => f.path), merged: mergedFiles[0].path }
   }
 
-  // Prioritas 2: Jika hanya fragment, ambil yang terbesar (setidaknya user dapat sesuatu)
-  allMatches.sort((a, b) => b.size - a.size)
-  console.warn(`[FindFile] Hanya fragment ditemukan, pakai file terbesar: ${allMatches[0].name}`)
-  return allMatches[0].path
+  return { file: null, fragments: fragmentFiles.map(f => f.path), merged: null }
+}
+
+/**
+ * Manual merge dengan ffmpeg jika yt-dlp merge gagal.
+ * Gabungkan video + audio fragments menjadi satu file mp4.
+ */
+function manualMerge(fragments: string[], outputPath: string, ffmpegPath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // Pisahkan video dan audio fragments
+    const videoExts = ['.mp4', '.webm', '.mkv']
+    const audioExts = ['.m4a', '.opus', '.ogg', '.mp3', '.webm']
+
+    let videoFile = ''
+    let audioFile = ''
+
+    for (const f of fragments) {
+      const ext = '.' + (f.split('.').pop() || '')
+      if (!videoFile && videoExts.includes(ext)) videoFile = f
+      else if (!audioFile && audioExts.includes(ext)) audioFile = f
+    }
+
+    // Jika ada 2 webm, cek mana yang lebih besar (biasanya video)
+    if (!videoFile && !audioFile && fragments.length >= 2) {
+      const sorted = [...fragments]
+      sorted.sort((a, b) => {
+        try {
+          return statSync(b).size - statSync(a).size
+        } catch { return 0 }
+      })
+      videoFile = sorted[0]
+      audioFile = sorted[1]
+    }
+
+    if (!videoFile || !audioFile) {
+      // Hanya 1 file — copy langsung
+      const src = videoFile || audioFile || fragments[0]
+      if (src) {
+        try {
+          copyFileSync(src, outputPath)
+          return resolve()
+        } catch (e: any) {
+          return reject(new Error(`Copy gagal: ${e.message}`))
+        }
+      }
+      return reject(new Error('Tidak ada fragment untuk di-merge'))
+    }
+
+    console.log(`[Merge] Video: ${basename(videoFile)}, Audio: ${basename(audioFile)} → ${basename(outputPath)}`)
+
+    const args = [
+      '-i', videoFile,
+      '-i', audioFile,
+      '-c', 'copy',       // Copy tanpa re-encode (cepat)
+      '-movflags', '+faststart',  // Optimasi streaming
+      '-y',               // Overwrite
+      outputPath
+    ]
+
+    const child = spawn(ffmpegPath, args)
+    let stderr = ''
+    child.stderr.on('data', (d) => { stderr += d.toString() })
+
+    const timer = setTimeout(() => {
+      child.kill('SIGTERM')
+      reject(new Error('ffmpeg merge timeout 120s'))
+    }, 120_000)
+
+    child.on('close', (code) => {
+      clearTimeout(timer)
+      if (code === 0 && existsSync(outputPath)) {
+        console.log(`[Merge] Berhasil! → ${basename(outputPath)}`)
+        // Hapus fragments setelah merge sukses
+        for (const f of fragments) {
+          try { unlinkSync(f) } catch {}
+        }
+        resolve()
+      } else {
+        reject(new Error(`ffmpeg merge gagal (code ${code}): ${stderr.substring(0, 300)}`))
+      }
+    })
+
+    child.on('error', (err) => {
+      clearTimeout(timer)
+      reject(err)
+    })
+  })
 }
 
 export default defineEventHandler(async (event) => {
@@ -449,14 +526,38 @@ export default defineEventHandler(async (event) => {
           console.log(`[Job ${jobId}] yt-dlp selesai, verifikasi file...`)
 
           // Cari file hasil download berdasarkan jobId
-          const actualFile = findDownloadedFile(getDownloadDir(), jobId)
-          if (!actualFile) {
-            // List isi directory untuk debugging
+          const downloadDir = getDownloadDir()
+          let result = findDownloadedFile(downloadDir, jobId)
+
+          let actualFile = result.file
+
+          // Jika yt-dlp merge gagal tapi fragments ada → merge manual dgn ffmpeg
+          if (!actualFile && result.fragments.length >= 2) {
+            console.warn(`[Job ${jobId}] Merge yt-dlp gagal, coba manual merge...`)
+            const mergedPath = join(downloadDir, `figo-${jobId}.mp4`)
             try {
-              const allFiles = readdirSync(getDownloadDir())
-              console.error(`[Job ${jobId}] Files di download dir: ${allFiles.join(', ')}`)
+              await manualMerge(result.fragments, mergedPath, ffmpegPath)
+              actualFile = mergedPath
+            } catch (mergeErr: any) {
+              console.error(`[Job ${jobId}] Manual merge gagal:`, mergeErr.message)
+              // Fallback: kirim fragment terbesar (video-only) daripada error total
+              result.fragments.sort((a, b) => {
+                try { return statSync(b).size - statSync(a).size } catch { return 0 }
+              })
+              actualFile = result.fragments[0]
+              console.warn(`[Job ${jobId}] Fallback ke fragment terbesar: ${basename(actualFile)}`)
+            }
+          } else if (!actualFile && result.fragments.length === 1) {
+            // Hanya 1 fragment (mungkin combined stream)
+            actualFile = result.fragments[0]
+          }
+
+          if (!actualFile) {
+            try {
+              const allFiles = readdirSync(downloadDir)
+              console.error(`[Job ${jobId}] Files di dir: ${allFiles.join(', ')}`)
             } catch {}
-            throw new Error('File hasil download tidak ditemukan. Mungkin merge gagal atau disk penuh.')
+            throw new Error('File hasil download tidak ditemukan.')
           }
 
           // Deteksi ekstensi aktual
