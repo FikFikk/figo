@@ -281,7 +281,7 @@ function findDownloadedFile(downloadDir: string, jobId: string): { file: string 
 
   if (mergedFiles.length > 0) {
     mergedFiles.sort((a, b) => b.size - a.size)
-    return { file: mergedFiles[0].path, fragments: fragmentFiles.map(f => f.path), merged: mergedFiles[0].path }
+    return { file: mergedFiles[0]?.path || null, fragments: fragmentFiles.map(f => f.path), merged: mergedFiles[0]?.path || null }
   }
 
   return { file: null, fragments: fragmentFiles.map(f => f.path), merged: null }
@@ -293,34 +293,9 @@ function findDownloadedFile(downloadDir: string, jobId: string): { file: string 
  */
 function manualMerge(fragments: string[], outputPath: string, ffmpegPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    // Pisahkan video dan audio fragments
-    const videoExts = ['.mp4', '.webm', '.mkv']
-    const audioExts = ['.m4a', '.opus', '.ogg', '.mp3', '.webm']
-
-    let videoFile = ''
-    let audioFile = ''
-
-    for (const f of fragments) {
-      const ext = '.' + (f.split('.').pop() || '')
-      if (!videoFile && videoExts.includes(ext)) videoFile = f
-      else if (!audioFile && audioExts.includes(ext)) audioFile = f
-    }
-
-    // Jika ada 2 webm, cek mana yang lebih besar (biasanya video)
-    if (!videoFile && !audioFile && fragments.length >= 2) {
-      const sorted = [...fragments]
-      sorted.sort((a, b) => {
-        try {
-          return statSync(b).size - statSync(a).size
-        } catch { return 0 }
-      })
-      videoFile = sorted[0]
-      audioFile = sorted[1]
-    }
-
-    if (!videoFile || !audioFile) {
+    if (fragments.length < 2) {
       // Hanya 1 file — copy langsung
-      const src = videoFile || audioFile || fragments[0]
+      const src = fragments[0]
       if (src) {
         try {
           copyFileSync(src, outputPath)
@@ -332,12 +307,27 @@ function manualMerge(fragments: string[], outputPath: string, ffmpegPath: string
       return reject(new Error('Tidak ada fragment untuk di-merge'))
     }
 
-    console.log(`[Merge] Video: ${basename(videoFile)}, Audio: ${basename(audioFile)} → ${basename(outputPath)}`)
+    // Identifikasi video vs audio BERDASARKAN UKURAN FILE
+    // Video SELALU jauh lebih besar dari audio (5-20x)
+    const withSize = fragments.map(f => {
+      try { return { path: f, size: statSync(f).size } }
+      catch { return { path: f, size: 0 } }
+    })
+    withSize.sort((a, b) => b.size - a.size)
+
+    const videoFile = withSize[0]?.path || ''  // File terbesar = video
+    const audioFile = withSize[1]?.path || ''  // File terkecil = audio
+
+    console.log(`[Merge] Video: ${basename(videoFile)} (${(withSize[0].size / 1048576).toFixed(1)}MB)`)
+    console.log(`[Merge] Audio: ${basename(audioFile)} (${(withSize[1].size / 1048576).toFixed(1)}MB)`)
+    console.log(`[Merge] Output: ${basename(outputPath)}`)
 
     const args = [
       '-i', videoFile,
       '-i', audioFile,
-      '-c', 'copy',       // Copy tanpa re-encode (cepat)
+      '-c:v', 'copy',     // Copy video tanpa re-encode (cepat)
+      '-c:a', 'aac',      // Convert audio ke AAC agar kompatibel dengan MP4/Browser
+      '-b:a', '192k',     // Bitrate audio
       '-movflags', '+faststart',  // Optimasi streaming
       '-y',               // Overwrite
       outputPath
@@ -520,7 +510,8 @@ export default defineEventHandler(async (event) => {
             // Reconnect otomatis jika stream terputus
             downloaderArgs: 'ffmpeg_i:-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
           }
-          if (ext === 'mp4') flags.mergeOutputFormat = 'mp4'
+          // Biarkan yt-dlp yang tentukan merge formatnya (biasanya mkv/webm jika codec tidak cocok untuk mp4)
+          // Jika kita batasi ke mp4, yt-dlp bisa gagal merge jika streamnya VP9/Opus.
 
           await execYtdlp(url, flags, 600_000, 'download')
           console.log(`[Job ${jobId}] yt-dlp selesai, verifikasi file...`)
@@ -544,12 +535,12 @@ export default defineEventHandler(async (event) => {
               result.fragments.sort((a, b) => {
                 try { return statSync(b).size - statSync(a).size } catch { return 0 }
               })
-              actualFile = result.fragments[0]
-              console.warn(`[Job ${jobId}] Fallback ke fragment terbesar: ${basename(actualFile)}`)
+              actualFile = result.fragments[0] || null
+              console.warn(`[Job ${jobId}] Fallback ke fragment terbesar: ${actualFile ? basename(actualFile) : 'none'}`)
             }
           } else if (!actualFile && result.fragments.length === 1) {
             // Hanya 1 fragment (mungkin combined stream)
-            actualFile = result.fragments[0]
+            actualFile = result.fragments[0] || null
           }
 
           if (!actualFile) {
