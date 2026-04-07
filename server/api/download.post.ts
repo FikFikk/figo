@@ -243,7 +243,6 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
  * atau menambahkan suffix. Fungsi ini cari file yang cocok.
  */
 function findDownloadedFile(expectedPath: string): string | null {
-  const { existsSync } = require('fs')
   // Cek path exact dulu
   if (existsSync(expectedPath)) return expectedPath
 
