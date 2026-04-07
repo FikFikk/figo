@@ -129,6 +129,7 @@ const activeTool = ref('color')
 // Configuration for active tools
 const availableTools = [
   { id: 'calendar', name: 'Calendar 2026', icon: 'calendar_month' },
+  { id: 'editor', name: 'AI Image Editor', icon: 'photo_filter' },
   { id: 'color', name: 'Color Palette', icon: 'palette' },
   { id: 'safety', name: 'Link Safety', icon: 'shield_lock' },
 ]
@@ -136,6 +137,8 @@ const availableTools = [
 function handleToolClick(id: string) {
   if (id === 'calendar') {
     router.push('/kalender')
+  } else if (id === 'editor') {
+    router.push('/editor')
   } else {
     activeTool.value = id
   }
