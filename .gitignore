@@ -25,3 +25,6 @@ logs
 # Binaries
 *.exe
 server/api/*.exe
+
+# Download temp files
+.downloads

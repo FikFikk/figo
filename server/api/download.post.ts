@@ -1,10 +1,22 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { join, dirname, basename } from 'path'
 import { randomUUID } from 'crypto'
-import { tmpdir } from 'os'
 import { spawn } from 'child_process'
-import { readdirSync, existsSync, unlinkSync, statSync } from 'fs'
+import { readdirSync, existsSync, unlinkSync, statSync, mkdirSync } from 'fs'
 import { downloadJobs } from '../lib/jobs'
+
+/**
+ * Gunakan directory di disk utama, bukan /tmp (sering tmpfs kecil).
+ * Directory dibuat di <project>/.downloads/ agar pakai disk utama.
+ */
+function getDownloadDir(): string {
+  const dir = join(process.cwd(), '.downloads')
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+    console.log(`[Init] Created download dir: ${dir}`)
+  }
+  return dir
+}
 
 // Blocklist for adult sites
 const BLOCKED_DOMAINS = [
@@ -54,7 +66,7 @@ function isNonRetryableError(msg: string): boolean {
  * Mencegah disk penuh karena partial download yang gagal.
  */
 function cleanupStaleTempFiles(): { cleaned: number; freedMB: number } {
-  const tmp = tmpdir()
+  const tmp = getDownloadDir()
   let cleaned = 0
   let freedBytes = 0
   const maxAge = 30 * 60 * 1000 // 30 menit
@@ -376,7 +388,7 @@ export default defineEventHandler(async (event) => {
       const jobId = randomUUID()
       const formatStr = formatId || 'best'
       const ext = formatStr.includes('bestaudio') && !formatStr.includes('bestvideo') ? 'm4a' : 'mp4'
-      const tmpFile = join(tmpdir(), `figo-${jobId}.${ext}`)
+      const tmpFile = join(getDownloadDir(), `figo-${jobId}.${ext}`)
       
       const isWin = process.platform === 'win32'
       const ffmpegName = isWin ? 'ffmpeg.exe' : 'ffmpeg'
