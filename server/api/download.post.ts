@@ -253,24 +253,33 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
  * Cari file hasil download yt-dlp.
  * yt-dlp kadang mengubah ekstensi (misal .webm jadi .mp4 setelah merge)
  * atau menambahkan suffix. Fungsi ini cari file yang cocok.
+ * PENTING: Skip fragment files (misal .f140.m4a, .f137.mp4) yang merupakan file sementara yt-dlp.
  */
 function findDownloadedFile(expectedPath: string): string | null {
   // Cek path exact dulu
   if (existsSync(expectedPath)) return expectedPath
 
-  // Cek variasi ekstensi umum
+  // Cek variasi ekstensi umum (merged output)
   const basePath = expectedPath.replace(/\.[^.]+$/, '')
   const extensions = ['.mp4', '.webm', '.mkv', '.m4a', '.mp3', '.opus']
   for (const ext of extensions) {
     if (existsSync(basePath + ext)) return basePath + ext
   }
 
-  // Cek dengan glob pattern di directory yang sama
+  // Cek dengan pattern di directory yang sama, tapi SKIP fragment files
+  // Fragment files punya pattern: .f###. (misal .f140.m4a, .f137.mp4)
   const dir = dirname(expectedPath)
   const base = basename(expectedPath).replace(/\.[^.]+$/, '')
+  const fragmentPattern = /\.f\d+\./  // Deteksi fragment: .f140., .f137., dll
   try {
     const files = readdirSync(dir)
-    const match = files.find(f => f.startsWith(base) && !f.endsWith('.part'))
+    // Prioritaskan file tanpa fragment pattern
+    const match = files.find(f =>
+      f.startsWith(base) &&
+      !f.endsWith('.part') &&
+      !f.endsWith('.ytdl') &&
+      !fragmentPattern.test(f)
+    )
     if (match) return join(dir, match)
   } catch {}
 
@@ -349,7 +358,7 @@ export default defineEventHandler(async (event) => {
       const qualities = sortedHeights.map(h => {
         const tier = h >= 2160 ? '4K' : h >= 1440 ? '2K' : h >= 1080 ? 'Full HD' : h >= 720 ? 'HD' : h >= 480 ? 'SD' : ''
         return {
-          formatId: `bestvideo[height<=${h}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${h}]+bestaudio/best[height<=${h}]`,
+          formatId: `bestvideo[height<=${h}]+bestaudio/best[height<=${h}]/best`,
           label: `${h}p`,
           resolution: `${h}p`,
           ext: 'mp4',
