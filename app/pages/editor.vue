@@ -303,28 +303,64 @@ watch(selectedModelId, () => imageLoaded.value && applyFilters())
 
 async function applyFilters() {
   if (!originalImgObj || !bufferCtx || !processedCanvas.value) return
-  isApplying.value = true; requestAnimationFrame(() => {
-    bufferCtx!.drawImage(originalImgObj!, 0, 0); let imageData = bufferCtx!.getImageData(0, 0, bufferCanvas!.width, bufferCanvas!.height), pix = imageData.data
+  isApplying.value = true;
+  
+  requestAnimationFrame(() => {
+    // Reset buffer to original image
+    bufferCtx!.drawImage(originalImgObj!, 0, 0)
+    let imageData = bufferCtx!.getImageData(0, 0, bufferCanvas!.width, bufferCanvas!.height)
+    let pix = imageData.data
+
     const b = filters.brightness, c = (filters.contrast + 100) / 100, s = filters.saturation / 100
+    
+    // 1. Basic Optimizations
     for (let i = 0; i < pix.length; i += 4) {
+      // Exposure
       pix[i]+=b; pix[i+1]+=b; pix[i+2]+=b
-      for (let j=0; j<3; j++) pix[i+j] = (pix[i+j]-128)*c+128
-      if (s!==1) { const l = 0.299*pix[i]+0.587*pix[i+1]+0.114*pix[i+2]; pix[i]=pix[i]*s+l*(1-s); pix[i+1]=pix[i+1]*s+l*(1-s); pix[i+2]=pix[i+2]*s+l*(1-s) }
+      
+      // Contrast
+      for (let j=0; j<3; j++) {
+        pix[i+j] = (pix[i+j] - 128) * c + 128
+      }
+      
+      // Saturation
+      if (s !== 1) {
+        const l = 0.299 * pix[i] + 0.587 * pix[i+1] + 0.114 * pix[i+2]
+        pix[i] = pix[i] * s + l * (1 - s)
+        pix[i+1] = pix[i+1] * s + l * (1 - s)
+        pix[i+2] = pix[i+2] * s + l * (1 - s)
+      }
     }
-    if (filters.sharpen > 0) imageData = applySharpen(imageData, filters.sharpen)
-    if (filters.denoise > 0) imageData = applyDenoise(imageData, filters.denoise)
-    processedCanvas.value!.getContext('2d')!.putImageData(imageData, 0, 0); updateHistogram(imageData); isApplying.value = false
+
+    // 2. AI CORE Engine (Sharpen & Denoise based on Model)
+    if (filters.sharpen > 0) {
+      imageData = applySharpen(imageData, filters.sharpen, selectedModelId.value)
+    }
+    
+    if (filters.denoise > 0) {
+      imageData = applyDenoise(imageData, filters.denoise)
+    }
+
+    // 3. Final Render
+    processedCanvas.value!.getContext('2d')!.putImageData(imageData, 0, 0)
+    updateHistogram(imageData)
+    isApplying.value = false
   })
 }
 
-function applySharpen(imageData: ImageData, amount: number) {
+function applySharpen(imageData: ImageData, amount: number, model: string) {
   const w = imageData.width, h = imageData.height, pix = imageData.data
   const o = new Uint8ClampedArray(pix.length)
   
-  // Power Kernel: 8-neighbor detail extraction
-  const cv = 1 + amount 
-  const nv = -(amount / 8) // Distributed across all surrounding pixels
+  // Power Multipliers based on AI Model
+  let sharpPower = amount
+  if (model === 'hd_clarity') sharpPower *= 2.5 // Extreme Boost
+  if (model === 'denoise') sharpPower *= 0.5    // Soft focus
+  
+  const cv = 1 + sharpPower 
+  const nv = -(sharpPower / 8)
 
+  // Copy Alpha Channel
   for(let i=3; i<pix.length; i+=4) o[i] = pix[i] || 255
 
   for (let y = 1; y < h - 1; y++) {
@@ -332,12 +368,17 @@ function applySharpen(imageData: ImageData, amount: number) {
       for (let c = 0; c < 3; c++) {
         const i = (y * w + x) * 4 + c
         
-        // Kernel calculation (8-point)
+        // High-Fidelity 8-Point Laplacian Kernel
         let v = (pix[i] || 0) * cv + (
-          (pix[((y-1)*w + x-1)*4 + c] || 0) + (pix[((y-1)*w + x)*4 + c] || 0) + (pix[((y-1)*w + x+1)*4 + c] || 0) +
-          (pix[(y*w + x-1)*4 + c] || 0)                                     + (pix[(y*w + x+1)*4 + c] || 0) +
-          (pix[((y+1)*w + x-1)*4 + c] || 0) + (pix[((y+1)*w + x)*4 + c] || 0) + (pix[((y+1)*w + x+1)*4 + c] || 0)
+          (pix[((y - 1) * w + x - 1) * 4 + c] || 0) + (pix[((y - 1) * w + x) * 4 + c] || 0) + (pix[((y - 1) * w + x + 1) * 4 + c] || 0) +
+          (pix[(y * w + x - 1) * 4 + c] || 0)                                         + (pix[(y * w + x + 1) * 4 + c] || 0) +
+          (pix[((y + 1) * w + x - 1) * 4 + c] || 0) + (pix[((y + 1) * w + x) * 4 + c] || 0) + (pix[((y + 1) * w + x + 1) * 4 + c] || 0)
         ) * nv
+        
+        // Contrast-Edge Boost (HDR-effect for HD Clarity)
+        if (model === 'hd_clarity' && amount > 2) {
+           v = (v - 128) * 1.05 + 128 
+        }
         
         o[i] = Math.min(255, Math.max(0, v))
       }
