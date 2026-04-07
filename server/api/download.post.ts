@@ -192,7 +192,6 @@ export default defineEventHandler(async (event) => {
         noWarnings: true,
         noCheckCertificates: true,
         noPlaylist: true,
-        noCacheDir: true,
         forceIpv4: true,
         ignoreErrors: true,
         retries: 3,
