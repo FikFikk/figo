@@ -251,39 +251,49 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
 
 /**
  * Cari file hasil download yt-dlp.
- * yt-dlp kadang mengubah ekstensi (misal .webm jadi .mp4 setelah merge)
- * atau menambahkan suffix. Fungsi ini cari file yang cocok.
- * PENTING: Skip fragment files (misal .f140.m4a, .f137.mp4) yang merupakan file sementara yt-dlp.
+ * yt-dlp bisa menghasilkan nama file berbeda tergantung format dan merge.
+ * Prioritas: exact match → ekstensi lain → file terbesar yang cocok prefix.
  */
-function findDownloadedFile(expectedPath: string): string | null {
-  // Cek path exact dulu
-  if (existsSync(expectedPath)) return expectedPath
+function findDownloadedFile(expectedBase: string, jobId: string): string | null {
+  const dir = dirname(expectedBase)
+  const base = basename(expectedBase)
 
-  // Cek variasi ekstensi umum (merged output)
-  const basePath = expectedPath.replace(/\.[^.]+$/, '')
-  const extensions = ['.mp4', '.webm', '.mkv', '.m4a', '.mp3', '.opus']
-  for (const ext of extensions) {
-    if (existsSync(basePath + ext)) return basePath + ext
-  }
-
-  // Cek dengan pattern di directory yang sama, tapi SKIP fragment files
-  // Fragment files punya pattern: .f###. (misal .f140.m4a, .f137.mp4)
-  const dir = dirname(expectedPath)
-  const base = basename(expectedPath).replace(/\.[^.]+$/, '')
-  const fragmentPattern = /\.f\d+\./  // Deteksi fragment: .f140., .f137., dll
+  // List semua file yang cocok dengan jobId di directory
+  let allMatches: { path: string; size: number; name: string }[] = []
   try {
     const files = readdirSync(dir)
-    // Prioritaskan file tanpa fragment pattern
-    const match = files.find(f =>
-      f.startsWith(base) &&
-      !f.endsWith('.part') &&
-      !f.endsWith('.ytdl') &&
-      !fragmentPattern.test(f)
-    )
-    if (match) return join(dir, match)
+    for (const f of files) {
+      if (!f.includes(jobId)) continue
+      if (f.endsWith('.part') || f.endsWith('.ytdl')) continue
+      try {
+        const fullPath = join(dir, f)
+        const info = statSync(fullPath)
+        allMatches.push({ path: fullPath, size: info.size, name: f })
+      } catch {}
+    }
   } catch {}
 
-  return null
+  if (allMatches.length === 0) {
+    console.error(`[FindFile] Tidak ada file ditemukan untuk job ${jobId} di ${dir}`)
+    return null
+  }
+
+  console.log(`[FindFile] Files ditemukan: ${allMatches.map(m => `${m.name} (${(m.size / 1048576).toFixed(1)}MB)`).join(', ')}`)
+
+  // Filter fragment files (punya .f###. di nama)
+  const fragmentPattern = /\.f\d+\./
+  const mergedFiles = allMatches.filter(m => !fragmentPattern.test(m.name))
+
+  // Prioritas 1: File merged (tanpa fragment pattern) — ambil yang terbesar
+  if (mergedFiles.length > 0) {
+    mergedFiles.sort((a, b) => b.size - a.size)
+    return mergedFiles[0].path
+  }
+
+  // Prioritas 2: Jika hanya fragment, ambil yang terbesar (setidaknya user dapat sesuatu)
+  allMatches.sort((a, b) => b.size - a.size)
+  console.warn(`[FindFile] Hanya fragment ditemukan, pakai file terbesar: ${allMatches[0].name}`)
+  return allMatches[0].path
 }
 
 export default defineEventHandler(async (event) => {
@@ -396,8 +406,11 @@ export default defineEventHandler(async (event) => {
     if (mode === 'download') {
       const jobId = randomUUID()
       const formatStr = formatId || 'best'
-      const ext = formatStr.includes('bestaudio') && !formatStr.includes('bestvideo') ? 'm4a' : 'mp4'
-      const tmpFile = join(getDownloadDir(), `figo-${jobId}.${ext}`)
+      const isAudioOnly = formatStr.includes('bestaudio') && !formatStr.includes('bestvideo')
+      const ext = isAudioOnly ? 'm4a' : 'mp4'
+      // Output TANPA ekstensi — biarkan yt-dlp yang tentukan
+      const tmpBase = join(getDownloadDir(), `figo-${jobId}`)
+      const tmpFile = `${tmpBase}.%(ext)s`
       
       const isWin = process.platform === 'win32'
       const ffmpegName = isWin ? 'ffmpeg.exe' : 'ffmpeg'
@@ -435,10 +448,15 @@ export default defineEventHandler(async (event) => {
           await execYtdlp(url, flags, 600_000, 'download')
           console.log(`[Job ${jobId}] yt-dlp selesai, verifikasi file...`)
 
-          // Cari file hasil download (handle ekstensi/nama yang beda)
-          const actualFile = findDownloadedFile(tmpFile)
+          // Cari file hasil download berdasarkan jobId
+          const actualFile = findDownloadedFile(getDownloadDir(), jobId)
           if (!actualFile) {
-            throw new Error(`File output tidak ditemukan: ${tmpFile}`)
+            // List isi directory untuk debugging
+            try {
+              const allFiles = readdirSync(getDownloadDir())
+              console.error(`[Job ${jobId}] Files di download dir: ${allFiles.join(', ')}`)
+            } catch {}
+            throw new Error('File hasil download tidak ditemukan. Mungkin merge gagal atau disk penuh.')
           }
 
           // Deteksi ekstensi aktual
