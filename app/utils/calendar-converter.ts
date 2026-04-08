@@ -295,7 +295,35 @@ export function getWewaran(date: Date) {
 
 const HARI_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'] as const
 
-export function getFullDateInfo(date: Date) {
+/** Tipe return getFullDateInfo — didefinisikan eksplisit untuk cache Map */
+export interface DateInfo {
+  masehi: string
+  hijri: string
+  hijriShort: string
+  jawa: string
+  pasaran: string
+  neptu: number
+  wuku: string
+  tanggalJawa: string
+  tahunJawa: string | undefined
+  winduJawa: string | undefined
+  bulanJawa: string | undefined
+  tahunAngkaJawa: number
+  pancasuda: PancasudaResult
+  wewaran: ReturnType<typeof getWewaran>
+}
+
+/** Cache per tanggal — hindari kalkulasi ulang Hijri/Jawa/Wuku setiap render */
+const _dateInfoCache = new Map<string, DateInfo>()
+
+/** Format bulan Indonesia — cache Intl formatter untuk performa */
+const _monthFormatter = new Intl.DateTimeFormat('id-ID', { month: 'long' })
+
+export function getFullDateInfo(date: Date): DateInfo {
+  const key = formatToLocalDate(date)
+  const cached = _dateInfoCache.get(key)
+  if (cached) return cached
+
   const hijri = toHijri(date)
   const pasaran = getJavanesePasaran(date)
   const neptu = getNeptu(date)
@@ -304,9 +332,9 @@ export function getFullDateInfo(date: Date) {
   const pancasuda = getPancasuda(date)
   const hari = HARI_NAMES[date.getDay()]
 
-  return {
+  const result = {
     // Masehi
-    masehi: `${hari}, ${date.getDate()} ${new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(date)} ${date.getFullYear()}`,
+    masehi: `${hari}, ${date.getDate()} ${_monthFormatter.format(date)} ${date.getFullYear()}`,
 
     // Hijriah
     hijri: `${hijri.day} ${hijri.monthName} ${hijri.year} H`,
@@ -331,4 +359,7 @@ export function getFullDateInfo(date: Date) {
     // Wewaran
     wewaran: getWewaran(date)
   }
+
+  _dateInfoCache.set(key, result)
+  return result
 }

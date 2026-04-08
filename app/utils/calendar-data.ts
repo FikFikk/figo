@@ -360,10 +360,17 @@ function getHijriYearForMasehi(year: number): number {
 }
 
 // =============================================================================
-// MAIN: getHolidays()
+// MAIN: getHolidays() — dengan in-memory cache
 // =============================================================================
 
+/** Cache per tahun — hindari kalkulasi ulang saat pindah tahun bolak-balik */
+const _holidayCache = new Map<number, Holiday[]>();
+
 export function getHolidays(year: number): Holiday[] {
+  // Return dari cache jika sudah pernah dihitung
+  const cached = _holidayCache.get(year);
+  if (cached) return cached;
+
   const holidays: Holiday[] = [];
   const hijriYear = getHijriYearForMasehi(year);
 
@@ -463,5 +470,9 @@ export function getHolidays(year: number): Holiday[] {
   const uniqueHolidays = Array.from(
     new Map(holidays.map(h => [h.date + h.name, h])).values()
   );
-  return uniqueHolidays.sort((a, b) => a.date.localeCompare(b.date));
+  const result = uniqueHolidays.sort((a, b) => a.date.localeCompare(b.date));
+
+  // Simpan ke cache
+  _holidayCache.set(year, result);
+  return result;
 }
