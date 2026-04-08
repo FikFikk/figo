@@ -6,7 +6,6 @@
       <h3 class="font-headline font-black text-lg tracking-tight uppercase" :class="isDark ? 'text-white' : 'text-slate-900'">
         {{ monthName }}
       </h3>
-      <span class="text-[10px] font-black opacity-30 tracking-widest">{{ year }}</span>
     </div>
 
     <!-- Header hari -->
@@ -39,9 +38,9 @@
         </span>
         
         <!-- Holiday dot indicator -->
-        <div v-if="dayCache[day - 1]?.holiday" 
+        <div v-if="dayCache[day - 1]?.holidays?.length" 
           class="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full"
-          :class="dayCache[day - 1]?.holiday?.type === 'joint_leave' ? 'bg-orange-400' : 'bg-red-500'"
+          :class="dayCache[day - 1]?.holidays.some(h => h.type === 'national') ? 'bg-red-500' : 'bg-orange-400'"
         ></div>
 
         <!-- Tooltip (desktop only, no backdrop-blur) -->
@@ -51,10 +50,12 @@
           <div class="space-y-2">
             <!-- Nama hari libur / tanggal -->
             <div class="border-b border-white/10 pb-2">
-              <p v-if="dayCache[day - 1]?.holiday" class="text-[11px] font-black leading-tight text-red-400">
-                {{ dayCache[day - 1]?.holiday?.name }}
-              </p>
-              <p class="text-[10px] font-bold leading-tight" :class="dayCache[day - 1]?.holiday ? 'opacity-50 mt-1' : 'opacity-70'">
+              <template v-if="dayCache[day - 1]?.holidays?.length">
+                <p v-for="h in dayCache[day - 1]?.holidays" :key="h.name" class="text-[11px] font-black leading-tight text-red-400 mb-0.5">
+                  {{ h.name }}
+                </p>
+              </template>
+              <p class="text-[10px] font-bold leading-tight" :class="dayCache[day - 1]?.holidays?.length ? 'opacity-50 mt-1' : 'opacity-70'">
                 {{ dayCache[day - 1]?.info?.masehi }}
               </p>
             </div>
@@ -133,13 +134,14 @@ const firstDayOffset = computed(() => {
 
 /** Cache holidays per bulan — dihitung sekali bukan per-hari */
 const holidayMap = computed(() => {
-  const map = new Map<string, Holiday>()
-  const holidays = getHolidays(props.year)
-  for (const h of holidays) {
+  const map = new Map<string, Holiday[]>()
+  const holidaysList = getHolidays(props.year)
+  for (const h of holidaysList) {
     // Filter hanya bulan ini
     const [, m] = h.date.split('-').map(Number)
     if (m === props.month + 1) {
-      map.set(h.date, h)
+      if (!map.has(h.date)) map.set(h.date, [])
+      map.get(h.date)!.push(h)
     }
   }
   return map
@@ -147,7 +149,7 @@ const holidayMap = computed(() => {
 
 interface DayCache {
   pasaran: string
-  holiday: Holiday | null
+  holidays: Holiday[]
   info: ReturnType<typeof getFullDateInfo>
 }
 
@@ -159,9 +161,9 @@ const dayCache = computed<DayCache[]>(() => {
     const dateObj = new Date(props.year, props.month, d)
     const dateStr = formatToLocalDate(dateObj)
     const pasaran = getJavanesePasaran(dateObj)
-    const holiday = holidayMap.value.get(dateStr) ?? null
+    const holidays = holidayMap.value.get(dateStr) ?? []
     const info = getFullDateInfo(dateObj)
-    cache.push({ pasaran, holiday, info })
+    cache.push({ pasaran, holidays, info })
   }
   return cache
 })
@@ -183,19 +185,19 @@ function getDayClasses(day: number) {
   const dateObj = new Date(props.year, props.month, day)
   const isToday = new Date().toDateString() === dateObj.toDateString()
   const cached = dayCache.value[day - 1]
-  const holiday = cached?.holiday
   const isSunday = dateObj.getDay() === 0
+
+  const hasNational = cached?.holidays?.some(h => h.type === 'national')
+  const hasJointLeave = cached?.holidays?.some(h => h.type === 'joint_leave')
 
   const classes: string[] = []
   
   if (isToday) {
     classes.push(isDark.value ? 'bg-primary text-white ring-2 ring-primary/30' : 'bg-primary text-white shadow-md shadow-primary/30')
-  } else if (holiday) {
-    if (holiday.type === 'joint_leave') {
-      classes.push('text-red-500 bg-red-500/10')
-    } else {
-      classes.push('text-white bg-red-500')
-    }
+  } else if (hasNational) {
+    classes.push('text-white bg-red-500')
+  } else if (hasJointLeave) {
+    classes.push('text-red-500 bg-red-500/10')
   } else if (isSunday) {
     classes.push('text-red-500')
   } else {

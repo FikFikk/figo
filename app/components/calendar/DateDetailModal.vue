@@ -29,9 +29,11 @@
           </div>
 
           <!-- Holiday -->
-          <div v-if="holidayName" class="mt-4 px-3.5 py-2.5 rounded-2xl bg-red-500/10 border border-red-500/15">
-            <p class="text-xs font-bold text-red-500">{{ holiday?.type === 'joint_leave' ? 'Cuti Bersama' : 'Hari Libur' }}</p>
-            <p class="text-sm font-bold mt-0.5" :class="isDark ? 'text-white' : 'text-slate-900'">{{ holidayName }}</p>
+          <div v-if="holidays.length > 0" class="mt-4 space-y-2">
+            <div v-for="h in holidays" :key="h.name" class="px-3.5 py-2.5 rounded-2xl bg-red-500/10 border border-red-500/15">
+              <p class="text-xs font-bold text-red-500">{{ h.type === 'joint_leave' ? 'Cuti Bersama' : 'Hari Libur' }}</p>
+              <p class="text-sm font-bold mt-0.5" :class="isDark ? 'text-white' : 'text-slate-900'">{{ h.name }}</p>
+            </div>
           </div>
         </div>
 
@@ -123,20 +125,12 @@ const info = computed(() => {
   return getFullDateInfo(props.date)
 })
 
-const holiday = computed(() => {
-  if (!props.date) return null
+const holidays = computed(() => {
+  if (!props.date) return []
   const dateStr = formatToLocalDate(props.date)
-  const holidays = getHolidays(props.date.getFullYear())
-  return holidays.find(h => h.date === dateStr) ?? null
+  const allHolidays = getHolidays(props.date.getFullYear())
+  return allHolidays.filter(h => h.date === dateStr)
 })
-
-const holidayName = computed(() => holiday.value?.name ?? '')
-const isIslamicHoliday = computed(() =>
-  holidayName.value.includes('Idul') ||
-  holidayName.value.includes('Hijri') ||
-  holidayName.value.includes('Maulid') ||
-  holidayName.value.includes('Isra')
-)
 
 function getPancasudaColor(name?: string): string {
   if (isDark.value) {

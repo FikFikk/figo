@@ -300,8 +300,8 @@ function computeEaster(year: number): Date {
 // =============================================================================
 
 /**
- * Generate cuti bersama Idul Fitri: 1 hari sebelum H-1 + 2 hari sesudah H+2.
- * Pola konsisten berdasarkan SKB historis pemerintah.
+ * Generate cuti bersama Idul Fitri: Total 4 hari (2 hari sebelum H-1 + 2 hari sesudah H+2).
+ * Pola default baru: "4 hari saja sebelum dan sesudah digabung".
  * Skip hari Minggu.
  */
 function generateIdulFitriJointLeave(
@@ -313,22 +313,27 @@ function generateIdulFitriJointLeave(
   const d1 = new Date(year, fitri1[0] - 1, fitri1[1]);
   const d2 = new Date(year, fitri2[0] - 1, fitri2[1]);
 
-  // 1 hari sebelum H-1 Idul Fitri
-  const before = new Date(d1);
-  before.setDate(d1.getDate() - 1);
-  if (before.getDay() === 0) before.setDate(before.getDate() - 1); // Skip Minggu
-  holidays.push({
-    date: formatToLocalDate(before),
-    name: 'Cuti Bersama Idul Fitri',
-    type: 'joint_leave',
-  });
+  // 2 hari sebelum H-1 Idul Fitri
+  let beforeCount = 0;
+  for (let offset = 1; beforeCount < 2; offset++) {
+    const before = new Date(d1);
+    before.setDate(d1.getDate() - offset);
+    if (before.getDay() !== 0 && before.getDay() !== 6) { // Skip Minggu dan Sabtu
+      holidays.push({
+        date: formatToLocalDate(before),
+        name: 'Cuti Bersama Idul Fitri',
+        type: 'joint_leave',
+      });
+      beforeCount++;
+    }
+  }
 
   // 2 hari setelah H+2 Idul Fitri
   let afterCount = 0;
-  for (let offset = 1; offset <= 4 && afterCount < 2; offset++) {
+  for (let offset = 1; afterCount < 2; offset++) {
     const after = new Date(d2);
     after.setDate(d2.getDate() + offset);
-    if (after.getDay() !== 0) { // Skip Minggu
+    if (after.getDay() !== 0 && after.getDay() !== 6) { // Skip Minggu dan Sabtu
       holidays.push({
         date: formatToLocalDate(after),
         name: 'Cuti Bersama Idul Fitri',
@@ -393,8 +398,9 @@ export function getHolidays(year: number): Holiday[] {
   // ─── Cuti bersama Idul Adha (1 hari setelahnya, cukup konsisten) ───
   const adhaDate = new Date(year, islamic.idulAdha[0] - 1, islamic.idulAdha[1]);
   const adhaAfter = new Date(adhaDate);
-  adhaAfter.setDate(adhaDate.getDate() + 1);
-  if (adhaAfter.getDay() === 0) adhaAfter.setDate(adhaAfter.getDate() + 1); // Skip Minggu
+  do {
+    adhaAfter.setDate(adhaAfter.getDate() + 1);
+  } while (adhaAfter.getDay() === 0 || adhaAfter.getDay() === 6); // Skip Minggu dan Sabtu
   holidays.push({
     date: formatToLocalDate(adhaAfter),
     name: 'Cuti Bersama Idul Adha',
@@ -433,8 +439,9 @@ export function getHolidays(year: number): Holiday[] {
   const imlek = predictLunarDate(IMLEK_HISTORY, year);
   const imlekDate = new Date(year, imlek[0] - 1, imlek[1]);
   const imlekCuti = new Date(imlekDate);
-  imlekCuti.setDate(imlekDate.getDate() - 1);
-  if (imlekCuti.getDay() === 0) imlekCuti.setDate(imlekCuti.getDate() - 1); // Skip Minggu
+  do {
+    imlekCuti.setDate(imlekCuti.getDate() - 1);
+  } while (imlekCuti.getDay() === 0 || imlekCuti.getDay() === 6); // Skip Minggu dan Sabtu
   holidays.push(
     { date: fmtMd(imlek), name: 'Tahun Baru Imlek', type: 'national' },
     { date: formatToLocalDate(imlekCuti), name: 'Cuti Bersama Imlek', type: 'joint_leave' },
@@ -444,8 +451,9 @@ export function getHolidays(year: number): Holiday[] {
   const nyepi = predictLunarDate(NYEPI_HISTORY, year);
   const nyepiDate = new Date(year, nyepi[0] - 1, nyepi[1]);
   const nyepiCuti = new Date(nyepiDate);
-  nyepiCuti.setDate(nyepiDate.getDate() - 1);
-  if (nyepiCuti.getDay() === 0) nyepiCuti.setDate(nyepiCuti.getDate() - 1); // Skip Minggu
+  do {
+    nyepiCuti.setDate(nyepiCuti.getDate() - 1);
+  } while (nyepiCuti.getDay() === 0 || nyepiCuti.getDay() === 6); // Skip Minggu dan Sabtu
   holidays.push(
     { date: fmtMd(nyepi), name: 'Hari Suci Nyepi', type: 'national' },
     { date: formatToLocalDate(nyepiCuti), name: 'Cuti Bersama Nyepi', type: 'joint_leave' },

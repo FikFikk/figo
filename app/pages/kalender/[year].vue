@@ -1,8 +1,6 @@
 <template>
   <div class="min-h-screen pt-24 pb-20 overflow-x-hidden bg-slate-50 dark:bg-neutral-950">
     <ClientOnly>
-      <CalendarTabs class="mt-4" />
-
       <CalendarGrid 
         :year="currentYear" 
         @update:year="navigateYear"

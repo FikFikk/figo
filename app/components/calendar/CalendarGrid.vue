@@ -1,74 +1,124 @@
 <template>
-  <div class="calendar-grid-container px-6 md:px-8 max-w-7xl mx-auto py-12">
-    <!-- Header with Year Selection -->
-    <div class="flex flex-col md:flex-row items-center justify-between mb-12 gap-8 text-center md:text-left">
-      <div class="space-y-4">
-        <div class="inline-block px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase"
-          :class="isDark ? 'bg-primary/15 text-primary border border-primary/20' : 'bg-primary-fixed text-on-primary-fixed'"
-        >
-          Dynamic Calendar Engine v2.0
-        </div>
-        <div class="flex items-center gap-4 group">
-          <h1 class="text-4xl md:text-6xl font-headline font-black tracking-tighter" :class="isDark ? 'text-white' : 'text-slate-900'">
-            Indonesia <span class="text-primary">{{ year }}</span>
-          </h1>
-          <button @click="showYearInput = !showYearInput" class="w-12 h-12 rounded-full flex items-center justify-center bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
-            <span class="material-symbols-outlined">{{ showYearInput ? 'close' : 'edit_calendar' }}</span>
-          </button>
-        </div>
-        
-        <!-- Year Input Overlay -->
-        <Transition
-          enter-active-class="transition duration-300 ease-out"
-          enter-from-class="transform -translate-y-4 opacity-0"
-          enter-to-class="transform translate-y-0 opacity-100"
-          leave-active-class="transition duration-200 ease-in"
-          leave-from-class="transform translate-y-0 opacity-100"
-          leave-to-class="transform -translate-y-4 opacity-0"
-        >
-          <div v-if="showYearInput" class="flex items-center gap-2">
-            <input 
-              type="number" 
-              v-model="inputYear" 
-              min="1900" 
-              max="2100"
-              class="w-32 px-4 py-2 rounded-xl border focus:ring-2 focus:ring-primary outline-none transition-all"
-              :class="isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'"
-              @keyup.enter="updateYear"
-            />
-            <button @click="updateYear" class="px-6 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-lg shadow-primary/20">Go</button>
-          </div>
-        </Transition>
+  <div class="calendar-grid-container px-4 sm:px-6 md:px-8 max-w-7xl mx-auto pt-6 pb-16">
+    
+    <!-- Hero Header — Clean & Minimal -->
+    <div class="calendar-hero text-center mb-8 md:mb-12">
 
-        <p class="text-sm md:text-base opacity-50 max-w-lg font-medium leading-relaxed">
-          Kalender pintar berbasis algoritma (1900-2100). Lengkap dengan penanggalan Hijriah, Jawa Pasaran, dan estimasi hari raya otomatis.
-        </p>
-      </div>
+      <!-- Subtitle dekoratif -->
+      <p class="text-[10px] sm:text-[11px] font-black tracking-[0.3em] uppercase mb-4"
+        :class="isDark ? 'text-white/25' : 'text-slate-300'"
+      >
+        ✦ Kalender Indonesia ✦
+      </p>
 
-      <div class="flex items-center gap-2 p-1.5 rounded-3xl" :class="isDark ? 'bg-white/5' : 'bg-slate-100'">
+      <!-- Tahun besar — panah + klik untuk edit -->
+      <div class="flex items-center justify-center gap-3 sm:gap-5 mb-2">
         <button 
-          v-for="y in [2024, 2025, 2026, 2027, 2028]" 
-          :key="y"
-          @click="$emit('update:year', y)"
-          class="px-5 py-2.5 rounded-2xl text-xs font-black transition-all"
-          :class="year === y 
-            ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-            : 'opacity-40 hover:opacity-100'"
+          @click="$emit('update:year', year - 1)"
+          class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+          :class="isDark ? 'bg-white/5 hover:bg-white/10 text-white/40 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-300 hover:text-slate-600'"
         >
-          {{ y }}
+          <span class="material-symbols-outlined text-lg">chevron_left</span>
+        </button>
+
+        <!-- Klik tahun → inline input -->
+        <div v-if="!isEditing" 
+          @click="startEditing"
+          class="cursor-pointer group"
+        >
+          <h1 
+            class="text-6xl sm:text-7xl md:text-8xl font-headline font-black tracking-tighter tabular-nums select-none transition-colors duration-200"
+            :class="isDark ? 'text-white group-hover:text-primary' : 'text-slate-900 group-hover:text-primary'"
+            :key="year"
+          >
+            {{ year }}
+          </h1>
+        </div>
+
+        <!-- Inline Year Input (muncul saat klik tahun) -->
+        <div v-else>
+          <input 
+            ref="yearInputRef"
+            type="number" 
+            v-model="inputYear" 
+            min="1900" 
+            max="2100"
+            class="w-36 sm:w-44 text-center text-5xl sm:text-6xl md:text-7xl font-headline font-black tracking-tighter rounded-2xl border-2 py-1 outline-none transition-all"
+            :class="isDark 
+              ? 'bg-white/5 border-primary/40 text-white focus:border-primary' 
+              : 'bg-slate-50 border-primary/30 text-slate-900 focus:border-primary'"
+            @keyup.enter="confirmYear"
+            @keyup.escape="cancelEditing"
+            @blur="confirmYear"
+          />
+        </div>
+
+        <button 
+          @click="$emit('update:year', year + 1)"
+          class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+          :class="isDark ? 'bg-white/5 hover:bg-white/10 text-white/40 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-300 hover:text-slate-600'"
+        >
+          <span class="material-symbols-outlined text-lg">chevron_right</span>
         </button>
       </div>
+
+      <!-- Hijriah year — di bawah tahun besar -->
+      <p class="text-[10px] sm:text-[11px] font-bold tracking-[0.15em] uppercase"
+        :class="isDark ? 'text-white/20' : 'text-slate-300'"
+      >
+        Tahun Hijriah {{ hijriYearRange }}
+      </p>
     </div>
 
     <!-- 12 Months Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
       <CalendarMonth 
         v-for="month in 12" 
-        :key="month" 
+        :key="`${year}-${month}`" 
         :year="year" 
         :month="month - 1"
         @select-date="handleSelectDate"
       />
+    </div>
+
+    <!-- Footer Stats + Nav — Kecil di bawah -->
+    <div class="flex flex-col items-center gap-3 mt-8 md:mt-12">
+      <!-- Stats -->
+      <div class="flex items-center gap-3 sm:gap-4">
+        <span class="text-[10px] sm:text-[11px] font-bold"
+          :class="isDark ? 'text-white/20' : 'text-slate-300'"
+        >
+          {{ totalHolidays }} hari libur
+        </span>
+        <span class="w-1 h-1 rounded-full" :class="isDark ? 'bg-white/10' : 'bg-slate-200'"></span>
+        <span class="text-[10px] sm:text-[11px] font-bold"
+          :class="isDark ? 'text-white/20' : 'text-slate-300'"
+        >
+          {{ totalJointLeave }} cuti bersama
+        </span>
+        <span class="w-1 h-1 rounded-full" :class="isDark ? 'bg-white/10' : 'bg-slate-200'"></span>
+        <span class="text-[10px] sm:text-[11px] font-bold"
+          :class="isDark ? 'text-white/20' : 'text-slate-300'"
+        >
+          {{ isLeapYear ? '366' : '365' }} hari
+        </span>
+      </div>
+      <!-- Tools Nav -->
+      <div class="flex items-center gap-4">
+        <NuxtLink to="/kalender/weton" 
+          class="text-[11px] font-bold transition-all hover:text-primary"
+          :class="isDark ? 'text-white/25 hover:text-primary' : 'text-slate-300 hover:text-primary'"
+        >
+          Cek Weton
+        </NuxtLink>
+        <span class="w-0.5 h-3 rounded-full" :class="isDark ? 'bg-white/10' : 'bg-slate-200'"></span>
+        <NuxtLink to="/kalender/kalkulator" 
+          class="text-[11px] font-bold transition-all hover:text-primary"
+          :class="isDark ? 'text-white/25 hover:text-primary' : 'text-slate-300 hover:text-primary'"
+        >
+          Kalkulator Tanggal
+        </NuxtLink>
+      </div>
     </div>
 
     <!-- Date Detail Modal -->
@@ -81,6 +131,9 @@
 </template>
 
 <script setup lang="ts">
+import { toHijri } from '~/utils/calendar-converter'
+import { getHolidays } from '~/utils/calendar-data'
+
 const props = defineProps<{
   year: number
 }>()
@@ -89,17 +142,62 @@ const emit = defineEmits(['update:year'])
 
 const { isDark } = useColorMode()
 
-const showYearInput = ref(false)
-const inputYear = ref(props.year)
 const isModalOpen = ref(false)
 const selectedDate = ref<Date | null>(null)
+const isEditing = ref(false)
+const inputYear = ref(props.year)
+const yearInputRef = ref<HTMLInputElement | null>(null)
 
-function updateYear() {
+
+
+
+/** Info Tahun Hijriah (rentang) */
+const hijriYearRange = computed(() => {
+  const jan1 = toHijri(new Date(props.year, 0, 1))
+  const dec31 = toHijri(new Date(props.year, 11, 31))
+  if (jan1.year === dec31.year) return `${jan1.year} H`
+  return `${jan1.year}–${dec31.year} H`
+})
+
+/** Cek tahun kabisat */
+const isLeapYear = computed(() => {
+  const y = props.year
+  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0
+})
+
+/** Total libur nasional */
+const totalHolidays = computed(() => {
+  return getHolidays(props.year).filter(h => h.type === 'national').length
+})
+
+/** Total cuti bersama */
+const totalJointLeave = computed(() => {
+  return getHolidays(props.year).filter(h => h.type === 'joint_leave').length
+})
+
+/** Mulai mode edit — fokus ke input */
+function startEditing() {
+  inputYear.value = props.year
+  isEditing.value = true
+  nextTick(() => {
+    yearInputRef.value?.focus()
+    yearInputRef.value?.select()
+  })
+}
+
+/** Konfirmasi tahun dari input */
+function confirmYear() {
   const y = parseInt(inputYear.value.toString())
-  if (y >= 1900 && y <= 2100) {
+  if (y >= 1900 && y <= 2100 && y !== props.year) {
     emit('update:year', y)
-    showYearInput.value = false
   }
+  isEditing.value = false
+}
+
+/** Batal edit */
+function cancelEditing() {
+  inputYear.value = props.year
+  isEditing.value = false
 }
 
 function handleSelectDate(date: Date) {
@@ -109,21 +207,45 @@ function handleSelectDate(date: Date) {
 
 watch(() => props.year, (newYear) => {
   inputYear.value = newYear
+  isEditing.value = false
 })
 </script>
 
 <style scoped>
 .calendar-grid-container {
-  animation: fadeIn 0.8s ease-out;
+  animation: fadeIn 0.6s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.glass-panel {
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+/* Sembunyikan scrollbar di year pills mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Animasi year ganti */
+h1 {
+  animation: yearPop 0.3s ease-out;
+}
+@keyframes yearPop {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Sembunyikan spinner di number input */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
 }
 </style>
