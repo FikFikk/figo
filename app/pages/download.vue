@@ -188,7 +188,7 @@
             
             <div class="flex-1 min-w-0 flex flex-col justify-center">
               <div class="mb-3 flex flex-wrap gap-2 items-center">
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold uppercase tracking-wider" :class="item.type === 'photo' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'">
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-2xl text-xs font-semibold uppercase tracking-wider" :class="item.type === 'photo' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'">
                   <span class="material-symbols-outlined text-[12px]">{{ item.type === 'photo' ? 'image' : 'movie' }}</span>
                   {{ item.type }}
                 </span>
@@ -201,14 +201,14 @@
               <div v-if="item.type === 'video' || item.type === 'gif'" class="space-y-2 mt-auto">
                  <div v-for="q in item.qualities" :key="q.url" class="flex items-center justify-between p-2 rounded-md border" :class="isDark ? 'border-white/5 bg-black/20' : 'border-slate-200 bg-white'">
                    <span class="font-bold text-sm" :class="isDark ? 'text-gray-200' : 'text-slate-700'">{{ q.height ? q.height + 'p' : 'Original' }}</span>
-                   <button @click="downloadTwitterMedia(q.url, 'video', videoInfo.title)" class="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold text-xs rounded transition-colors flex items-center gap-1">
+                   <button @click="downloadTwitterMedia(q.url, 'video', videoInfo.uploader, q.height ? q.height + 'p' : 'Orig')" class="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold text-xs rounded transition-colors flex items-center gap-1">
                      <span class="material-symbols-outlined text-[14px]">download</span> Download
                    </button>
                  </div>
               </div>
 
               <!-- Content for Photo -->
-              <button v-if="item.type === 'photo'" @click="downloadTwitterMedia(item.url, item.type, videoInfo.title)" class="w-full mt-auto py-2.5 bg-primary text-on-primary font-headline font-bold text-sm rounded hover:scale-[1.01] hover:shadow transition-all active:scale-[0.99] flex items-center justify-center gap-2">
+              <button v-if="item.type === 'photo'" @click="downloadTwitterMedia(item.url, item.type, videoInfo.uploader, 'Photo')" class="w-full mt-auto py-2.5 bg-primary text-on-primary font-headline font-bold text-sm rounded hover:scale-[1.01] hover:shadow transition-all active:scale-[0.99] flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined text-base">download</span>
                 Download Photo
               </button>
@@ -446,9 +446,10 @@ async function downloadSelected() {
 }
 
 // Download direct URL via proxy untuk media Twitter
-function downloadTwitterMedia(mediaUrl: string, type: string, title?: string) {
-  const safeTitle = (title || 'twitter_media').substring(0, 30).replace(/[^a-zA-Z0-9_\s-]/g, ' ').trim()
-  const filename = `figo-${Date.now()}-${safeTitle.replace(/\s+/g, '-')}`
+function downloadTwitterMedia(mediaUrl: string, type: string, username?: string, resolution?: string) {
+  const safeUsername = (username || 'User').replace(/[^a-zA-Z0-9_\-]/g, '').trim()
+  const safeRes = resolution || (type === 'photo' ? 'Orig' : 'Video')
+  const filename = `${safeUsername}-${safeRes}`
   window.location.href = `/api/download-twitter?url=${encodeURIComponent(mediaUrl)}&type=${type}&filename=${encodeURIComponent(filename)}`
   
   // Add to history
