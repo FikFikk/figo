@@ -9,11 +9,6 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    externals: {
-      inline: [
-        'instagram-url-direct'
-      ]
-    },
     rollupConfig: {
       output: {
         plugins: [

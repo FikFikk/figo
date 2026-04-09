@@ -579,7 +579,7 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      // ---------- INSTAGRAM: inline fetch GraphQL tanpa dependensi eksternal ----------
+      // ---------- INSTAGRAM: HTML Scraping + OpenGraph Strategy ----------
       if (/(?:instagram\.com|ig\.me)/i.test(url)) {
         if (/\/stories\//i.test(url)) {
            throw createError({
@@ -589,91 +589,113 @@ export default defineEventHandler(async (event) => {
         }
 
         try {
-          // Ekstrak shortcode dari URL IG (format /p/xxx, /reel/xxx, /tv/xxx)
-          const scMatch = url.match(/\/(?:p|reel|tv|reels)\/([A-Za-z0-9_-]+)/)
-          if (!scMatch) throw new Error('Format URL Instagram tidak dikenali. Hanya /p/, /reel/, /tv/ yang didukung.')
-          const shortcode = scMatch[1]
-
-          // Query GraphQL publik Instagram (tanpa login)
-          const gqlUrl = `https://www.instagram.com/graphql/query/?query_hash=b3055c01b4b222b8a47dc12b090e4e64&variables=${encodeURIComponent(JSON.stringify({ shortcode }))}`
-          const gqlRes = await fetch(gqlUrl, {
+          // STEP 1: Fetch raw HTML guna bypass 401 GraphQL
+          const res = await fetch(url, {
             headers: {
-              'User-Agent': REALISTIC_USER_AGENT,
-              'Accept': '*/*',
-              'Referer': 'https://www.instagram.com/',
-              'x-ig-app-id': '936619743392459'
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.5',
+              'Upgrade-Insecure-Requests': '1',
+              'Sec-Fetch-Dest': 'document',
+              'Sec-Fetch-Mode': 'navigate',
+              'Sec-Fetch-Site': 'none',
+              'Cache-Control': 'max-age=0'
             }
           })
 
-          if (!gqlRes.ok) {
-            throw new Error(`Instagram menolak permintaan (HTTP ${gqlRes.status}). Post mungkin di-private.`)
+          if (!res.ok) {
+            throw new Error(`Instagram menolak akses (HTTP ${res.status}).`)
           }
 
-          const gqlJson = await gqlRes.json() as any
-          const media = gqlJson?.data?.shortcode_media
+          const html = await res.text()
 
-          if (!media) {
-            throw new Error('Tidak ada media yang dapat diakses. Post mungkin di-private atau telah dihapus.')
+          // STEP 2: Scrape OpenGraph metadata (paling stabil untuk publik)
+          const ogImageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+                               html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
+          
+          const ogVideoMatch = html.match(/<meta[^>]+property=["']og:video["'][^>]+content=["']([^"']+)["']/i) ||
+                               html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:video["']/i)
+
+          const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+                               html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i) ||
+                               html.match(/<title>([^<]+)<\/title>/i)
+
+          const ogUrlMatch = html.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i)
+
+          // Coba cari username uploader dari title atau JSON-LD
+          let uploader = 'Instagram User'
+          if (ogTitleMatch && ogTitleMatch[1]) {
+             const title = ogTitleMatch[1]
+             // Biasa formatnya: "Username (@handle) • Instagram photos and videos"
+             const handleMatch = title.match(/\((@[^)]+)\)/)
+             if (handleMatch) uploader = handleMatch[1]
+             else if (title.includes('on Instagram')) uploader = title.split(' on Instagram')[0]
           }
 
-          // Parsing hasil GraphQL ke format mediaItems standar kita
           const mediaItems: any[] = []
 
-          const parseIgNode = (node: any) => {
-            if (node.__typename === 'GraphVideo' || node.is_video) {
-              // Untuk video, ambil video_url
-              const vUrl = node.video_url
-              const thumb = node.thumbnail_src || node.display_url || vUrl
-              const h = node.dimensions?.height || 720
-              const w = node.dimensions?.width || 1280
-              if (vUrl) mediaItems.push({
-                type: 'video', url: vUrl, thumbnail: thumb, width: w, height: h,
-                qualities: [{ height: h, url: vUrl }]
-              })
-            } else {
-              // Untuk foto, ambil display_url resolusi tertinggi
-              const candidates = node.display_resources || []
-              const best = candidates.length > 0 ? candidates[candidates.length - 1] : null
-              const pUrl = best?.src || node.display_url
-              const h = best?.config_height || node.dimensions?.height || 0
-              const w = best?.config_width || node.dimensions?.width || 0
-              if (pUrl) mediaItems.push({
-                type: 'photo', url: pUrl, thumbnail: pUrl, width: w, height: h
-              })
-            }
+          // Jika ada video, prioritaskan video
+          if (ogVideoMatch && ogVideoMatch[1]) {
+             const vUrl = ogVideoMatch[1].replace(/&amp;/g, '&')
+             mediaItems.push({
+                type: 'video',
+                url: vUrl,
+                thumbnail: ogImageMatch ? ogImageMatch[1].replace(/&amp;/g, '&') : vUrl,
+                width: 0, height: 0,
+                qualities: [{ height: 720, url: vUrl }]
+             })
+          } 
+          // Jika tidak ada video tapi ada foto
+          else if (ogImageMatch && ogImageMatch[1]) {
+             const pUrl = ogImageMatch[1].replace(/&amp;/g, '&')
+             mediaItems.push({
+                type: 'photo',
+                url: pUrl,
+                thumbnail: pUrl,
+                width: 0, height: 0
+             })
           }
 
-          // Carousel (sidecar) vs single post
-          if (media.edge_sidecar_to_children?.edges?.length > 0) {
-            for (const edge of media.edge_sidecar_to_children.edges) {
-              parseIgNode(edge.node)
-            }
-          } else {
-            parseIgNode(media)
+          // STEP 3: Fallback ke Public API jika scraping HTML tidak menghasilkan media
+          // (Misal untuk Carousel yang butuh data lebih detail)
+          if (mediaItems.length === 0) {
+             console.log('[Instagram] HTML Scraping nihil, mencoba Public Fallback API...')
+             const fallbackRes = await fetch(`https://api.vreden.web.id/api/igdownload?url=${encodeURIComponent(url)}`).catch(() => null)
+             if (fallbackRes && fallbackRes.ok) {
+                const fbJson = await fallbackRes.json() as any
+                if (fbJson.status && fbJson.result && fbJson.result.length > 0) {
+                   for (const item of fbJson.result) {
+                      const type = item.url.includes('.mp4') ? 'video' : 'photo'
+                      mediaItems.push({
+                         type,
+                         url: item.url,
+                         thumbnail: item.thumbnail || item.url,
+                         width: 0, height: 0,
+                         qualities: type === 'video' ? [{ height: 720, url: item.url }] : undefined
+                      })
+                   }
+                }
+             }
           }
 
           if (mediaItems.length === 0) {
-            throw new Error('Tidak ada media foto/video yang berhasil diekstrak.')
+            throw new Error('Tidak ada media yang terdeteksi. Post mungkin di-private.')
           }
-
-          const ownerUsername = media.owner?.username || 'instagram_user'
-          const uploader = `@${ownerUsername}`
-          const caption = media.edge_media_to_caption?.edges?.[0]?.node?.text || 'Instagram Post'
 
           return {
             success: true, mode: 'info', source: 'instagram',
-            title: caption.substring(0, 100),
+            title: ogTitleMatch ? ogTitleMatch[1].split(' • Instagram')[0] : 'Instagram Post',
             uploader,
             thumb: mediaItems[0]?.thumbnail || null,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(ownerUsername)}&background=E1306C&color=fff&size=128`,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(uploader.replace('@',''))}&background=E1306C&color=fff&size=128`,
             mediaItems,
             fetchDuration: Date.now() - startTime
           }
         } catch (igErr: any) {
-           console.error(`[Instagram] Fetch GraphQL gagal: ${igErr.message}`)
+           console.error(`[Instagram] Scraper gagal: ${igErr.message}`)
            throw createError({
-             statusCode: igErr.statusCode || 422,
-             message: igErr.message || 'Video/Foto IG di-private atau tidak ditemukan.'
+             statusCode: 422,
+             message: igErr.message || 'Gagal mengambil media. Pastikan akun tidak di-private.'
            })
         }
       }
