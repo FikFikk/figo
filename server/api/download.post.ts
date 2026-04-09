@@ -197,6 +197,83 @@ async function fetchTwitterMedia(url: string): Promise<{
 // User-Agent realistis untuk bypass fingerprinting
 const REALISTIC_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
+/** Deteksi apakah URL dari TikTok */
+function isTikTokUrl(url: string): boolean {
+  try {
+    const h = new URL(url).hostname.toLowerCase()
+    return h.includes('tiktok.com') || h.includes('vm.tiktok.com')
+  } catch { return false }
+}
+
+/** Fetch media TikTok via tikwm.com API (tanpa API key, stabil) */
+async function fetchTikTokMedia(url: string): Promise<{
+  title: string
+  uploader: string
+  thumb: string | null
+  avatar: string | null
+  mediaItems: any[]
+}> {
+  const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}&hd=1`
+  console.log(`[TikTok] Fetching via tikwm API...`)
+  
+  const res = await fetch(apiUrl, {
+    headers: {
+      'User-Agent': REALISTIC_USER_AGENT,
+      'Referer': 'https://tikwm.com/',
+      'Accept': 'application/json'
+    }
+  })
+
+  if (!res.ok) throw new Error(`tikwm API error: HTTP ${res.status}`)
+
+  const json = await res.json() as any
+  if (json.code !== 0 || !json.data) {
+    throw new Error(json.msg || 'TikTok video tidak ditemukan atau link tidak valid.')
+  }
+
+  const data = json.data
+  const uploader = data.author?.unique_id ? `@${data.author.unique_id}` : (data.author?.nickname || 'TikTok User')
+  const thumb = data.cover || data.origin_cover || null
+  const avatar = data.author?.avatar || null
+
+  const mediaItems: any[] = []
+
+  // Foto Slideshow (images array)
+  if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+    for (const imgUrl of data.images) {
+      if (imgUrl) mediaItems.push({
+        type: 'photo', url: imgUrl, thumbnail: imgUrl, width: 0, height: 0
+      })
+    }
+  }
+
+  // Video (HD + SD kualitas)
+  if (mediaItems.length === 0 && data.play) {
+    const qualities: any[] = []
+    // HD (no watermark) — tikwm hdplay atau play
+    if (data.hdplay) qualities.push({ height: 1080, url: data.hdplay })
+    if (data.play && data.play !== data.hdplay) qualities.push({ height: 720, url: data.play })
+    if (data.wmplay) qualities.push({ height: 480, url: data.wmplay, label: 'SD (Watermark)' })
+    
+    mediaItems.push({
+      type: 'video',
+      url: data.hdplay || data.play,
+      thumbnail: thumb,
+      width: data.width || 0,
+      height: data.height || 0,
+      duration: data.duration || undefined,
+      qualities
+    })
+  }
+
+  if (mediaItems.length === 0) throw new Error('Tidak ada media yang ditemukan di video TikTok ini.')
+
+  return {
+    title: data.title || 'TikTok Video',
+    uploader, thumb, avatar, mediaItems
+  }
+}
+
 // Error yang tidak perlu di-retry (masalah server, bukan YouTube)
 const NON_RETRYABLE_PATTERNS = [
   'No space left on device',
@@ -575,6 +652,31 @@ export default defineEventHandler(async (event) => {
           throw createError({
             statusCode: 422,
             message: twitterErr.message || 'Gagal mengambil media dari tweet.'
+          })
+        }
+      }
+
+      // ---------- TIKTOK: gunakan tikwm API (bypass IP block yt-dlp) ----------
+      if (isTikTokUrl(url)) {
+        try {
+          const ttData = await fetchTikTokMedia(url)
+          console.log(`[TikTok] Success: ${ttData.mediaItems.length} media items`)
+          return {
+            success: true, mode: 'info', source: 'tiktok',
+            title: ttData.title,
+            uploader: ttData.uploader,
+            thumb: ttData.thumb,
+            avatar: ttData.avatar
+              ? `/api/download-twitter?url=${encodeURIComponent(ttData.avatar)}&type=photo&inline=true`
+              : `https://ui-avatars.com/api/?name=${encodeURIComponent(ttData.uploader.replace('@',''))}&background=010101&color=fff&size=128`,
+            mediaItems: ttData.mediaItems,
+            fetchDuration: Date.now() - startTime
+          }
+        } catch (ttErr: any) {
+          console.error(`[TikTok] tikwm API gagal: ${ttErr.message}`)
+          throw createError({
+            statusCode: 422,
+            message: ttErr.message || 'Gagal mengambil media dari TikTok.'
           })
         }
       }

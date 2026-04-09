@@ -19,7 +19,11 @@ export default defineEventHandler(async (event) => {
   // Validasi domain — izinkan domain Twitter media & Instagram media
   try {
     const hostname = new URL(mediaUrl).hostname.toLowerCase()
-    const allowed = ['twimg.com', 'instagram.com', 'cdninstagram.com', 'fbcdn.net']
+    const allowed = [
+      'twimg.com', 'instagram.com', 'cdninstagram.com', 'fbcdn.net',
+      'tikwm.com', 'tiktokcdn.com', 'tiktokcdn-us.com', 'tiktok.com', 'musical.ly',
+      'p16-sign-sg.tiktokcdn.com', 'v19-webapp.tiktok.com', 'v16m-default.tiktokcdn-us.com'
+    ]
     if (!allowed.some(d => hostname.endsWith(d) || hostname.includes(d))) {
       throw createError({ statusCode: 403, message: 'Domain media tidak diizinkan.' })
     }

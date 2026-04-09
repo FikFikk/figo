@@ -67,7 +67,7 @@
     </div>
 
     <!-- ============ STEP 2: Quality Picker (Default YT-DLP) ============ -->
-    <div v-if="videoInfo && !['twitter', 'instagram'].includes(videoInfo.source)" class="mt-8 animate-fade-in">
+    <div v-if="videoInfo && !['twitter', 'instagram', 'tiktok'].includes(videoInfo.source)" class="mt-8 animate-fade-in">
       <div class="glass-panel rounded-2xl p-6 md:p-8 border" :class="isDark ? 'border-white/5' : 'border-slate-100'">
         <!-- Video Preview -->
         <div class="flex flex-col md:flex-row gap-6 mb-8">
@@ -153,13 +153,18 @@
       </div>
     </div>
 
-    <!-- ============ STEP 2.5: Twitter/X/Instagram Media List ============ -->
-    <div v-if="videoInfo && ['twitter', 'instagram'].includes(videoInfo.source)" class="mt-8 animate-fade-in">
+    <!-- ============ STEP 2.5: Twitter/X/Instagram/TikTok Media List ============ -->
+    <div v-if="videoInfo && ['twitter', 'instagram', 'tiktok'].includes(videoInfo.source)" class="mt-8 animate-fade-in">
       <div class="glass-panel rounded-2xl p-6 md:p-8 border" :class="isDark ? 'border-white/5' : 'border-slate-100'">
         <!-- Post Header -->
         <div class="flex items-start gap-4 mb-6">
           <div class="w-12 h-12 shrink-0 rounded-2xl overflow-hidden bg-black/10 border" :class="isDark ? 'border-white/10' : 'border-slate-200'">
-            <img v-if="videoInfo.avatar" :src="getProxiedMediaUrl(videoInfo.avatar)" class="w-full h-full object-cover" />
+            <img 
+              v-if="videoInfo.avatar" 
+              :src="getProxiedMediaUrl(videoInfo.avatar)" 
+              class="w-full h-full object-cover" 
+              @error="(e) => (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(videoInfo.uploader.replace('@', ''))}&background=E1306C&color=fff&size=128`"
+            />
             <img v-else-if="videoInfo.uploader" :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(videoInfo.uploader.replace('@', ''))}&background=random&color=fff&size=128&font-size=0.4`" class="w-full h-full object-cover" />
             <span v-else class="material-symbols-outlined text-2xl w-full h-full flex items-center justify-center text-gray-400">person</span>
           </div>
@@ -342,7 +347,7 @@ async function fetchInfo() {
       body: { url: url.value, mode: 'info' }
     }) as any
 
-    if (['twitter', 'instagram'].includes(response.source)) {
+    if (['twitter', 'instagram', 'tiktok'].includes(response.source)) {
       videoInfo.value = response
       console.log(`[Figo] Fetch Info Success in ${response.fetchDuration}ms (${response.source})`)
       return
