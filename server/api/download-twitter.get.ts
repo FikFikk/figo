@@ -43,12 +43,15 @@ export default defineEventHandler(async (event) => {
     }
 
     // Tentukan content-type dan ekstensi
-    const contentType = response.headers.get('content-type') || (type === 'video' ? 'video/mp4' : 'image/jpeg')
-    let ext = 'jpg'
+    const contentType = response.headers.get('content-type') || ''
+    
+    let ext = type === 'video' ? 'mp4' : 'jpg'
+    
     if (contentType.includes('png')) ext = 'png'
     else if (contentType.includes('webp')) ext = 'webp'
     else if (contentType.includes('gif')) ext = 'gif'
-    else if (contentType.includes('mp4') || contentType.includes('video')) ext = 'mp4'
+    else if (contentType.includes('jpeg') || contentType.includes('jpg')) ext = 'jpg'
+    else if (contentType.includes('mp4') || contentType.includes('video/')) ext = 'mp4'
 
     let downloadName = filename || `twitter-${type}-${Date.now()}.${ext}`
     // Jika filename dari query tidak memiliki ekstensi yang benar, tambahkan ekstensi

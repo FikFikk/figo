@@ -600,16 +600,23 @@ export default defineEventHandler(async (event) => {
           if (ytParsed && ytParsed.title && !ytParsed.title.includes('There is no video')) {
              
              // Extractor yt-dlp sukses! Format ke UI standards
-             const heights = new Set<number>()
+             const qualitiesMap = new Map<number, string>()
              if (ytParsed.formats) {
                 for (const f of ytParsed.formats) {
-                   if (f.height && f.vcodec && f.vcodec !== 'none') heights.add(f.height)
+                   // kita ambil URL CDN instagram yang mentah (exclude manifest dash/m3u8 bila ada supaya proxy bs unduh as mp4)
+                   if (f.height && f.vcodec && f.vcodec !== 'none' && f.url && !f.url.includes('.m3u8')) {
+                      qualitiesMap.set(f.height, f.url)
+                   }
                 }
              }
-             const sortedHeights = [...heights].sort((a, b) => b - a)
-             const qualities = sortedHeights.length > 0 ? sortedHeights.map(h => ({
-                height: h, url: url // For IG, quality download streams use fallback from url logic
-             })) : [{ height: 720, url }]
+             
+             let qualities = Array.from(qualitiesMap.keys())
+                .sort((a, b) => b - a)
+                .map(h => ({ height: h, url: qualitiesMap.get(h)! }))
+
+             if (qualities.length === 0) {
+                 qualities = [{ height: 720, url: ytParsed.url || url }]
+             }
 
              const uploader = ytParsed.uploader || ytParsed.channel || 'Instagram User'
              const thumb = ytParsed.thumbnail || null
