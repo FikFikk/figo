@@ -4,6 +4,8 @@ import { randomUUID } from 'crypto'
 import { spawn } from 'child_process'
 import { readdirSync, existsSync, unlinkSync, statSync, mkdirSync, copyFileSync } from 'fs'
 import { downloadJobs } from '../lib/jobs'
+// @ts-ignore
+import igDirectModule from 'instagram-url-direct'
 
 /**
  * Gunakan directory di disk utama, bukan /tmp (sering tmpfs kecil).
@@ -581,12 +583,18 @@ export default defineEventHandler(async (event) => {
 
       // ---------- INSTAGRAM: gunakan instagram-url-direct ----------
       if (/(?:instagram\.com|ig\.me)/i.test(url)) {
+        if (!!url.match(/\/stories\//i)) {
+           throw createError({
+             statusCode: 422,
+             message: 'Pengunduhan Instagram Story tidak didukung oleh public server.'
+           })
+        }
+        
         try {
-          const igDirect = await import('instagram-url-direct')
-          const instagramGetUrl = igDirect.instagramGetUrl || (igDirect.default ? (igDirect.default as any).instagramGetUrl : null)
+          const instagramGetUrl = igDirectModule.instagramGetUrl || (igDirectModule.default ? (igDirectModule.default as any).instagramGetUrl : null) || igDirectModule
           
-          if (!instagramGetUrl) {
-            throw new Error('Modul instagram-url-direct tidak ditemukan.')
+          if (!instagramGetUrl || typeof instagramGetUrl !== 'function') {
+            throw new Error('Modul instagram-url-direct tidak termuat secara sempurna.')
           }
 
           const igData = await instagramGetUrl(url)
@@ -638,8 +646,8 @@ export default defineEventHandler(async (event) => {
         } catch (igErr: any) {
            console.error(`[Instagram] ig-direct API gagal: ${igErr.message}`)
            throw createError({
-             statusCode: 422,
-             message: igErr.message || 'Video/Foto IG di-private atau server diblokir oleh Instagram.'
+             statusCode: igErr.statusCode || 422,
+             message: igErr.message || 'Video/Foto IG di-private atau tidak ditemukan.'
            })
         }
       }
