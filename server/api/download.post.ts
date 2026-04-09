@@ -4,8 +4,6 @@ import { randomUUID } from 'crypto'
 import { spawn } from 'child_process'
 import { readdirSync, existsSync, unlinkSync, statSync, mkdirSync, copyFileSync } from 'fs'
 import { downloadJobs } from '../lib/jobs'
-// @ts-ignore
-import igDirectModule from 'instagram-url-direct'
 
 /**
  * Gunakan directory di disk utama, bukan /tmp (sering tmpfs kecil).
@@ -581,70 +579,98 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      // ---------- INSTAGRAM: gunakan instagram-url-direct ----------
+      // ---------- INSTAGRAM: inline fetch GraphQL tanpa dependensi eksternal ----------
       if (/(?:instagram\.com|ig\.me)/i.test(url)) {
-        if (!!url.match(/\/stories\//i)) {
+        if (/\/stories\//i.test(url)) {
            throw createError({
              statusCode: 422,
              message: 'Pengunduhan Instagram Story tidak didukung oleh public server.'
            })
         }
-        
+
         try {
-          const instagramGetUrl = igDirectModule.instagramGetUrl || (igDirectModule.default ? (igDirectModule.default as any).instagramGetUrl : null) || igDirectModule
-          
-          if (!instagramGetUrl || typeof instagramGetUrl !== 'function') {
-            throw new Error('Modul instagram-url-direct tidak termuat secara sempurna.')
+          // Ekstrak shortcode dari URL IG (format /p/xxx, /reel/xxx, /tv/xxx)
+          const scMatch = url.match(/\/(?:p|reel|tv|reels)\/([A-Za-z0-9_-]+)/)
+          if (!scMatch) throw new Error('Format URL Instagram tidak dikenali. Hanya /p/, /reel/, /tv/ yang didukung.')
+          const shortcode = scMatch[1]
+
+          // Query GraphQL publik Instagram (tanpa login)
+          const gqlUrl = `https://www.instagram.com/graphql/query/?query_hash=b3055c01b4b222b8a47dc12b090e4e64&variables=${encodeURIComponent(JSON.stringify({ shortcode }))}`
+          const gqlRes = await fetch(gqlUrl, {
+            headers: {
+              'User-Agent': REALISTIC_USER_AGENT,
+              'Accept': '*/*',
+              'Referer': 'https://www.instagram.com/',
+              'x-ig-app-id': '936619743392459'
+            }
+          })
+
+          if (!gqlRes.ok) {
+            throw new Error(`Instagram menolak permintaan (HTTP ${gqlRes.status}). Post mungkin di-private.`)
           }
 
-          const igData = await instagramGetUrl(url)
-          if (!igData || !igData.url_list || igData.url_list.length === 0) {
-             throw new Error('Tidak ada media foto/video yang bisa diakses (Mungkin diprivate).')
+          const gqlJson = await gqlRes.json() as any
+          const media = gqlJson?.data?.shortcode_media
+
+          if (!media) {
+            throw new Error('Tidak ada media yang dapat diakses. Post mungkin di-private atau telah dihapus.')
           }
 
+          // Parsing hasil GraphQL ke format mediaItems standar kita
           const mediaItems: any[] = []
-          if (igData.media_details && igData.media_details.length > 0) {
-             for (let i = 0; i < igData.media_details.length; i++) {
-                const item = igData.media_details[i]
-                const mUrl = item.url || igData.url_list[i]
-                const type = item.type === 'video' ? 'video' : 'photo'
-                if (mUrl) {
-                   mediaItems.push({
-                      type,
-                      url: mUrl,
-                      thumbnail: item.thumbnail || mUrl,
-                      width: item.dimensions?.width || 0,
-                      height: item.dimensions?.height || 0,
-                      qualities: type === 'video' ? [{ height: item.dimensions?.height || 720, url: mUrl }] : undefined
-                   })
-                }
-             }
-          } else {
-             // Fallback minimal jika `media_details` tidak terbaca tapi `url_list` ada
-             for (const mUrl of igData.url_list) {
-                const type = mUrl.includes('.mp4') ? 'video' : 'photo'
-                mediaItems.push({
-                   type, url: mUrl, thumbnail: mUrl, width: 0, height: 0,
-                   qualities: type === 'video' ? [{ height: 720, url: mUrl }] : undefined
-                })
-             }
+
+          const parseIgNode = (node: any) => {
+            if (node.__typename === 'GraphVideo' || node.is_video) {
+              // Untuk video, ambil video_url
+              const vUrl = node.video_url
+              const thumb = node.thumbnail_src || node.display_url || vUrl
+              const h = node.dimensions?.height || 720
+              const w = node.dimensions?.width || 1280
+              if (vUrl) mediaItems.push({
+                type: 'video', url: vUrl, thumbnail: thumb, width: w, height: h,
+                qualities: [{ height: h, url: vUrl }]
+              })
+            } else {
+              // Untuk foto, ambil display_url resolusi tertinggi
+              const candidates = node.display_resources || []
+              const best = candidates.length > 0 ? candidates[candidates.length - 1] : null
+              const pUrl = best?.src || node.display_url
+              const h = best?.config_height || node.dimensions?.height || 0
+              const w = best?.config_width || node.dimensions?.width || 0
+              if (pUrl) mediaItems.push({
+                type: 'photo', url: pUrl, thumbnail: pUrl, width: w, height: h
+              })
+            }
           }
 
-          const uploader = igData.post_info?.owner_username ? `@${igData.post_info.owner_username}` : 'Instagram User'
+          // Carousel (sidecar) vs single post
+          if (media.edge_sidecar_to_children?.edges?.length > 0) {
+            for (const edge of media.edge_sidecar_to_children.edges) {
+              parseIgNode(edge.node)
+            }
+          } else {
+            parseIgNode(media)
+          }
+
+          if (mediaItems.length === 0) {
+            throw new Error('Tidak ada media foto/video yang berhasil diekstrak.')
+          }
+
+          const ownerUsername = media.owner?.username || 'instagram_user'
+          const uploader = `@${ownerUsername}`
+          const caption = media.edge_media_to_caption?.edges?.[0]?.node?.text || 'Instagram Post'
 
           return {
-            success: true,
-            mode: 'info',
-            source: 'instagram',
-            title: igData.post_info?.caption || 'Instagram Post',
+            success: true, mode: 'info', source: 'instagram',
+            title: caption.substring(0, 100),
             uploader,
             thumb: mediaItems[0]?.thumbnail || null,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(uploader.replace('@',''))}&background=random&color=fff&size=128`,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(ownerUsername)}&background=E1306C&color=fff&size=128`,
             mediaItems,
             fetchDuration: Date.now() - startTime
           }
         } catch (igErr: any) {
-           console.error(`[Instagram] ig-direct API gagal: ${igErr.message}`)
+           console.error(`[Instagram] Fetch GraphQL gagal: ${igErr.message}`)
            throw createError({
              statusCode: igErr.statusCode || 422,
              message: igErr.message || 'Video/Foto IG di-private atau tidak ditemukan.'
