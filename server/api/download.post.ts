@@ -579,7 +579,7 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      // ---------- INSTAGRAM: HTML Scraping + OpenGraph Strategy ----------
+      // ---------- INSTAGRAM: Hybrid Strategy (YtDlp Video -> HTML Photo) ----------
       if (/(?:instagram\.com|ig\.me)/i.test(url)) {
         if (/\/stories\//i.test(url)) {
            throw createError({
@@ -588,18 +588,63 @@ export default defineEventHandler(async (event) => {
            })
         }
 
+        // STEP 1: Coba tangkap videonya pakai YT-DLP (Sangat kuat untuk Reels)
         try {
-          // STEP 1: Fetch raw HTML guna bypass 401 GraphQL
+          console.log('[Instagram] Mencoba yt-dlp untuk ekstrak Video / Reel...')
+          const ytRaw = await execYtdlp(url, {
+            dumpSingleJson: true, noCheckCertificates: true, noWarnings: true,
+            ignoreErrors: true, forceIpv4: true
+          }, 20000)
+          
+          const ytParsed = parseYtdlpOutput(ytRaw.stdout)
+          if (ytParsed && ytParsed.title && !ytParsed.title.includes('There is no video')) {
+             
+             // Extractor yt-dlp sukses! Format ke UI standards
+             const heights = new Set<number>()
+             if (ytParsed.formats) {
+                for (const f of ytParsed.formats) {
+                   if (f.height && f.vcodec && f.vcodec !== 'none') heights.add(f.height)
+                }
+             }
+             const sortedHeights = [...heights].sort((a, b) => b - a)
+             const qualities = sortedHeights.length > 0 ? sortedHeights.map(h => ({
+                height: h, url: url // For IG, quality download streams use fallback from url logic
+             })) : [{ height: 720, url }]
+
+             const uploader = ytParsed.uploader || ytParsed.channel || 'Instagram User'
+             const thumb = ytParsed.thumbnail || null
+             
+             return {
+                success: true, mode: 'info', source: 'instagram',
+                title: (ytParsed.title || ytParsed.description || 'Instagram Reel').substring(0, 100),
+                uploader, thumb,
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(uploader.replace('@',''))}&background=E1306C&color=fff&size=128`,
+                mediaItems: [{
+                   type: 'video',
+                   url: url,
+                   thumbnail: thumb,
+                   width: ytParsed.width || 0,
+                   height: ytParsed.height || 0,
+                   qualities
+                }],
+                fetchDuration: Date.now() - startTime
+             }
+          }
+        } catch(vidErr) {
+          console.log('[Instagram] Tidak diformat sbg video murni, Fallback mengecek foto...')
+        }
+
+        // STEP 2: Scrape HTML murni (Khusus untuk Single Photos / Carousel tanpa video)
+        try {
           const res = await fetch(url, {
             headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+              'User-Agent': REALISTIC_USER_AGENT,
               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
               'Accept-Language': 'en-US,en;q=0.5',
               'Upgrade-Insecure-Requests': '1',
               'Sec-Fetch-Dest': 'document',
               'Sec-Fetch-Mode': 'navigate',
-              'Sec-Fetch-Site': 'none',
-              'Cache-Control': 'max-age=0'
+              'Sec-Fetch-Site': 'none'
             }
           })
 
