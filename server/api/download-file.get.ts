@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
     const fileInfo = await stat(tmpFile)
     const mimeType = job.mimeType || 'application/octet-stream'
     const title = job.title || 'Video'
-    const filename = `${title}-figo.${job.ext || 'mp4'}`
+    const filename = `${title}.${job.ext || 'mp4'}`
 
     console.log(`[Job ${id}] Streaming file to client... Size: ${(fileInfo.size / 1048576).toFixed(1)} MB`)
 

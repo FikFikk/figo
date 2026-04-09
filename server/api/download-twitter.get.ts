@@ -10,16 +10,17 @@ export default defineEventHandler(async (event) => {
   const mediaUrl = query.url as string
   const type = (query.type as string) || 'photo'
   const filename = (query.filename as string) || ''
+  const isInline = query.inline === 'true'
 
   if (!mediaUrl) {
     throw createError({ statusCode: 400, message: 'URL media diperlukan.' })
   }
 
-  // Validasi domain — hanya izinkan domain Twitter media
+  // Validasi domain — izinkan domain Twitter media & Instagram media
   try {
     const hostname = new URL(mediaUrl).hostname.toLowerCase()
-    const allowed = ['pbs.twimg.com', 'video.twimg.com', 'abs.twimg.com']
-    if (!allowed.some(d => hostname.includes(d))) {
+    const allowed = ['twimg.com', 'instagram.com', 'cdninstagram.com', 'fbcdn.net']
+    if (!allowed.some(d => hostname.endsWith(d) || hostname.includes(d))) {
       throw createError({ statusCode: 403, message: 'Domain media tidak diizinkan.' })
     }
   } catch (err: any) {
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event) => {
     const response = await fetch(mediaUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        'Referer': 'https://x.com/',
+        'Referer': mediaUrl.includes('twimg') ? 'https://x.com/' : 'https://www.instagram.com/',
       },
     })
 
@@ -57,7 +58,7 @@ export default defineEventHandler(async (event) => {
 
     setResponseHeaders(event, {
       'Content-Type': contentType,
-      'Content-Disposition': `attachment; filename="${downloadName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`,
+      'Content-Disposition': `${isInline ? 'inline' : 'attachment'}; filename="${downloadName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`,
       'Cache-Control': 'no-cache',
     })
 

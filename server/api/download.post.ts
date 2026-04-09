@@ -270,6 +270,7 @@ function buildYtdlpArgs(url: string, flags: Record<string, any>): string[] {
   if (flags.noCacheDir) args.push('--no-cache-dir')
   if (flags.forceIpv4) args.push('--force-ipv4')
   if (flags.ignoreErrors) args.push('--ignore-errors')
+  if (flags.ignoreNoFormatsError) args.push('--ignore-no-formats-error')
   if (flags.flatPlaylist) args.push('--flat-playlist')
   if (flags.format) args.push('--format', flags.format)
   if (flags.output) args.push('--output', flags.output)
@@ -563,6 +564,7 @@ export default defineEventHandler(async (event) => {
             source: 'twitter',
             title: twitterData.title,
             thumb: twitterData.mediaItems[0]?.thumbnail || null,
+            avatar: twitterData.mediaItems[0] ? `https://unavatar.io/twitter/${twitterData.uploader.replace('@', '')}?fallback=false` : null,
             duration: null,
             uploader: twitterData.uploader,
             mediaItems: enrichedItems,
@@ -577,10 +579,74 @@ export default defineEventHandler(async (event) => {
         }
       }
 
+      // ---------- INSTAGRAM: gunakan instagram-url-direct ----------
+      if (/(?:instagram\.com|ig\.me)/i.test(url)) {
+        try {
+          const igDirect = await import('instagram-url-direct')
+          const instagramGetUrl = igDirect.instagramGetUrl || (igDirect.default ? (igDirect.default as any).instagramGetUrl : null)
+          
+          if (!instagramGetUrl) {
+            throw new Error('Modul instagram-url-direct tidak ditemukan.')
+          }
+
+          const igData = await instagramGetUrl(url)
+          if (!igData || !igData.url_list || igData.url_list.length === 0) {
+             throw new Error('Tidak ada media foto/video yang bisa diakses (Mungkin diprivate).')
+          }
+
+          const mediaItems: any[] = []
+          if (igData.media_details && igData.media_details.length > 0) {
+             for (let i = 0; i < igData.media_details.length; i++) {
+                const item = igData.media_details[i]
+                const mUrl = item.url || igData.url_list[i]
+                const type = item.type === 'video' ? 'video' : 'photo'
+                if (mUrl) {
+                   mediaItems.push({
+                      type,
+                      url: mUrl,
+                      thumbnail: item.thumbnail || mUrl,
+                      width: item.dimensions?.width || 0,
+                      height: item.dimensions?.height || 0,
+                      qualities: type === 'video' ? [{ height: item.dimensions?.height || 720, url: mUrl }] : undefined
+                   })
+                }
+             }
+          } else {
+             // Fallback minimal jika `media_details` tidak terbaca tapi `url_list` ada
+             for (const mUrl of igData.url_list) {
+                const type = mUrl.includes('.mp4') ? 'video' : 'photo'
+                mediaItems.push({
+                   type, url: mUrl, thumbnail: mUrl, width: 0, height: 0,
+                   qualities: type === 'video' ? [{ height: 720, url: mUrl }] : undefined
+                })
+             }
+          }
+
+          const uploader = igData.post_info?.owner_username ? `@${igData.post_info.owner_username}` : 'Instagram User'
+
+          return {
+            success: true,
+            mode: 'info',
+            source: 'instagram',
+            title: igData.post_info?.caption || 'Instagram Post',
+            uploader,
+            thumb: mediaItems[0]?.thumbnail || null,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(uploader.replace('@',''))}&background=random&color=fff&size=128`,
+            mediaItems,
+            fetchDuration: Date.now() - startTime
+          }
+        } catch (igErr: any) {
+           console.error(`[Instagram] ig-direct API gagal: ${igErr.message}`)
+           throw createError({
+             statusCode: 422,
+             message: igErr.message || 'Video/Foto IG di-private atau server diblokir oleh Instagram.'
+           })
+        }
+      }
+
       // ---------- DEFAULT: yt-dlp untuk platform lain ----------
       const dataRaw = await execYtdlp(url, {
         dumpSingleJson: true,
-        noWarnings: true,
         noCheckCertificates: true,
         noPlaylist: true,
         forceIpv4: true,
@@ -593,6 +659,8 @@ export default defineEventHandler(async (event) => {
 
       const data = parseYtdlpOutput(dataRaw.stdout)
 
+
+      // KODE ASLI UNTUK NON-INSTAGRAM (YOUTUBE, TIKTOK, DLL)
       // Collect unique heights
       const heights = new Set<number>()
       const sizeEstimates: Record<number, number> = {}
@@ -672,10 +740,14 @@ export default defineEventHandler(async (event) => {
       const ffmpegPath = join(process.cwd(), 'server', 'api', ffmpegName)
 
       const rawTitle = (body?.title as string) || 'Video'
+      const uploader = (body?.uploader as string) || 'Unknown'
+      const resolution = (body?.resolution as string) || 'Video'
       // Remove invalid characters for Windows/Linux filenames
       const safeTitle = rawTitle.replace(/[/\\?%*:|"<>]/g, '').trim()
+      const safeUploader = uploader.replace(/[/\\?%*:|"<>@]/g, '').trim()
+      const finalName = `figo-${Date.now()}-${safeUploader} - ${resolution}`
 
-      downloadJobs.set(jobId, { status: 'processing', ext, title: safeTitle })
+      downloadJobs.set(jobId, { status: 'processing', ext, title: finalName })
 
       // Background process (fire-and-forget)
       ;(async () => {
@@ -774,11 +846,20 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Mode tidak valid.' })
 
   } catch (err: any) {
-    console.error('[Download Native Error]', err)
+    let msg = err.message || String(err)
+    
+    if (msg.includes('empty media response')) {
+      console.warn('[Figo] IG Private/Blocked Post terdeteksi (Gagal fetch dari yt-dlp).')
+      msg = 'Video/Foto IG di-private atau server diblokir oleh Instagram.'
+    } else {
+      console.error('[Download Native Error]', msg.split('\n')[0])
+      msg = 'Sistem Error: ' + msg.replace('Native Error: ', '')
+    }
+    
     if (err.statusCode) throw err
     throw createError({
-      statusCode: 500,
-      message: 'Native Error: ' + (err.message || String(err))
+      statusCode: (msg.includes('di-private')) ? 422 : 500,
+      message: msg
     })
   }
 })

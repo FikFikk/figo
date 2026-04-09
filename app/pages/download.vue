@@ -2,7 +2,7 @@
   <div class="pt-24 pb-20 px-6 md:px-8 max-w-4xl mx-auto min-h-screen">
     <!-- Header -->
     <div class="text-center mb-12">
-      <div class="inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6"
+      <div class="inline-block px-4 py-1.5 rounded-2xl text-xs font-bold tracking-widest uppercase mb-6"
         :class="isDark ? 'bg-primary/15 text-primary' : 'bg-primary-fixed text-on-primary-fixed'"
       >
         <span class="material-symbols-outlined text-sm align-middle mr-1">download</span>
@@ -67,12 +67,12 @@
     </div>
 
     <!-- ============ STEP 2: Quality Picker (Default YT-DLP) ============ -->
-    <div v-if="videoInfo && videoInfo.source !== 'twitter'" class="mt-8 animate-fade-in">
+    <div v-if="videoInfo && !['twitter', 'instagram'].includes(videoInfo.source)" class="mt-8 animate-fade-in">
       <div class="glass-panel rounded-2xl p-6 md:p-8 border" :class="isDark ? 'border-white/5' : 'border-slate-100'">
         <!-- Video Preview -->
         <div class="flex flex-col md:flex-row gap-6 mb-8">
           <div class="w-full md:w-64 shrink-0 rounded-md overflow-hidden shadow-lg aspect-video bg-black/10">
-            <img v-if="videoInfo.thumb" :src="videoInfo.thumb" class="w-full h-full object-cover" alt="Thumbnail" />
+            <img v-if="videoInfo.thumb" :src="getProxiedMediaUrl(videoInfo.thumb)" class="w-full h-full object-cover" alt="Thumbnail" />
             <div v-else class="w-full h-full flex items-center justify-center">
               <span class="material-symbols-outlined text-4xl text-gray-500">movie</span>
             </div>
@@ -117,12 +117,12 @@
           >
             <div class="flex items-center gap-3">
               <!-- Radio indicator -->
-              <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all"
+              <div class="w-5 h-5 rounded-2xl border-2 flex items-center justify-center shrink-0 transition-all"
                 :class="selectedFormat === q.formatId
                   ? 'border-primary bg-primary'
                   : isDark ? 'border-gray-600' : 'border-slate-300'"
               >
-                <div v-if="selectedFormat === q.formatId" class="w-2 h-2 rounded-full bg-white"></div>
+                <div v-if="selectedFormat === q.formatId" class="w-2 h-2 rounded-2xl bg-white"></div>
               </div>
               <div class="flex-1 min-w-0">
                 <p class="font-bold text-sm truncate" :class="isDark ? 'text-white' : 'text-slate-900'">
@@ -153,13 +153,14 @@
       </div>
     </div>
 
-    <!-- ============ STEP 2.5: Twitter/X Media List ============ -->
-    <div v-if="videoInfo && videoInfo.source === 'twitter'" class="mt-8 animate-fade-in">
+    <!-- ============ STEP 2.5: Twitter/X/Instagram Media List ============ -->
+    <div v-if="videoInfo && ['twitter', 'instagram'].includes(videoInfo.source)" class="mt-8 animate-fade-in">
       <div class="glass-panel rounded-2xl p-6 md:p-8 border" :class="isDark ? 'border-white/5' : 'border-slate-100'">
-        <!-- Tweet Header -->
+        <!-- Post Header -->
         <div class="flex items-start gap-4 mb-6">
-          <div class="w-12 h-12 shrink-0 rounded-full overflow-hidden bg-black/10 border" :class="isDark ? 'border-white/10' : 'border-slate-200'">
-            <img v-if="videoInfo.thumb" :src="videoInfo.thumb" class="w-full h-full object-cover" />
+          <div class="w-12 h-12 shrink-0 rounded-2xl overflow-hidden bg-black/10 border" :class="isDark ? 'border-white/10' : 'border-slate-200'">
+            <img v-if="videoInfo.avatar" :src="getProxiedMediaUrl(videoInfo.avatar)" class="w-full h-full object-cover" />
+            <img v-else-if="videoInfo.uploader" :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(videoInfo.uploader.replace('@', ''))}&background=random&color=fff&size=128&font-size=0.4`" class="w-full h-full object-cover" />
             <span v-else class="material-symbols-outlined text-2xl w-full h-full flex items-center justify-center text-gray-400">person</span>
           </div>
           <div class="flex-1 min-w-0">
@@ -178,9 +179,9 @@
         </h4>
 
         <div class="space-y-4">
-          <div v-for="(item, idx) in videoInfo.mediaItems" :key="idx" class="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border transition-all hover:shadow-md" :class="isDark ? 'border-white/5 bg-white/5 hover:border-white/10' : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'">
-            <div class="w-full sm:w-48 shrink-0 rounded-lg overflow-hidden shadow-sm aspect-video bg-black/10 relative">
-               <img v-if="item.thumbnail || item.url" :src="item.thumbnail || item.url" class="w-full h-full object-cover" />
+          <div v-for="(item, idx) in videoInfo.mediaItems" :key="idx" class="flex flex-col sm:flex-row gap-4 p-4 rounded-2xl border transition-all hover:shadow-md" :class="isDark ? 'border-white/5 bg-white/5 hover:border-white/10' : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'">
+            <div class="w-full sm:w-48 shrink-0 rounded-2xl overflow-hidden shadow-sm aspect-video bg-black/10 relative">
+               <img v-if="item.thumbnail || item.url" :src="getProxiedMediaUrl(item.thumbnail || item.url)" class="w-full h-full object-cover" />
                <div v-if="item.type === 'video' || item.type === 'gif'" class="absolute inset-0 flex items-center justify-center bg-black/20">
                  <span class="material-symbols-outlined text-3xl text-white drop-shadow-md shadow-black">play_circle</span>
                </div>
@@ -201,14 +202,14 @@
               <div v-if="item.type === 'video' || item.type === 'gif'" class="space-y-2 mt-auto">
                  <div v-for="q in item.qualities" :key="q.url" class="flex items-center justify-between p-2 rounded-md border" :class="isDark ? 'border-white/5 bg-black/20' : 'border-slate-200 bg-white'">
                    <span class="font-bold text-sm" :class="isDark ? 'text-gray-200' : 'text-slate-700'">{{ q.height ? q.height + 'p' : 'Original' }}</span>
-                   <button @click="downloadTwitterMedia(q.url, 'video', videoInfo.uploader, q.height ? q.height + 'p' : 'Orig')" class="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold text-xs rounded transition-colors flex items-center gap-1">
+                   <button @click="downloadTwitterMedia(q.url, 'video', videoInfo.uploader, q.height ? q.height + 'p' : 'Orig')" class="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold text-xs rounded-2xl transition-colors flex items-center gap-1">
                      <span class="material-symbols-outlined text-[14px]">download</span> Download
                    </button>
                  </div>
               </div>
 
               <!-- Content for Photo -->
-              <button v-if="item.type === 'photo'" @click="downloadTwitterMedia(item.url, item.type, videoInfo.uploader, 'Photo')" class="w-full mt-auto py-2.5 bg-primary text-on-primary font-headline font-bold text-sm rounded hover:scale-[1.01] hover:shadow transition-all active:scale-[0.99] flex items-center justify-center gap-2">
+              <button v-if="item.type === 'photo'" @click="downloadTwitterMedia(item.url, item.type, videoInfo.uploader, 'Photo')" class="w-full mt-auto py-2.5 bg-primary text-on-primary font-headline font-bold text-sm rounded-2xl hover:scale-[1.01] hover:shadow transition-all active:scale-[0.99] flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined text-base">download</span>
                 Download Photo
               </button>
@@ -269,7 +270,7 @@ onMounted(() => {
 const PLATFORMS_CONFIG = {
   YOUTUBE: { name: 'YouTube', icon: 'https://static.vecteezy.com/system/resources/thumbnails/018/930/572/small_2x/youtube-logo-youtube-icon-transparent-free-png.png' },
   TIKTOK: { name: 'TikTok', icon: 'https://img.freepik.com/premium-vector/tik-tok-logo_578229-290.jpg?semt=ais_hybrid&w=740&q=80' },
-  INSTAGRAM: { name: 'Instagram', icon: 'https://unblast.com/wp-content/uploads/2025/07/instagram-logo-colored.jpg' },
+  INSTAGRAM: { name: 'Instagram', icon: 'https://api.iconify.design/skill-icons:instagram.svg' },
   TWITTER: { name: 'Twitter/X', icon: 'https://cdn.worldvectorlogo.com/logos/twitter-logo-2.svg' },
 }
 
@@ -282,7 +283,7 @@ function detectPlatform(link: string): { name: string; icon: string } {
   const lowUrl = link.toLowerCase()
   if (lowUrl.includes('youtube') || lowUrl.includes('youtu.be')) return PLATFORMS_CONFIG.YOUTUBE
   if (lowUrl.includes('tiktok')) return PLATFORMS_CONFIG.TIKTOK
-  if (lowUrl.includes('instagram')) return PLATFORMS_CONFIG.INSTAGRAM
+  if (lowUrl.includes('instagram') || lowUrl.includes('ig.me')) return PLATFORMS_CONFIG.INSTAGRAM
   if (lowUrl.includes('twitter') || lowUrl.includes('x.com')) return PLATFORMS_CONFIG.TWITTER
   return { name: 'Web', icon: '' }
 }
@@ -302,6 +303,15 @@ function resetAll() {
 }
 
 // Helpers
+function getProxiedMediaUrl(mediaUrl: string, type: 'photo' | 'video' = 'photo') {
+  if (!mediaUrl) return ''
+  // Deteksi domain yg diblokir CORS Hotlink (IG, Twitter CDN, FB)
+  const isCORS = mediaUrl.includes('instagram') || mediaUrl.includes('cdninstagram') || mediaUrl.includes('twimg') || mediaUrl.includes('fbcdn') || mediaUrl.includes('ig_')
+  if (isCORS) {
+    return `/api/download-twitter?url=${encodeURIComponent(mediaUrl)}&type=${type}&inline=true`
+  }
+  return mediaUrl
+}
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
@@ -332,9 +342,9 @@ async function fetchInfo() {
       body: { url: url.value, mode: 'info' }
     }) as any
 
-    if (response.source === 'twitter') {
+    if (['twitter', 'instagram'].includes(response.source)) {
       videoInfo.value = response
-      console.log(`[Figo] Fetch Info Success in ${response.fetchDuration}ms (Twitter)`)
+      console.log(`[Figo] Fetch Info Success in ${response.fetchDuration}ms (${response.source})`)
       return
     }
 
@@ -385,13 +395,17 @@ async function downloadSelected() {
 
   try {
     const targetUrl = url.value || videoInfo.value?._originalUrl || ''
+    const selectedObj = videoInfo.value?.qualities?.find((q: any) => q.formatId === selectedFormat.value)
+    
     const response = await $fetch('/api/download', {
       method: 'POST',
       body: { 
         url: targetUrl, 
         mode: 'download', 
         formatId: selectedFormat.value,
-        title: videoInfo.value?.title || 'Video'
+        title: videoInfo.value?.title || 'Video',
+        uploader: videoInfo.value?.uploader || 'Unknown',
+        resolution: selectedObj ? selectedObj.label || 'Media' : 'Media'
       }
     }) as any
 
@@ -449,8 +463,8 @@ async function downloadSelected() {
 function downloadTwitterMedia(mediaUrl: string, type: string, username?: string, resolution?: string) {
   // Membersihkan karakter "@" atau spasi berlebih
   const safeUsername = (username || 'User').replace(/[^a-zA-Z0-9_\-]/g, '').trim()
-  const safeRes = resolution || (type === 'photo' ? 'Orig' : 'Video')
-  const filename = `figo-${Date.now()}-${safeUsername}-${safeRes}`
+  const safeRes = resolution || (type === 'photo' ? 'Original' : 'Video')
+  const filename = `figo-${Date.now()}-${safeUsername} - ${safeRes}`
   window.location.href = `/api/download-twitter?url=${encodeURIComponent(mediaUrl)}&type=${type}&filename=${encodeURIComponent(filename)}`
   
   // Add to history
