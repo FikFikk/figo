@@ -1122,7 +1122,7 @@ export default defineEventHandler(async (event) => {
             ffmpegLocation: ffmpegPath,
             retries: 5,
             fragmentRetries: 5,
-            mergeOutputFormat: ext, // PAKSA output format sesuai pilihan user (MP4/WEBM)
+            mergeOutputFormat: isAudioOnly ? undefined : ext, // Hanya isi jika ada video yang di-merge
             // Jika MP4, pastikan audio di-transcode ke AAC agar kompatibel (kasus Opus di MP4)
             postprocessorArgs: ext === 'mp4' ? 'ffmpeg:-c:a aac' : undefined,
             // Reconnect otomatis jika stream terputus
