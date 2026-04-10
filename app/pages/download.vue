@@ -275,14 +275,18 @@
               <div class="flex items-center justify-between">
                 <p class="text-white/50 text-[10px]">{{ item.time }}</p>
                 <!-- Stats Indicators -->
-                <div v-if="item.metadata?.statistics?.likes || item.metadata?.statistics?.comments" class="flex gap-2">
+                <div v-if="item.metadata?.statistics?.views || item.metadata?.statistics?.likes || item.metadata?.statistics?.comments" class="flex gap-2">
+                  <div v-if="item.metadata.statistics.views" class="flex items-center gap-0.5 text-white/40 text-[9px]">
+                    <span class="material-symbols-outlined" style="font-size: 9px; line-height: 1;">visibility</span>
+                    <span>{{ formatStatsNumber(item.metadata.statistics.views) }}</span>
+                  </div>
                   <div v-if="item.metadata.statistics.likes" class="flex items-center gap-0.5 text-white/40 text-[9px]">
                     <span class="material-symbols-outlined" style="font-size: 9px; line-height: 1;">favorite</span>
-                    <span>{{ item.metadata.statistics.likes }}</span>
+                    <span>{{ formatStatsNumber(item.metadata.statistics.likes) }}</span>
                   </div>
                   <div v-if="item.metadata.statistics.comments" class="flex items-center gap-0.5 text-white/40 text-[9px]">
                     <span class="material-symbols-outlined" style="font-size: 9px; line-height: 1;">chat_bubble</span>
-                    <span>{{ item.metadata.statistics.comments }}</span>
+                    <span>{{ formatStatsNumber(item.metadata.statistics.comments) }}</span>
                   </div>
                 </div>
               </div>
@@ -331,6 +335,9 @@ const PLATFORMS_CONFIG = {
   TIKTOK: { name: 'TikTok', icon: 'https://api.iconify.design/logos:tiktok-icon.svg' },
   INSTAGRAM: { name: 'Instagram', icon: 'https://api.iconify.design/skill-icons:instagram.svg' },
   TWITTER: { name: 'Twitter/X', icon: 'https://api.iconify.design/ri:twitter-x-fill.svg?color=%23ffffff' },
+  FACEBOOK: { name: 'Facebook', icon: 'https://api.iconify.design/logos:facebook.svg' },
+  REDDIT: { name: 'Reddit', icon: 'https://api.iconify.design/logos:reddit-icon.svg' },
+  PORNHUB: { name: 'Pornhub', icon: 'https://api.iconify.design/ri:vidicon-2-fill.svg?color=%23ffa500' },
 }
 
 const detectedIcon = computed(() => {
@@ -344,6 +351,9 @@ function detectPlatform(link: string): { name: string; icon: string } {
   if (lowUrl.includes('tiktok')) return PLATFORMS_CONFIG.TIKTOK
   if (lowUrl.includes('instagram') || lowUrl.includes('ig.me')) return PLATFORMS_CONFIG.INSTAGRAM
   if (lowUrl.includes('twitter') || lowUrl.includes('x.com')) return PLATFORMS_CONFIG.TWITTER
+  if (lowUrl.includes('facebook.com') || lowUrl.includes('fb.watch')) return PLATFORMS_CONFIG.FACEBOOK
+  if (lowUrl.includes('reddit.com')) return PLATFORMS_CONFIG.REDDIT
+  if (lowUrl.includes('pornhub.com')) return PLATFORMS_CONFIG.PORNHUB
   return { name: 'Web', icon: '' }
 }
 
@@ -487,12 +497,21 @@ function getProxiedMediaUrl(mediaUrl: string, type: 'photo' | 'video' = 'photo')
   }
   return mediaUrl
 }
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  const s = Math.floor(seconds % 60)
+function formatDuration(sec: number) {
+  if (!sec) return '00:00'
+  const h = Math.floor(sec / 3600)
+  const m = Math.floor((sec % 3600) / 60)
+  const s = Math.round(sec % 60)
   if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-  return `${m}:${String(s).padStart(2, '0')}`
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+function formatStatsNumber(num: any) {
+  if (!num) return '0'
+  if (typeof num === 'string') return num
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+  return String(num)
 }
 
 function formatSize(bytes: number): string {

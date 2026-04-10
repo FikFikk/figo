@@ -20,7 +20,7 @@ function getDownloadDir(): string {
 
 // Blocklist for adult sites
 const BLOCKED_DOMAINS = [
-  'pornhub.com', 'xvideos.com', 'xnxx.com', 'xhamster.com', 'redtube.com',
+  'xvideos.com', 'xnxx.com', 'xhamster.com', 'redtube.com',
   'youporn.com', 'spankbang.com', 'eporner.com', 'beeg.com', 'chaturbate.com',
   'onlyfans.com', 'rule34.xxx'
 ]
@@ -432,8 +432,11 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
   let strategies: Record<string, any>[]
 
   if (!isYouTube) {
-    // Non-YouTube: cukup 1 attempt dengan user-agent
-    strategies = [{ ...flags, userAgent: REALISTIC_USER_AGENT }]
+    // Non-YouTube: Berikan 2 strategy dengan UA berbeda untuk bypass blokir
+    strategies = [
+      { ...flags, userAgent: REALISTIC_USER_AGENT },
+      { ...flags, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+    ]
   } else if (purpose === 'info') {
     // Info mode: skip dash/hls untuk kecepatan (tidak perlu download format)
     strategies = [
@@ -974,13 +977,26 @@ export default defineEventHandler(async (event) => {
         note: 'Best quality',
       })
 
+      // Deteksi source platform secara generik dari domain
+      let source = 'web'
+      const lowUrl = url.toLowerCase()
+      if (lowUrl.includes('pornhub.com')) source = 'pornhub'
+      else if (lowUrl.includes('youtube.com') || lowUrl.includes('youtu.be')) source = 'youtube'
+      else if (lowUrl.includes('facebook.com') || lowUrl.includes('fb.watch')) source = 'facebook'
+      else if (lowUrl.includes('reddit.com')) source = 'reddit'
+
       return {
         success: true,
         mode: 'info',
+        source,
         title: data.title || 'Video',
         thumb: data.thumbnail || null,
         duration: data.duration || null,
         uploader: data.uploader || data.channel || null,
+        statistics: {
+          views: data.view_count || 0,
+          likes: data.like_count || 0
+        },
         qualities,
         fetchDuration,
       }
