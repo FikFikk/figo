@@ -291,8 +291,6 @@ const NON_RETRYABLE_PATTERNS = [
   'Permission denied',
   'ENOSPC',
   'EACCES',
-  'Connection refused',
-  'Connection reset',
 ]
 
 function isNonRetryableError(msg: string): boolean {
@@ -346,40 +344,6 @@ function cleanupPartialFiles(tmpFile: string): void {
 }
 
 /**
- * Ambil daftar proxy gratis dari ProxyScrape untuk bypass ISP block.
- * Prioritaskan SOCKS5 karena lebih reliable untuk streaming.
- * Fallback ke HTTP proxy jika SOCKS5 tidak tersedia.
- */
-async function fetchFreeProxies(): Promise<string[]> {
-  const sources = [
-    // SOCKS5 proxy
-    { url: 'https://api.proxyscrape.com/v2/?request=displayproxies&protocol=socks5&timeout=5000&country=all&ssl=all&anonymity=all', prefix: 'socks5://' },
-    // HTTP proxy sebagai fallback
-    { url: 'https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000&country=all&ssl=all&anonymity=elite', prefix: 'http://' },
-  ]
-
-  const proxies: string[] = []
-
-  for (const source of sources) {
-    try {
-      const res = await fetch(source.url, { signal: AbortSignal.timeout(8000) })
-      const text = await res.text()
-      const list = text.trim().split('\n')
-        .map(p => p.trim())
-        .filter(p => p && p.includes(':'))
-        .slice(0, 3) // Ambil max 3 per source agar tidak terlalu lama
-        .map(p => `${source.prefix}${p}`)
-      proxies.push(...list)
-    } catch (e: any) {
-      console.warn(`[AutoProxy] Gagal ambil proxy dari ${source.url}: ${e.message}`)
-    }
-  }
-
-  console.log(`[AutoProxy] Ditemukan ${proxies.length} proxy kandidat`)
-  return proxies
-}
-
-/**
  * Implementasi native yt-dlp untuk kompatibilitas Nitro/Rollup.
  * Mendukung extractor-args, user-agent, retry, dan rate limiting.
  */
@@ -417,12 +381,6 @@ function buildYtdlpArgs(url: string, flags: Record<string, any>): string[] {
 
   // Network reconnect via ffmpeg (untuk stream yang putus)
   if (flags.downloaderArgs) args.push('--downloader-args', flags.downloaderArgs)
-
-  // Proxy support (HTTP/SOCKS5)
-  if (flags.proxy) args.push('--proxy', flags.proxy)
-
-  // Referer header
-  if (flags.referer) args.push('--referer', flags.referer)
 
   // URL terakhir
   args.push(url)
@@ -474,11 +432,10 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
   let strategies: Record<string, any>[]
 
   if (!isYouTube) {
-    // Non-YouTube: Berikan 2 strategy dengan UA berbeda & referer untuk bypass blokir
-    const isPornhub = /pornhub\.com/i.test(url)
+    // Non-YouTube: Berikan 2 strategy dengan UA berbeda untuk bypass blokir
     strategies = [
-      { ...flags, userAgent: REALISTIC_USER_AGENT, referer: isPornhub ? 'https://www.pornhub.com/' : undefined },
-      { ...flags, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', referer: isPornhub ? 'https://www.pornhub.com/' : undefined }
+      { ...flags, userAgent: REALISTIC_USER_AGENT },
+      { ...flags, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
     ]
   } else if (purpose === 'info') {
     // Info mode: skip dash/hls untuk kecepatan (tidak perlu download format)
@@ -499,7 +456,6 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
   }
 
   let lastError: Error | null = null
-  let isConnectionRefused = false
 
   for (let i = 0; i < strategies.length; i++) {
     try {
@@ -512,13 +468,10 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
       const errMsg = err.message || String(err)
       console.warn(`[Retry] Attempt ${i + 1} gagal: ${errMsg.substring(0, 200)}`)
 
-      if (errMsg.includes('Connection refused') || errMsg.includes('Connection reset')) {
-        isConnectionRefused = true
-      }
-
       // Error fatal (disk penuh, permission) → jangan retry, langsung gagal
-      if (isNonRetryableError(errMsg) && !isConnectionRefused) {
+      if (isNonRetryableError(errMsg)) {
         console.error(`[Retry] Non-retryable error terdeteksi, berhenti.`)
+        // Cleanup partial files sebelum throw
         if (flags.output) cleanupPartialFiles(flags.output)
         throw new Error(`Server error: ${errMsg.includes('No space') ? 'Disk server penuh, coba lagi nanti.' : errMsg}`)
       }
@@ -531,29 +484,6 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
         await new Promise(r => setTimeout(r, (i + 1) * 1000))
       }
     }
-  }
-
-  // Auto-Proxy Fallback: jika Connection refused (ISP block), coba dengan proxy gratis
-  if (isConnectionRefused && !flags.proxy) {
-    console.log(`[AutoProxy] Koneksi ditolak ISP, mencoba proxy otomatis...`)
-    const proxies = await fetchFreeProxies()
-    
-    for (let i = 0; i < proxies.length; i++) {
-      try {
-        const proxyUrl = proxies[i] as string
-        console.log(`[AutoProxy] Attempt ${i + 1}/${proxies.length} — proxy: ${proxyUrl}`)
-        const proxyFlags = { ...strategies[0], proxy: proxyUrl }
-        const args = buildYtdlpArgs(url, proxyFlags)
-        const result = await spawnYtdlp(binPath, args, timeoutMs)
-        console.log(`[AutoProxy] Berhasil dengan proxy: ${proxyUrl}`)
-        return result
-      } catch (proxyErr: any) {
-        console.warn(`[AutoProxy] Proxy ${i + 1} gagal: ${(proxyErr.message || '').substring(0, 100)}`)
-        if (flags.output) cleanupPartialFiles(flags.output)
-      }
-    }
-    
-    throw new Error('Koneksi ditolak oleh ISP (Internet Positif). Semua proxy otomatis juga gagal. Silakan masukkan proxy Anda sendiri di Opsi Lanjutan.')
   }
 
   throw lastError || new Error('Semua strategi download gagal')
@@ -678,17 +608,12 @@ export default defineEventHandler(async (event) => {
   const targetUrl = body?.url as string
   const mode = (body?.mode as string) || 'info'
   const formatId = body?.formatId as string | undefined
-  const proxy = body?.proxy as string | undefined // Dukungan proxy opsional
 
   if (!targetUrl || typeof targetUrl !== 'string') {
     throw createError({ statusCode: 400, message: 'Harap masukkan URL yang valid.' })
   }
 
   const url = normalizeUrl(targetUrl)
-
-  const commonFlags: Record<string, any> = {
-    proxy: proxy || undefined
-  }
 
   if (isBlocked(url)) {
     throw createError({
@@ -983,161 +908,12 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      // ---------- PORNHUB: Direct scraper via web relay ----------
-      if (/pornhub\.com/i.test(url)) {
-        try {
-          console.log('[Pornhub] ISP Bypass: menggunakan web relay scraper...')
-
-          // Daftar relay service untuk bypass ISP block
-          const relays = [
-            `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-          ]
-
-          let html = ''
-          for (const relayUrl of relays) {
-            try {
-              console.log(`[Pornhub] Trying relay: ${relayUrl.substring(0, 60)}...`)
-              const res = await fetch(relayUrl, {
-                headers: { 'User-Agent': REALISTIC_USER_AGENT },
-                signal: AbortSignal.timeout(15000),
-              })
-              if (res.ok) {
-                const text = await res.text()
-                // Pastikan kita mendapat HTML yang valid (bukan error page)
-                if (text.length > 5000 && (text.includes('flashvars_') || text.includes('mediaDefinitions') || text.includes('pornhub'))) {
-                  html = text
-                  console.log(`[Pornhub] Relay berhasil, HTML ${text.length} chars`)
-                  break
-                }
-              }
-            } catch (e: any) {
-              console.warn(`[Pornhub] Relay gagal: ${e.message}`)
-            }
-          }
-
-          if (!html) {
-            throw new Error('Semua relay proxy gagal mengambil halaman video.')
-          }
-
-          // Parse title
-          const titleMatch = html.match(/<title>([^<]+)<\/title>/i)
-          const title = titleMatch 
-            ? titleMatch[1].replace(/ - Pornhub\.com$/i, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').trim()
-            : 'Pornhub Video'
-
-          // Parse uploader
-          const uploaderMatch = html.match(/"author"\s*:\s*"([^"]+)"/)
-            || html.match(/class="usernameBadgesWrapper"[^>]*>[\s\S]*?<a[^>]*>([^<]+)</)
-            || html.match(/data-type="user"[^>]*>([^<]+)</)
-          const uploader = uploaderMatch ? uploaderMatch[1].trim() : 'Pornhub User'
-
-          // Parse thumbnail
-          const thumbMatch = html.match(/og:image"\s+content="([^"]+)"/)
-          const thumb = thumbMatch ? thumbMatch[1] : null
-
-          // Parse video URLs dari flashvars / mediaDefinitions
-          let mediaDefinitions: any[] = []
-
-          // Method 1: flashvars_XXXXX = {...}
-          const flashvarsMatch = html.match(/var\s+flashvars_\d+\s*=\s*(\{[\s\S]*?\});/)
-          if (flashvarsMatch) {
-            try {
-              const flashvars = JSON.parse(flashvarsMatch[1])
-              if (flashvars.mediaDefinitions && Array.isArray(flashvars.mediaDefinitions)) {
-                mediaDefinitions = flashvars.mediaDefinitions
-              }
-            } catch (e) {
-              console.warn('[Pornhub] flashvars JSON parse gagal, coba method 2...')
-            }
-          }
-
-          // Method 2: mediaDefinitions langsung di HTML
-          if (mediaDefinitions.length === 0) {
-            const mdMatch = html.match(/mediaDefinitions\s*[=:]\s*(\[[\s\S]*?\])\s*[;,]/)
-            if (mdMatch) {
-              try {
-                mediaDefinitions = JSON.parse(mdMatch[1])
-              } catch {}
-            }
-          }
-
-          // Method 3: Cari URL video manual dari HTML (fallback)
-          if (mediaDefinitions.length === 0) {
-            const videoUrlMatches = html.matchAll(/https?:\/\/[^"'\s]+\.(?:mp4|m3u8)[^"'\s]*/gi)
-            const seen = new Set<string>()
-            for (const m of videoUrlMatches) {
-              const vUrl = m[0].replace(/\\\//g, '/')
-              if (!seen.has(vUrl) && !vUrl.includes('thumb') && !vUrl.includes('poster')) {
-                seen.add(vUrl)
-                mediaDefinitions.push({ videoUrl: vUrl, quality: '720', format: 'mp4' })
-              }
-            }
-          }
-
-          if (mediaDefinitions.length === 0) {
-            throw new Error('Tidak dapat menemukan video URL. Video mungkin memerlukan login atau di-private.')
-          }
-
-          // Filter hanya entry yang punya videoUrl langsung (bukan empty/getVideoUrl)
-          const videos = mediaDefinitions
-            .filter((m: any) => {
-              const vUrl = m.videoUrl || m.url || ''
-              return vUrl && vUrl.startsWith('http') && !vUrl.includes('getVideoUrl')
-            })
-            .map((m: any) => ({
-              url: (m.videoUrl || m.url).replace(/\\\//g, '/'),
-              quality: parseInt(m.quality) || 0,
-            }))
-            .filter((v: any) => v.quality > 0)
-            .sort((a: any, b: any) => b.quality - a.quality)
-            // Deduplicate by quality
-            .filter((v: any, i: number, arr: any[]) => i === 0 || v.quality !== arr[i - 1].quality)
-
-          if (videos.length === 0) {
-            throw new Error('Tidak ada video quality yang tersedia. Mungkin butuh login.')
-          }
-
-          console.log(`[Pornhub] Ditemukan ${videos.length} quality: ${videos.map((v: any) => v.quality + 'p').join(', ')}`)
-
-          // Format response sebagai mediaItems (seperti Twitter/Instagram)
-          const mediaItems = [{
-            type: 'video' as const,
-            url: videos[0].url,
-            thumbnail: thumb,
-            width: 0,
-            height: videos[0].quality,
-            qualities: videos.map((v: any) => ({
-              url: v.url,
-              height: v.quality,
-              label: `${v.quality}p`,
-            })),
-          }]
-
-          return {
-            success: true,
-            mode: 'info',
-            source: 'pornhub',
-            title,
-            uploader,
-            thumb,
-            statistics: { views: 0, likes: 0 },
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(uploader.replace('@', ''))}&background=FFA500&color=000&size=128`,
-            mediaItems,
-            fetchDuration: Date.now() - startTime,
-          }
-        } catch (phErr: any) {
-          console.error(`[Pornhub] Direct scraper gagal: ${phErr.message}`)
-          // Fall through ke yt-dlp default (yang akan coba auto-proxy)
-        }
-      }
-
       // ---------- DEFAULT: yt-dlp untuk platform lain ----------
       const dataRaw = await execYtdlp(url, {
-        ...commonFlags, // Masukkan proxy jika ada
         dumpSingleJson: true,
         noCheckCertificates: true,
         noPlaylist: true,
+        forceIpv4: true,
         ignoreErrors: true,
         retries: 3,
         fragmentRetries: 3,
@@ -1260,8 +1036,7 @@ export default defineEventHandler(async (event) => {
           }
 
           console.log(`[Job ${jobId}] Starting: format=${formatStr}`)
-          const flags = {
-            ...commonFlags,
+          const flags: any = {
             format: formatStr,
             output: tmpFile,
             noWarnings: true,
@@ -1272,6 +1047,8 @@ export default defineEventHandler(async (event) => {
             // Reconnect otomatis jika stream terputus
             downloaderArgs: 'ffmpeg_i:-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
           }
+          // Biarkan yt-dlp yang tentukan merge formatnya (biasanya mkv/webm jika codec tidak cocok untuk mp4)
+          // Jika kita batasi ke mp4, yt-dlp bisa gagal merge jika streamnya VP9/Opus.
 
           await execYtdlp(url, flags, 600_000, 'download')
           console.log(`[Job ${jobId}] yt-dlp selesai, verifikasi file...`)

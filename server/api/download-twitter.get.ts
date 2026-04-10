@@ -18,9 +18,9 @@ export default defineEventHandler(async (event) => {
 
   // Validasi domain — izinkan domain Twitter media & Instagram media
   try {
+    const hostname = new URL(mediaUrl).hostname.toLowerCase()
     const allowed = [
       'twimg.com', 'instagram.com', 'cdninstagram.com', 'fbcdn.net',
-      'phncdn.com', 'pornhub.com', 
       'tikwm.com', 'tiktokcdn.com', 'tiktokcdn-us.com', 'tiktok.com', 'musical.ly',
       'p16-sign-sg.tiktokcdn.com', 'v19-webapp.tiktok.com', 'v16m-default.tiktokcdn-us.com'
     ]
@@ -38,8 +38,7 @@ export default defineEventHandler(async (event) => {
     const response = await fetch(mediaUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        'Referer': mediaUrl.includes('twimg') ? 'https://x.com/' : 
-                 (mediaUrl.includes('phncdn') ? 'https://www.pornhub.com/' : 'https://www.instagram.com/'),
+        'Referer': mediaUrl.includes('twimg') ? 'https://x.com/' : 'https://www.instagram.com/',
       },
     })
 
