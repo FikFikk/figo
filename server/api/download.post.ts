@@ -761,12 +761,16 @@ export default defineEventHandler(async (event) => {
              const uploader = ytParsed.uploader || ytParsed.channel || 'Instagram User'
              const thumb = ytParsed.thumbnail || null
              const rawTitle = ytParsed.description || ytParsed.title || 'Instagram Reel'
-             const { caption } = parseIgContent(rawTitle)
+             const { caption, likes, comments } = parseIgContent(rawTitle)
              
              return {
                 success: true, mode: 'info', source: 'instagram',
                 title: caption.substring(0, 200),
                 uploader, thumb,
+                statistics: {
+                   likes: likes || ytParsed.like_count || 0,
+                   comments: comments || ytParsed.comment_count || 0
+                },
                 avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(uploader.replace('@',''))}&background=E1306C&color=fff&size=128`,
                 mediaItems: [{
                    type: 'video',
