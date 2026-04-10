@@ -69,7 +69,7 @@
 
         <!-- Advanced Fields -->
         <div v-if="showAdvanced" class="animate-slide-down">
-          <div class="glass-panel p-4 rounded-xl border" :class="isDark ? 'border-white/5' : 'border-slate-200'">
+          <div class="glass-panel p-4 rounded-2xl border" :class="isDark ? 'border-white/5' : 'border-slate-200'">
             <label class="block text-[10px] font-bold uppercase tracking-widest mb-2" :class="isDark ? 'text-white/40' : 'text-slate-500'">HTTP/SOCKS Proxy URL</label>
             <input 
               v-model="proxy"
