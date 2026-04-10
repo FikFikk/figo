@@ -18,44 +18,71 @@
 
     <!-- URL Input -->
     <div class="glass-panel rounded-2xl p-6 md:p-8" :class="isDark ? 'border border-white/5' : 'border border-slate-100'">
-      <div class="flex flex-col sm:flex-row gap-4">
-        <div class="flex-1 relative">
-          <!-- Dynamic Platform Icon -->
-          <div class="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center pointer-events-none transition-all duration-300">
-            <img v-if="detectedIcon" :src="detectedIcon" class="w-full h-full object-cover rounded-md shadow-sm bg-white" />
-            <span v-else class="material-symbols-outlined text-xl"
-              :class="isDark ? 'text-gray-500' : 'text-slate-400'"
-            >link</span>
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <div class="flex-1 relative">
+            <!-- Dynamic Platform Icon -->
+            <div class="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center pointer-events-none transition-all duration-300">
+              <img v-if="detectedIcon" :src="detectedIcon" class="w-full h-full object-cover rounded-md shadow-sm bg-white" />
+              <span v-else class="material-symbols-outlined text-xl"
+                :class="isDark ? 'text-gray-500' : 'text-slate-400'"
+              >link</span>
+            </div>
+            <input
+              v-model="url"
+              type="url"
+              placeholder="Paste URL here... (YouTube, TikTok, Instagram, Twitter)"
+              class="w-full pl-14 pr-12 py-4 rounded-md text-sm font-medium transition-all outline-none"
+              :class="isDark
+                ? 'bg-white/5 text-white placeholder-gray-600 border border-white/10 focus:border-primary/40 focus:bg-white/8'
+                : 'bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 focus:border-primary focus:bg-white'"
+              @keydown.enter="fetchInfo"
+              :disabled="isLoading"
+            />
+            <!-- Clear/Paste Button -->
+            <button
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              @click="url ? resetAll() : pasteFromClipboard()"
+            >
+              <span class="material-symbols-outlined text-lg">{{ url ? 'close' : 'content_paste' }}</span>
+            </button>
           </div>
-          <input
-            v-model="url"
-            type="url"
-            placeholder="Paste URL here... (YouTube, TikTok, Instagram, Twitter)"
-            class="w-full pl-14 pr-12 py-4 rounded-md text-sm font-medium transition-all outline-none"
-            :class="isDark
-              ? 'bg-white/5 text-white placeholder-gray-600 border border-white/10 focus:border-primary/40 focus:bg-white/8'
-              : 'bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 focus:border-primary focus:bg-white'"
-            @keydown.enter="fetchInfo"
-            :disabled="isLoading"
-          />
-          <!-- Clear/Paste Button -->
           <button
-            class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            @click="url ? resetAll() : pasteFromClipboard()"
+            class="px-8 py-4 bg-primary text-on-primary rounded-md font-headline font-bold text-sm hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 whitespace-nowrap"
+            @click="fetchInfo"
+            :disabled="!url.trim() || isLoading"
+            :class="{ 'opacity-50 cursor-not-allowed': !url.trim() || isLoading }"
           >
-            <span class="material-symbols-outlined text-lg">{{ url ? 'close' : 'content_paste' }}</span>
+            <span v-if="isLoading" class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+            <span v-else class="material-symbols-outlined text-lg">search</span>
+            {{ isLoading ? 'Fetching...' : 'Fetch Info' }}
           </button>
         </div>
-        <button
-          class="px-8 py-4 bg-primary text-on-primary rounded-md font-headline font-bold text-sm hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 whitespace-nowrap"
-          @click="fetchInfo"
-          :disabled="!url.trim() || isLoading"
-          :class="{ 'opacity-50 cursor-not-allowed': !url.trim() || isLoading }"
-        >
-          <span v-if="isLoading" class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
-          <span v-else class="material-symbols-outlined text-lg">search</span>
-          {{ isLoading ? 'Fetching...' : 'Fetch Info' }}
-        </button>
+
+        <!-- Advanced Options Toggle -->
+        <div class="text-center">
+          <button @click="showAdvanced = !showAdvanced" class="text-xs font-semibold text-primary/60 hover:text-primary transition-colors flex items-center justify-center gap-1 mx-auto">
+            <span class="material-symbols-outlined text-[14px]">{{ showAdvanced ? 'expand_less' : 'settings' }}</span>
+            {{ showAdvanced ? 'Sembunyikan Opsi Lanjutan' : 'Punya Proxy? (Opsi Lanjutan)' }}
+          </button>
+        </div>
+
+        <!-- Advanced Fields -->
+        <div v-if="showAdvanced" class="animate-slide-down">
+          <div class="glass-panel p-4 rounded-xl border" :class="isDark ? 'border-white/5' : 'border-slate-200'">
+            <label class="block text-[10px] font-bold uppercase tracking-widest mb-2" :class="isDark ? 'text-white/40' : 'text-slate-500'">HTTP/SOCKS Proxy URL</label>
+            <input 
+              v-model="proxy"
+              type="text" 
+              placeholder="http://user:pass@host:port" 
+              class="w-full bg-transparent border rounded-md px-3 py-2 text-xs focus:ring-1 focus:ring-primary outline-none transition-all"
+              :class="isDark ? 'border-white/10 text-white placeholder:text-white/20' : 'border-slate-200 text-slate-700 placeholder:text-slate-400'"
+            />
+            <p class="text-[9px] mt-2 leading-relaxed" :class="isDark ? 'text-white/30' : 'text-slate-400'">
+              Gunakan proxy jika Anda mengalami error "Connection Refused" (Blokir ISP).
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -313,6 +340,8 @@ const { isDark } = useColorMode()
 const { increment } = useHistoryCounter()
 
 const url = ref('')
+const proxy = ref('') // Added for advanced proxy support
+const showAdvanced = ref(false) // Toggle for advanced options
 const history = ref<any[]>([])
 const STORAGE_KEY = 'figo_recent_downloads_v2' // Update version to avoid parsing errors with old schema
 
@@ -452,7 +481,7 @@ async function startDownloadJob(body: any) {
   try {
     const response = await $fetch('/api/download', {
       method: 'POST',
-      body
+      body: { ...body, proxy: proxy.value || undefined }
     }) as any
 
     const jobId = response.jobId
@@ -533,7 +562,7 @@ async function fetchInfo() {
   try {
     const response = await $fetch('/api/download', {
       method: 'POST',
-      body: { url: url.value, mode: 'info' }
+      body: { url: url.value, mode: 'info', proxy: proxy.value || undefined }
     }) as any
 
     if (['twitter', 'instagram', 'tiktok'].includes(response.source)) {

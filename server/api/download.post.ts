@@ -432,10 +432,11 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
   let strategies: Record<string, any>[]
 
   if (!isYouTube) {
-    // Non-YouTube: Berikan 2 strategy dengan UA berbeda untuk bypass blokir
+    // Non-YouTube: Berikan 2 strategy dengan UA berbeda & referer untuk bypass blokir
+    const isPornhub = /pornhub\.com/i.test(url)
     strategies = [
-      { ...flags, userAgent: REALISTIC_USER_AGENT },
-      { ...flags, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+      { ...flags, userAgent: REALISTIC_USER_AGENT, referer: isPornhub ? 'https://www.pornhub.com/' : undefined },
+      { ...flags, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', referer: isPornhub ? 'https://www.pornhub.com/' : undefined }
     ]
   } else if (purpose === 'info') {
     // Info mode: skip dash/hls untuk kecepatan (tidak perlu download format)
@@ -473,7 +474,13 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
         console.error(`[Retry] Non-retryable error terdeteksi, berhenti.`)
         // Cleanup partial files sebelum throw
         if (flags.output) cleanupPartialFiles(flags.output)
-        throw new Error(`Server error: ${errMsg.includes('No space') ? 'Disk server penuh, coba lagi nanti.' : errMsg}`)
+        
+        let customMessage = errMsg.includes('No space') ? 'Disk server penuh, coba lagi nanti.' : errMsg
+        if (errMsg.includes('Connection refused')) {
+          customMessage = 'Koneksi ditolak (ISP Block). Gunakan Proxy di backend atau pastikan server bisa mengakses situs tersebut.'
+        }
+        
+        throw new Error(`Server error: ${customMessage}`)
       }
 
       // Cleanup partial files sebelum retry berikutnya
@@ -608,12 +615,17 @@ export default defineEventHandler(async (event) => {
   const targetUrl = body?.url as string
   const mode = (body?.mode as string) || 'info'
   const formatId = body?.formatId as string | undefined
+  const proxy = body?.proxy as string | undefined // Dukungan proxy opsional
 
   if (!targetUrl || typeof targetUrl !== 'string') {
     throw createError({ statusCode: 400, message: 'Harap masukkan URL yang valid.' })
   }
 
   const url = normalizeUrl(targetUrl)
+
+  const commonFlags: Record<string, any> = {
+    proxy: proxy || undefined
+  }
 
   if (isBlocked(url)) {
     throw createError({
@@ -910,10 +922,10 @@ export default defineEventHandler(async (event) => {
 
       // ---------- DEFAULT: yt-dlp untuk platform lain ----------
       const dataRaw = await execYtdlp(url, {
+        ...commonFlags, // Masukkan proxy jika ada
         dumpSingleJson: true,
         noCheckCertificates: true,
         noPlaylist: true,
-        forceIpv4: true,
         ignoreErrors: true,
         retries: 3,
         fragmentRetries: 3,
@@ -1036,7 +1048,8 @@ export default defineEventHandler(async (event) => {
           }
 
           console.log(`[Job ${jobId}] Starting: format=${formatStr}`)
-          const flags: any = {
+          const flags = {
+            ...commonFlags,
             format: formatStr,
             output: tmpFile,
             noWarnings: true,
@@ -1047,8 +1060,6 @@ export default defineEventHandler(async (event) => {
             // Reconnect otomatis jika stream terputus
             downloaderArgs: 'ffmpeg_i:-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
           }
-          // Biarkan yt-dlp yang tentukan merge formatnya (biasanya mkv/webm jika codec tidak cocok untuk mp4)
-          // Jika kita batasi ke mp4, yt-dlp bisa gagal merge jika streamnya VP9/Opus.
 
           await execYtdlp(url, flags, 600_000, 'download')
           console.log(`[Job ${jobId}] yt-dlp selesai, verifikasi file...`)
