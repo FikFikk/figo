@@ -38,13 +38,12 @@
             @keydown.enter="fetchInfo"
             :disabled="isLoading"
           />
-          <!-- Clear Button -->
+          <!-- Clear/Paste Button -->
           <button
-            v-if="url"
             class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            @click="resetAll"
+            @click="url ? resetAll() : pasteFromClipboard()"
           >
-            <span class="material-symbols-outlined text-lg">close</span>
+            <span class="material-symbols-outlined text-lg">{{ url ? 'close' : 'content_paste' }}</span>
           </button>
         </div>
         <button
@@ -224,25 +223,65 @@
       </div>
     </div>
 
-    <!-- Download History -->
-    <div v-if="history.length > 0" class="mt-10">
-      <h3 class="font-headline font-bold text-lg mb-4" :class="isDark ? 'text-white' : 'text-slate-900'">Recent Downloads</h3>
-      <div class="space-y-3">
+    <!-- Download History (Carousel) -->
+    <div v-if="history.length > 0" class="mt-12">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="font-headline font-bold text-xl" :class="isDark ? 'text-white' : 'text-slate-900'">Recent Downloads</h3>
+        <div class="flex gap-2">
+          <button @click="(($refs.historyScroll as any).scrollBy({ left: -300, behavior: 'smooth' }))" class="w-8 h-8 rounded-full border flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5" :class="isDark ? 'border-white/10 text-white' : 'border-slate-200 text-slate-600'">
+            <span class="material-symbols-outlined text-sm">arrow_back</span>
+          </button>
+          <button @click="(($refs.historyScroll as any).scrollBy({ left: 300, behavior: 'smooth' }))" class="w-8 h-8 rounded-full border flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5" :class="isDark ? 'border-white/10 text-white' : 'border-slate-200 text-slate-600'">
+            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+
+      <div 
+        ref="historyScroll"
+        class="flex gap-5 overflow-x-auto pb-8 px-1 snap-x snap-mandatory hide-scroll scroll-smooth"
+      >
         <div
           v-for="(item, idx) in history"
           :key="idx"
-          class="glass-panel rounded-2xl p-4 flex items-center gap-4"
-          :class="isDark ? 'border border-white/5' : 'border border-slate-100'"
+          class="flex-none w-[280px] snap-start"
         >
-          <div class="w-10 h-10 flex items-center justify-center shrink-0 shadow-sm rounded-md overflow-hidden bg-white">
-            <img v-if="item.icon" :src="item.icon" class="w-full h-full object-cover" />
-            <span v-else class="material-symbols-outlined text-xl text-slate-400">link</span>
+          <div 
+            class="group relative aspect-[16/10] rounded-2xl overflow-hidden glass-panel border shadow-sm transition-all hover:shadow-xl hover:scale-[1.02] bg-black/20"
+            :class="isDark ? 'border-white/5' : 'border-slate-100'"
+          >
+            <!-- Thumbnail Background -->
+            <img 
+              v-if="item.thumbnail" 
+              :src="getProxiedMediaUrl(item.thumbnail)" 
+              class="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-70 transition-opacity"
+            />
+            <div v-else class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+               <span class="material-symbols-outlined text-4xl text-white/20">movie</span>
+            </div>
+
+            <!-- Content Overlay -->
+            <div class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black via-black/60 to-transparent">
+              <div class="flex items-center gap-2 mb-1.5">
+                <div class="w-5 h-5 rounded-full overflow-hidden bg-white shadow-sm flex items-center justify-center">
+                  <img v-if="item.platformIcon" :src="item.platformIcon" class="w-3.5 h-3.5 object-contain" />
+                  <span v-else class="material-symbols-outlined text-[10px] text-slate-400">link</span>
+                </div>
+                <span class="text-[10px] font-bold text-white/70 uppercase tracking-widest">{{ item.platform }}</span>
+              </div>
+              <h4 class="text-white font-bold text-sm line-clamp-1 mb-1">{{ item.title || 'Untitled' }}</h4>
+              <p class="text-white/50 text-[10px]">{{ item.time }}</p>
+            </div>
+
+            <!-- Download Action Button -->
+            <button 
+              @click="reDownloadFromHistory(item)"
+              class="absolute top-3 right-3 w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 active:scale-95"
+              title="Download Again"
+            >
+              <span class="material-symbols-outlined text-xl">download</span>
+            </button>
           </div>
-          <div class="flex-1 min-w-0">
-            <p class="font-medium truncate text-sm" :class="isDark ? 'text-white' : 'text-slate-900'">{{ item.url }}</p>
-            <p class="text-xs" :class="isDark ? 'text-gray-500' : 'text-slate-400'">{{ item.platform }} • {{ item.time }}</p>
-          </div>
-          <span class="material-symbols-outlined text-green-500 text-lg">check_circle</span>
         </div>
       </div>
     </div>
@@ -255,8 +294,8 @@ const { isDark } = useColorMode()
 const { increment } = useHistoryCounter()
 
 const url = ref('')
-const history = ref<{ url: string; platform: string; icon: string; time: string }[]>([])
-const STORAGE_KEY = 'figo_recent_downloads'
+const history = ref<any[]>([])
+const STORAGE_KEY = 'figo_recent_downloads_v2' // Update version to avoid parsing errors with old schema
 
 onMounted(() => {
   if (process.client) {
@@ -305,6 +344,117 @@ function resetAll() {
   error.value = ''
   videoInfo.value = null
   selectedFormat.value = ''
+}
+
+async function pasteFromClipboard() {
+  if (process.client && typeof navigator !== 'undefined' && navigator.clipboard) {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (text) {
+        url.value = text
+        fetchInfo()
+      }
+    } catch (err) {
+      console.error('Gagal membaca clipboard:', err)
+    }
+  }
+}
+
+// History Helper
+function addToHistory(payload: any) {
+  const { name, icon } = detectPlatform(payload.url)
+  const newItem = {
+    url: payload.url,
+    title: payload.title || 'Untitled',
+    thumbnail: payload.thumbnail || '',
+    platform: name,
+    platformIcon: icon,
+    time: new Date().toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }),
+    source: payload.source || 'web',
+    metadata: payload.metadata || {}
+  }
+
+  // Remove duplicate by URL
+  history.value = history.value.filter(h => h.url !== newItem.url)
+  history.value.unshift(newItem)
+
+  if (history.value.length > 20) {
+    history.value = history.value.slice(0, 20)
+  }
+
+  if (process.client) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history.value))
+  }
+}
+
+async function reDownloadFromHistory(item: any) {
+  if (isProcessing.value) return
+  
+  error.value = ''
+  
+  if (['twitter', 'instagram', 'tiktok'].includes(item.source)) {
+    downloadTwitterMedia(
+      item.metadata.mediaUrl, 
+      item.metadata.type, 
+      item.metadata.uploader, 
+      item.metadata.resolution
+    )
+    return
+  }
+
+  if (item.metadata.formatId) {
+    await startDownloadJob({
+      url: item.url,
+      mode: 'download',
+      formatId: item.metadata.formatId,
+      title: item.title,
+      uploader: item.metadata.uploader || 'Unknown',
+      resolution: item.metadata.resolutionLabel || 'Media'
+    })
+  }
+}
+
+// Polling Helper
+async function startDownloadJob(body: any) {
+  isProcessing.value = true
+  error.value = ''
+
+  try {
+    const response = await $fetch('/api/download', {
+      method: 'POST',
+      body
+    }) as any
+
+    const jobId = response.jobId
+
+    if (pollInterval.value) clearInterval(pollInterval.value)
+    
+    pollInterval.value = setInterval(async () => {
+      try {
+        const { status, error: jobErr } = await $fetch(`/api/job-status?id=${jobId}`) as any
+        
+        if (status === 'done') {
+          clearInterval(pollInterval.value)
+          isProcessing.value = false
+          window.location.href = `/api/download-file?id=${jobId}`
+          increment()
+        } else if (status === 'error') {
+          clearInterval(pollInterval.value)
+          isProcessing.value = false
+          error.value = 'Gagal memproses video: ' + (jobErr || 'Unknown error')
+        } else if (status === 'not_found') {
+          clearInterval(pollInterval.value)
+          isProcessing.value = false
+          error.value = 'Tugas download tidak ditemukan.'
+        }
+      } catch (e: any) {
+        console.error('Polling error:', e)
+      }
+    }, 2000)
+  } catch (err: any) {
+    isProcessing.value = false
+    error.value = err.data?.message || 'Gagal memulai unduhan.'
+  }
 }
 
 // Helpers
@@ -395,73 +545,32 @@ onUnmounted(() => {
 async function downloadSelected() {
   if (!selectedFormat.value || isDownloading.value || isProcessing.value) return
 
-  isProcessing.value = true
-  error.value = ''
-
-  try {
-    const targetUrl = url.value || videoInfo.value?._originalUrl || ''
-    const selectedObj = videoInfo.value?.qualities?.find((q: any) => q.formatId === selectedFormat.value)
-    
-    const response = await $fetch('/api/download', {
-      method: 'POST',
-      body: { 
-        url: targetUrl, 
-        mode: 'download', 
-        formatId: selectedFormat.value,
-        title: videoInfo.value?.title || 'Video',
-        uploader: videoInfo.value?.uploader || 'Unknown',
-        resolution: selectedObj ? selectedObj.label || 'Media' : 'Media'
-      }
-    }) as any
-
-    const jobId = response.jobId
-
-    // Start polling status
-    pollInterval.value = setInterval(async () => {
-      try {
-        const { status, error: jobErr } = await $fetch(`/api/job-status?id=${jobId}`) as any
-        
-        if (status === 'done') {
-          clearInterval(pollInterval.value)
-          isProcessing.value = false
-          
-          // Trigger the actual download natively in the browser
-          window.location.href = `/api/download-file?id=${jobId}`
-
-          // Add to history
-          const { name, icon } = detectPlatform(targetUrl)
-          history.value.unshift({
-            url: targetUrl, platform: name, icon, time: new Date().toLocaleTimeString(),
-          })
-          
-          // Persist top 5 to local storage
-          if (history.value.length > 5) {
-            history.value = history.value.slice(0, 5)
-          }
-          if (process.client) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(history.value))
-          }
-
-          increment()
-          
-        } else if (status === 'error') {
-          clearInterval(pollInterval.value)
-          isProcessing.value = false
-          error.value = 'Gagal memproses video: ' + (jobErr || 'Unknown error')
-        } else if (status === 'not_found') {
-          clearInterval(pollInterval.value)
-          isProcessing.value = false
-          error.value = 'Tugas download tidak ditemukan / kadaluarsa.'
-        }
-      } catch (e: any) {
-        console.error('Polling error:', e)
-      }
-    }, 2000)
-
-  } catch (err: any) {
-    isProcessing.value = false
-    error.value = err.data?.message || 'Gagal memulai unduhan.'
+  const targetUrl = url.value || videoInfo.value?._originalUrl || ''
+  const selectedObj = videoInfo.value?.qualities?.find((q: any) => q.formatId === selectedFormat.value)
+  
+  const payload = { 
+    url: targetUrl, 
+    mode: 'download', 
+    formatId: selectedFormat.value,
+    title: videoInfo.value?.title || 'Video',
+    uploader: videoInfo.value?.uploader || 'Unknown',
+    resolutionLabel: selectedObj ? selectedObj.label || 'Media' : 'Media'
   }
+
+  await startDownloadJob(payload)
+
+  // Add to history
+  addToHistory({
+    url: targetUrl,
+    title: videoInfo.value?.title,
+    thumbnail: videoInfo.value?.thumb,
+    source: videoInfo.value?.source || 'web',
+    metadata: {
+      formatId: selectedFormat.value,
+      uploader: videoInfo.value?.uploader,
+      resolutionLabel: payload.resolutionLabel
+    }
+  })
 }
 
 // Download direct URL via proxy untuk media Twitter
@@ -474,17 +583,19 @@ function downloadTwitterMedia(mediaUrl: string, type: string, username?: string,
   
   // Add to history
   const targetUrl = url.value
-  const { name, icon } = detectPlatform(targetUrl)
-  history.value.unshift({
-    url: targetUrl, platform: name || 'Twitter/X', icon: icon || PLATFORMS_CONFIG.TWITTER.icon, time: new Date().toLocaleTimeString(),
+  addToHistory({
+    url: targetUrl,
+    title: videoInfo.value?.title || `${type.toUpperCase()} from ${username}`,
+    thumbnail: videoInfo.value?.mediaItems?.[0]?.thumbnail || videoInfo.value?.mediaItems?.[0]?.url,
+    source: videoInfo.value?.source || 'twitter',
+    metadata: {
+      mediaUrl,
+      type,
+      uploader: username,
+      resolution: safeRes
+    }
   })
-  
-  if (history.value.length > 5) {
-    history.value = history.value.slice(0, 5)
-  }
-  if (process.client) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history.value))
-  }
+
   increment()
 }
 </script>
