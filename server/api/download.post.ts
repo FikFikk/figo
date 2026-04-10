@@ -291,6 +291,8 @@ const NON_RETRYABLE_PATTERNS = [
   'Permission denied',
   'ENOSPC',
   'EACCES',
+  'Connection refused',
+  'Connection reset',
 ]
 
 function isNonRetryableError(msg: string): boolean {
@@ -341,21 +343,6 @@ function cleanupPartialFiles(tmpFile: string): void {
       }
     }
   } catch {}
-}
-
-/**
- * Deteksi error yang tidak perlu di-retry (disk penuh, permission, dll).
- */
-function isNonRetryableError(errMsg: string): boolean {
-  const fatal = [
-    'No space left on device',
-    'Permission denied',
-    'EACCES',
-    'EROFS',
-    'Connection refused',
-    'Connection reset',
-  ]
-  return fatal.some(f => errMsg.includes(f))
 }
 
 /**
