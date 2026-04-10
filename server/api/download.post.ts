@@ -382,6 +382,9 @@ function buildYtdlpArgs(url: string, flags: Record<string, any>): string[] {
   // Network reconnect via ffmpeg (untuk stream yang putus)
   if (flags.downloaderArgs) args.push('--downloader-args', flags.downloaderArgs)
 
+  // Post-processor args (e.g. force AAC transcoding for MP4)
+  if (flags.postprocessorArgs) args.push('--postprocessor-args', flags.postprocessorArgs)
+
   // URL terakhir
   args.push(url)
   return args
@@ -972,12 +975,12 @@ export default defineEventHandler(async (event) => {
 
 
       // KODE ASLI UNTUK NON-INSTAGRAM (YOUTUBE, TIKTOK, DLL)
-      // Collect unique heights
-      const heights = new Set<number>()
-      const sizeEstimates: Record<number, number> = {}
+      // Collect unique (height, ext) combinations
+      const formatMap = new Map<string, { height: number; ext: string; size: number }>()
+      let bestAudioSize = 0
 
       if (data.formats && Array.isArray(data.formats)) {
-        let bestAudioSize = 0
+        // Cari audio terbaik dulu
         for (const f of data.formats) {
           if (f.acodec && f.acodec !== 'none' && (!f.vcodec || f.vcodec === 'none')) {
             const aSize = f.filesize || f.filesize_approx || 0
@@ -987,28 +990,42 @@ export default defineEventHandler(async (event) => {
 
         for (const f of data.formats) {
           if (f.height && f.vcodec && f.vcodec !== 'none') {
-            heights.add(f.height)
+            // Normalisasi ekstensi (e.g. m4v -> mp4)
+            let ext = f.ext === 'm4v' ? 'mp4' : f.ext
+            if (!['mp4', 'webm'].includes(ext)) ext = 'mp4' // Fallback aman
+            
+            const key = `${f.height}-${ext}`
             const vSize = f.filesize || f.filesize_approx || 0
-            const total = vSize + bestAudioSize
-            if (!sizeEstimates[f.height] || total > (sizeEstimates[f.height] ?? 0)) {
-              sizeEstimates[f.height] = total
+            
+            if (!formatMap.has(key) || vSize > (formatMap.get(key)?.size || 0)) {
+              formatMap.set(key, { height: f.height, ext, size: vSize })
             }
           }
         }
       }
 
-      const sortedHeights = [...heights].sort((a, b) => b - a)
+      const sortedFormats = Array.from(formatMap.values()).sort((a, b) => {
+        if (b.height !== a.height) return b.height - a.height
+        return a.ext === 'mp4' ? -1 : 1 // Prioritas MP4 jika resolusi sama
+      })
 
-      const qualities = sortedHeights.map(h => {
+      const qualities = sortedFormats.map(f => {
+        const { height: h, ext } = f
         const tier = h >= 2160 ? '4K' : h >= 1440 ? '2K' : h >= 1080 ? 'Full HD' : h >= 720 ? 'HD' : h >= 480 ? 'SD' : ''
+        
+        // Buat formatId yang lebih spesifik agar yt-dlp mengambil ekstensi yang benar
+        // Jika MP4, prioritaskan audio AAC m4a agar kompatibel tanpa re-encode
+        const filterStr = `[height<=${h}][ext=${ext}]`
+        const audioFilter = ext === 'mp4' ? 'bestaudio[ext=m4a]/bestaudio' : 'bestaudio'
+        
         return {
-          formatId: `bestvideo[height<=${h}]+bestaudio/best[height<=${h}]/best`,
+          formatId: `bestvideo${filterStr}+${audioFilter}/best${filterStr}/best`,
           label: `${h}p`,
           resolution: `${h}p`,
-          ext: 'mp4',
+          ext: ext,
           hasAudio: true,
           hasVideo: true,
-          filesize: sizeEstimates[h] || null,
+          filesize: (f.size > 0 ? f.size + bestAudioSize : null),
           note: tier,
         }
       })
@@ -1054,8 +1071,12 @@ export default defineEventHandler(async (event) => {
       const jobId = randomUUID()
       const formatStr = formatId || 'best'
       const isAudioOnly = formatStr.includes('bestaudio') && !formatStr.includes('bestvideo')
-      const ext = isAudioOnly ? 'm4a' : 'mp4'
-      // Output TANPA ekstensi — biarkan yt-dlp yang tentukan
+      
+      // Deteksi ekstensi yang diminta dari formatId (e.g. [ext=mp4])
+      const requestedExtMatch = formatStr.match(/\[ext=([^\]]+)\]/)
+      const ext = requestedExtMatch ? requestedExtMatch[1] : (isAudioOnly ? 'm4a' : 'mp4')
+
+      // Output TANPA ekstensi di template — biarkan yt-dlp yang tentukan di fase akhir
       const tmpBase = join(getDownloadDir(), `figo-${jobId}`)
       const tmpFile = `${tmpBase}.%(ext)s`
       
@@ -1089,11 +1110,12 @@ export default defineEventHandler(async (event) => {
             ffmpegLocation: ffmpegPath,
             retries: 5,
             fragmentRetries: 5,
+            mergeOutputFormat: ext, // PAKSA output format sesuai pilihan user (MP4/WEBM)
+            // Jika MP4, pastikan audio di-transcode ke AAC agar kompatibel (kasus Opus di MP4)
+            postprocessorArgs: ext === 'mp4' ? 'ffmpeg:-c:a aac' : undefined,
             // Reconnect otomatis jika stream terputus
             downloaderArgs: 'ffmpeg_i:-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
           }
-          // Biarkan yt-dlp yang tentukan merge formatnya (biasanya mkv/webm jika codec tidak cocok untuk mp4)
-          // Jika kita batasi ke mp4, yt-dlp bisa gagal merge jika streamnya VP9/Opus.
 
           await execYtdlp(url, flags, 600_000, 'download')
           console.log(`[Job ${jobId}] yt-dlp selesai, verifikasi file...`)
@@ -1106,8 +1128,8 @@ export default defineEventHandler(async (event) => {
 
           // Jika yt-dlp merge gagal tapi fragments ada → merge manual dgn ffmpeg
           if (!actualFile && result.fragments.length >= 2) {
-            console.warn(`[Job ${jobId}] Merge yt-dlp gagal, coba manual merge...`)
-            const mergedPath = join(downloadDir, `figo-${jobId}.mp4`)
+            console.warn(`[Job ${jobId}] Merge yt-dlp gagal, coba manual merge ke ${ext}...`)
+            const mergedPath = join(downloadDir, `figo-${jobId}.${ext}`)
             try {
               await manualMerge(result.fragments, mergedPath, ffmpegPath)
               actualFile = mergedPath
