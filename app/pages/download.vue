@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-24 pb-20 px-6 md:px-8 max-w-4xl mx-auto min-h-screen">
+  <div class="pt-24 pb-8 px-6 md:px-8 max-w-4xl mx-auto min-h-screen">
     <!-- Header -->
     <div class="text-center mb-12">
       <div class="inline-block px-4 py-1.5 rounded-2xl text-xs font-bold tracking-widest uppercase mb-6"
@@ -239,7 +239,7 @@
 
       <div 
         ref="historyScroll"
-        class="flex gap-5 overflow-x-auto pb-8 px-1 snap-x snap-mandatory hide-scroll scroll-smooth"
+        class="flex gap-5 overflow-x-auto pb-5 px-1 snap-x snap-mandatory hide-scroll scroll-smooth"
       >
         <div
           v-for="(item, idx) in history"
@@ -261,16 +261,31 @@
             </div>
 
             <!-- Content Overlay -->
-            <div class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black via-black/60 to-transparent">
+            <div class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
               <div class="flex items-center gap-2 mb-1.5">
-                <div class="w-5 h-5 rounded-full overflow-hidden bg-white shadow-sm flex items-center justify-center">
+                <div class="w-5 h-5 rounded-full overflow-hidden bg-white/10 backdrop-blur-sm shadow-sm flex items-center justify-center shrink-0 border border-white/10">
                   <img v-if="item.platformIcon" :src="item.platformIcon" class="w-3.5 h-3.5 object-contain" />
                   <span v-else class="material-symbols-outlined text-[10px] text-slate-400">link</span>
                 </div>
-                <span class="text-[10px] font-bold text-white/70 uppercase tracking-widest">{{ item.platform }}</span>
+                <span class="text-[10px] font-bold text-white/70 uppercase tracking-widest truncate">
+                  {{ item.platform }} <span v-if="item.uploader" class="text-white/40 font-medium normal-case"> • {{ item.uploader }}</span>
+                </span>
               </div>
-              <h4 class="text-white font-bold text-sm line-clamp-1 mb-1">{{ item.title || 'Untitled' }}</h4>
-              <p class="text-white/50 text-[10px]">{{ item.time }}</p>
+              <h4 class="text-white font-bold text-sm line-clamp-1 mb-1">{{ item.caption || item.title || 'Untitled' }}</h4>
+              <div class="flex items-center justify-between">
+                <p class="text-white/50 text-[10px]">{{ item.time }}</p>
+                <!-- Stats Indicators -->
+                <div v-if="item.metadata?.statistics?.likes || item.metadata?.statistics?.comments" class="flex gap-2">
+                  <div v-if="item.metadata.statistics.likes" class="flex items-center gap-0.5 text-white/40 text-[9px]">
+                    <span class="material-symbols-outlined" style="font-size: 9px; line-height: 1;">favorite</span>
+                    <span>{{ item.metadata.statistics.likes }}</span>
+                  </div>
+                  <div v-if="item.metadata.statistics.comments" class="flex items-center gap-0.5 text-white/40 text-[9px]">
+                    <span class="material-symbols-outlined" style="font-size: 9px; line-height: 1;">chat_bubble</span>
+                    <span>{{ item.metadata.statistics.comments }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Download Action Button -->
@@ -312,10 +327,10 @@ onMounted(() => {
 
 // Platform configuration for dynamic icon detection
 const PLATFORMS_CONFIG = {
-  YOUTUBE: { name: 'YouTube', icon: 'https://static.vecteezy.com/system/resources/thumbnails/018/930/572/small_2x/youtube-logo-youtube-icon-transparent-free-png.png' },
-  TIKTOK: { name: 'TikTok', icon: 'https://img.freepik.com/premium-vector/tik-tok-logo_578229-290.jpg?semt=ais_hybrid&w=740&q=80' },
+  YOUTUBE: { name: 'YouTube', icon: 'https://api.iconify.design/logos:youtube-icon.svg' },
+  TIKTOK: { name: 'TikTok', icon: 'https://api.iconify.design/logos:tiktok-icon.svg' },
   INSTAGRAM: { name: 'Instagram', icon: 'https://api.iconify.design/skill-icons:instagram.svg' },
-  TWITTER: { name: 'Twitter/X', icon: 'https://cdn.worldvectorlogo.com/logos/twitter-logo-2.svg' },
+  TWITTER: { name: 'Twitter/X', icon: 'https://api.iconify.design/ri:twitter-x-fill.svg?color=%23ffffff' },
 }
 
 const detectedIcon = computed(() => {
@@ -366,12 +381,17 @@ function addToHistory(payload: any) {
   const newItem = {
     url: payload.url,
     title: payload.title || 'Untitled',
+    uploader: payload.uploader || '',
+    caption: payload.caption || payload.title || '',
     thumbnail: payload.thumbnail || '',
     platform: name,
     platformIcon: icon,
     time: new Date().toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }),
     source: payload.source || 'web',
-    metadata: payload.metadata || {}
+    metadata: {
+      ...(payload.metadata || {}),
+      statistics: payload.statistics || payload.metadata?.statistics || {}
+    }
   }
 
   // Remove duplicate by URL
@@ -563,12 +583,16 @@ async function downloadSelected() {
   addToHistory({
     url: targetUrl,
     title: videoInfo.value?.title,
+    caption: videoInfo.value?.title,
+    uploader: videoInfo.value?.uploader,
     thumbnail: videoInfo.value?.thumb,
+    statistics: videoInfo.value?.statistics,
     source: videoInfo.value?.source || 'web',
     metadata: {
       formatId: selectedFormat.value,
       uploader: videoInfo.value?.uploader,
-      resolutionLabel: payload.resolutionLabel
+      resolutionLabel: payload.resolutionLabel,
+      statistics: videoInfo.value?.statistics
     }
   })
 }
@@ -586,13 +610,17 @@ function downloadTwitterMedia(mediaUrl: string, type: string, username?: string,
   addToHistory({
     url: targetUrl,
     title: videoInfo.value?.title || `${type.toUpperCase()} from ${username}`,
+    caption: videoInfo.value?.title,
+    uploader: username,
+    statistics: videoInfo.value?.statistics,
     thumbnail: videoInfo.value?.mediaItems?.[0]?.thumbnail || videoInfo.value?.mediaItems?.[0]?.url,
     source: videoInfo.value?.source || 'twitter',
     metadata: {
       mediaUrl,
       type,
       uploader: username,
-      resolution: safeRes
+      resolution: safeRes,
+      statistics: videoInfo.value?.statistics
     }
   })
 

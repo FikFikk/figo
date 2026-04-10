@@ -191,6 +191,11 @@ async function fetchTwitterMedia(url: string): Promise<{
     title: tweet.text || 'Twitter Post',
     uploader,
     mediaItems,
+    statistics: {
+      likes: tweet.likes || 0,
+      comments: tweet.replies || 0,
+      retweets: tweet.retweets || 0
+    }
   }
 }
 
@@ -270,7 +275,13 @@ async function fetchTikTokMedia(url: string): Promise<{
 
   return {
     title: data.title || 'TikTok Video',
-    uploader, thumb, avatar, mediaItems
+    uploader, thumb, avatar, mediaItems,
+    statistics: {
+      likes: data.digg_count || 0,
+      comments: data.comment_count || 0,
+      shares: data.share_count || 0,
+      views: data.play_count || 0
+    }
   }
 }
 
@@ -645,6 +656,7 @@ export default defineEventHandler(async (event) => {
             duration: null,
             uploader: twitterData.uploader,
             mediaItems: enrichedItems,
+            statistics: twitterData.statistics,
             fetchDuration: Date.now() - startTime,
           }
         } catch (twitterErr: any) {
@@ -670,6 +682,7 @@ export default defineEventHandler(async (event) => {
               ? `/api/download-twitter?url=${encodeURIComponent(ttData.avatar)}&type=photo&inline=true`
               : `https://ui-avatars.com/api/?name=${encodeURIComponent(ttData.uploader.replace('@',''))}&background=010101&color=fff&size=128`,
             mediaItems: ttData.mediaItems,
+            statistics: ttData.statistics,
             fetchDuration: Date.now() - startTime
           }
         } catch (ttErr: any) {
@@ -683,6 +696,31 @@ export default defineEventHandler(async (event) => {
 
       // ---------- INSTAGRAM: Hybrid Strategy (YtDlp Video -> HTML Photo) ----------
       if (/(?:instagram\.com|ig\.me)/i.test(url)) {
+        const parseIgContent = (raw: string) => {
+          let caption = raw || ''
+          let likes = ''
+          let comments = ''
+
+          // Format: "90K likes, 727 comments - User on Date: \"Caption\""
+          // Juga mendukung bahasa Indonesia: "99,4 rb suka, 893 komentar"
+          const likesMatch = raw.match(/([\d.,]+[KMB rbjt]*)\s*(?:likes?|suka)/i)
+          const commentsMatch = raw.match(/([\d.,]+[KMB rbjt]*)\s*(?:comments?|komentar)/i)
+          
+          if (likesMatch) likes = likesMatch[1]
+          if (commentsMatch) comments = commentsMatch[1]
+
+          // Ambil caption: cari teks di dalam tanda kutip terakhir setelah titik dua
+          const captionQuoteMatch = raw.match(/:\s*["'](.*)["']$/i)
+          if (captionQuoteMatch) {
+            caption = captionQuoteMatch[1]
+          } else {
+            // Fallback: hapus awalan standar Instagram
+            caption = raw.replace(/^.*?on Instagram: /i, '').replace(/^.*?on [\w\s\d,]+: /i, '').trim()
+          }
+
+          return { caption: caption.trim(), likes, comments }
+        }
+
         if (/\/stories\//i.test(url)) {
            throw createError({
              statusCode: 422,
@@ -722,10 +760,12 @@ export default defineEventHandler(async (event) => {
 
              const uploader = ytParsed.uploader || ytParsed.channel || 'Instagram User'
              const thumb = ytParsed.thumbnail || null
+             const rawTitle = ytParsed.description || ytParsed.title || 'Instagram Reel'
+             const { caption } = parseIgContent(rawTitle)
              
              return {
                 success: true, mode: 'info', source: 'instagram',
-                title: (ytParsed.title || ytParsed.description || 'Instagram Reel').substring(0, 100),
+                title: caption.substring(0, 200),
                 uploader, thumb,
                 avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(uploader.replace('@',''))}&background=E1306C&color=fff&size=128`,
                 mediaItems: [{
@@ -767,12 +807,15 @@ export default defineEventHandler(async (event) => {
           const ogImageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
                                html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
           
-          const ogVideoMatch = html.match(/<meta[^>]+property=["']og:video["'][^>]+content=["']([^"']+)["']/i) ||
-                               html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:video["']/i)
+          const ogVideoMatch = html.match(/<meta[^>]+property=["']og:video(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i) ||
+                               html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:video(?::secure_url)?["']/i)
 
           const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
                                html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i) ||
                                html.match(/<title>([^<]+)<\/title>/i)
+
+          const ogDescMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ||
+                              html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i)
 
           const ogUrlMatch = html.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i)
 
@@ -835,15 +878,19 @@ export default defineEventHandler(async (event) => {
           if (mediaItems.length === 0) {
             throw new Error('Tidak ada media yang terdeteksi. Post mungkin di-private.')
           }
+          
+          const rawCaption = ogDescMatch ? ogDescMatch[1].replace(/&amp;/g, '&') : (ogTitleMatch ? ogTitleMatch[1] : 'Instagram Post')
+          const { caption, likes, comments } = parseIgContent(rawCaption)
 
           return {
-            success: true, mode: 'info', source: 'instagram',
-            title: ogTitleMatch ? ogTitleMatch[1].split(' • Instagram')[0] : 'Instagram Post',
-            uploader,
-            thumb: mediaItems[0]?.thumbnail || null,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(uploader.replace('@',''))}&background=E1306C&color=fff&size=128`,
-            mediaItems,
-            fetchDuration: Date.now() - startTime
+             success: true, mode: 'info', source: 'instagram',
+             title: caption.substring(0, 200),
+             uploader, 
+             thumb: mediaItems[0]?.thumbnail || null,
+             statistics: { likes, comments },
+             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(uploader.replace('@',''))}&background=E1306C&color=fff&size=128`,
+             mediaItems,
+             fetchDuration: Date.now() - startTime
           }
         } catch (igErr: any) {
            console.error(`[Instagram] Scraper gagal: ${igErr.message}`)
