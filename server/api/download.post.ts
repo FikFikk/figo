@@ -983,6 +983,155 @@ export default defineEventHandler(async (event) => {
         }
       }
 
+      // ---------- PORNHUB: Direct scraper via web relay ----------
+      if (/pornhub\.com/i.test(url)) {
+        try {
+          console.log('[Pornhub] ISP Bypass: menggunakan web relay scraper...')
+
+          // Daftar relay service untuk bypass ISP block
+          const relays = [
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+          ]
+
+          let html = ''
+          for (const relayUrl of relays) {
+            try {
+              console.log(`[Pornhub] Trying relay: ${relayUrl.substring(0, 60)}...`)
+              const res = await fetch(relayUrl, {
+                headers: { 'User-Agent': REALISTIC_USER_AGENT },
+                signal: AbortSignal.timeout(15000),
+              })
+              if (res.ok) {
+                const text = await res.text()
+                // Pastikan kita mendapat HTML yang valid (bukan error page)
+                if (text.length > 5000 && (text.includes('flashvars_') || text.includes('mediaDefinitions') || text.includes('pornhub'))) {
+                  html = text
+                  console.log(`[Pornhub] Relay berhasil, HTML ${text.length} chars`)
+                  break
+                }
+              }
+            } catch (e: any) {
+              console.warn(`[Pornhub] Relay gagal: ${e.message}`)
+            }
+          }
+
+          if (!html) {
+            throw new Error('Semua relay proxy gagal mengambil halaman video.')
+          }
+
+          // Parse title
+          const titleMatch = html.match(/<title>([^<]+)<\/title>/i)
+          const title = titleMatch 
+            ? titleMatch[1].replace(/ - Pornhub\.com$/i, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').trim()
+            : 'Pornhub Video'
+
+          // Parse uploader
+          const uploaderMatch = html.match(/"author"\s*:\s*"([^"]+)"/)
+            || html.match(/class="usernameBadgesWrapper"[^>]*>[\s\S]*?<a[^>]*>([^<]+)</)
+            || html.match(/data-type="user"[^>]*>([^<]+)</)
+          const uploader = uploaderMatch ? uploaderMatch[1].trim() : 'Pornhub User'
+
+          // Parse thumbnail
+          const thumbMatch = html.match(/og:image"\s+content="([^"]+)"/)
+          const thumb = thumbMatch ? thumbMatch[1] : null
+
+          // Parse video URLs dari flashvars / mediaDefinitions
+          let mediaDefinitions: any[] = []
+
+          // Method 1: flashvars_XXXXX = {...}
+          const flashvarsMatch = html.match(/var\s+flashvars_\d+\s*=\s*(\{[\s\S]*?\});/)
+          if (flashvarsMatch) {
+            try {
+              const flashvars = JSON.parse(flashvarsMatch[1])
+              if (flashvars.mediaDefinitions && Array.isArray(flashvars.mediaDefinitions)) {
+                mediaDefinitions = flashvars.mediaDefinitions
+              }
+            } catch (e) {
+              console.warn('[Pornhub] flashvars JSON parse gagal, coba method 2...')
+            }
+          }
+
+          // Method 2: mediaDefinitions langsung di HTML
+          if (mediaDefinitions.length === 0) {
+            const mdMatch = html.match(/mediaDefinitions\s*[=:]\s*(\[[\s\S]*?\])\s*[;,]/)
+            if (mdMatch) {
+              try {
+                mediaDefinitions = JSON.parse(mdMatch[1])
+              } catch {}
+            }
+          }
+
+          // Method 3: Cari URL video manual dari HTML (fallback)
+          if (mediaDefinitions.length === 0) {
+            const videoUrlMatches = html.matchAll(/https?:\/\/[^"'\s]+\.(?:mp4|m3u8)[^"'\s]*/gi)
+            const seen = new Set<string>()
+            for (const m of videoUrlMatches) {
+              const vUrl = m[0].replace(/\\\//g, '/')
+              if (!seen.has(vUrl) && !vUrl.includes('thumb') && !vUrl.includes('poster')) {
+                seen.add(vUrl)
+                mediaDefinitions.push({ videoUrl: vUrl, quality: '720', format: 'mp4' })
+              }
+            }
+          }
+
+          if (mediaDefinitions.length === 0) {
+            throw new Error('Tidak dapat menemukan video URL. Video mungkin memerlukan login atau di-private.')
+          }
+
+          // Filter hanya entry yang punya videoUrl langsung (bukan empty/getVideoUrl)
+          const videos = mediaDefinitions
+            .filter((m: any) => {
+              const vUrl = m.videoUrl || m.url || ''
+              return vUrl && vUrl.startsWith('http') && !vUrl.includes('getVideoUrl')
+            })
+            .map((m: any) => ({
+              url: (m.videoUrl || m.url).replace(/\\\//g, '/'),
+              quality: parseInt(m.quality) || 0,
+            }))
+            .filter((v: any) => v.quality > 0)
+            .sort((a: any, b: any) => b.quality - a.quality)
+            // Deduplicate by quality
+            .filter((v: any, i: number, arr: any[]) => i === 0 || v.quality !== arr[i - 1].quality)
+
+          if (videos.length === 0) {
+            throw new Error('Tidak ada video quality yang tersedia. Mungkin butuh login.')
+          }
+
+          console.log(`[Pornhub] Ditemukan ${videos.length} quality: ${videos.map((v: any) => v.quality + 'p').join(', ')}`)
+
+          // Format response sebagai mediaItems (seperti Twitter/Instagram)
+          const mediaItems = [{
+            type: 'video' as const,
+            url: videos[0].url,
+            thumbnail: thumb,
+            width: 0,
+            height: videos[0].quality,
+            qualities: videos.map((v: any) => ({
+              url: v.url,
+              height: v.quality,
+              label: `${v.quality}p`,
+            })),
+          }]
+
+          return {
+            success: true,
+            mode: 'info',
+            source: 'pornhub',
+            title,
+            uploader,
+            thumb,
+            statistics: { views: 0, likes: 0 },
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(uploader.replace('@', ''))}&background=FFA500&color=000&size=128`,
+            mediaItems,
+            fetchDuration: Date.now() - startTime,
+          }
+        } catch (phErr: any) {
+          console.error(`[Pornhub] Direct scraper gagal: ${phErr.message}`)
+          // Fall through ke yt-dlp default (yang akan coba auto-proxy)
+        }
+      }
+
       // ---------- DEFAULT: yt-dlp untuk platform lain ----------
       const dataRaw = await execYtdlp(url, {
         ...commonFlags, // Masukkan proxy jika ada

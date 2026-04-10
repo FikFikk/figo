@@ -93,7 +93,7 @@
     </div>
 
     <!-- ============ STEP 2: Quality Picker (Default YT-DLP) ============ -->
-    <div v-if="videoInfo && !['twitter', 'instagram', 'tiktok'].includes(videoInfo.source)" class="mt-8 animate-fade-in">
+    <div v-if="videoInfo && !['twitter', 'instagram', 'tiktok', 'pornhub'].includes(videoInfo.source)" class="mt-8 animate-fade-in">
       <div class="glass-panel rounded-2xl p-6 md:p-8 border" :class="isDark ? 'border-white/5' : 'border-slate-100'">
         <!-- Video Preview -->
         <div class="flex flex-col md:flex-row gap-6 mb-8">
@@ -180,7 +180,7 @@
     </div>
 
     <!-- ============ STEP 2.5: Twitter/X/Instagram/TikTok Media List ============ -->
-    <div v-if="videoInfo && ['twitter', 'instagram', 'tiktok'].includes(videoInfo.source)" class="mt-8 animate-fade-in">
+    <div v-if="videoInfo && ['twitter', 'instagram', 'tiktok', 'pornhub'].includes(videoInfo.source)" class="mt-8 animate-fade-in">
       <div class="glass-panel rounded-2xl p-6 md:p-8 border" :class="isDark ? 'border-white/5' : 'border-slate-100'">
         <!-- Post Header -->
         <div class="flex items-start gap-4 mb-6">
@@ -451,7 +451,7 @@ async function reDownloadFromHistory(item: any) {
   
   error.value = ''
   
-  if (['twitter', 'instagram', 'tiktok'].includes(item.source)) {
+  if (['twitter', 'instagram', 'tiktok', 'pornhub'].includes(item.source)) {
     downloadTwitterMedia(
       item.metadata.mediaUrl, 
       item.metadata.type, 
@@ -520,7 +520,7 @@ async function startDownloadJob(body: any) {
 function getProxiedMediaUrl(mediaUrl: string, type: 'photo' | 'video' = 'photo') {
   if (!mediaUrl) return ''
   // Deteksi domain yg diblokir CORS Hotlink (IG, Twitter CDN, FB)
-  const isCORS = mediaUrl.includes('instagram') || mediaUrl.includes('cdninstagram') || mediaUrl.includes('twimg') || mediaUrl.includes('fbcdn') || mediaUrl.includes('ig_')
+  const isCORS = mediaUrl.includes('instagram') || mediaUrl.includes('cdninstagram') || mediaUrl.includes('twimg') || mediaUrl.includes('fbcdn') || mediaUrl.includes('ig_') || mediaUrl.includes('phncdn.com')
   if (isCORS) {
     return `/api/download-twitter?url=${encodeURIComponent(mediaUrl)}&type=${type}&inline=true`
   }
@@ -565,7 +565,7 @@ async function fetchInfo() {
       body: { url: url.value, mode: 'info', proxy: proxy.value || undefined }
     }) as any
 
-    if (['twitter', 'instagram', 'tiktok'].includes(response.source)) {
+    if (['twitter', 'instagram', 'tiktok', 'pornhub'].includes(response.source)) {
       videoInfo.value = response
       console.log(`[Figo] Fetch Info Success in ${response.fetchDuration}ms (${response.source})`)
       return
