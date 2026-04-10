@@ -387,32 +387,69 @@ function buildYtdlpArgs(url: string, flags: Record<string, any>): string[] {
   return args
 }
 
+/**
+ * Mencari path binary (yt-dlp/ffmpeg) secara cerdas.
+ * Memprioritaskan binary lokal di server/api, jika gagal/tidak ada maka pakai binary sistem.
+ */
+function getBinaryPath(name: 'yt-dlp' | 'ffmpeg'): string {
+  const isWin = process.platform === 'win32'
+  const localName = isWin ? `${name}.exe` : name
+  const localPath = join(process.cwd(), 'server', 'api', localName)
+
+  if (existsSync(localPath)) {
+    // Pada Linux, pastikan file lokal bukan sekadar file Windows yang salah commit (.exe)
+    // dan memiliki permission yang benar. 
+    // Kita cek ukuran file sebagai indikator kasar: .exe biasanya jauh berbeda ukurannya atau 
+    // kita biarkan spawn yang gagal nanti mentrigger fallback (untuk saat ini asumsikan ada dulu).
+    return localPath
+  }
+
+  // Fallback ke binary global sistem
+  return name
+}
+
 function spawnYtdlp(binPath: string, args: string[], timeoutMs = 120_000): Promise<{ stdout: string }> {
-  return new Promise((resolve, reject) => {
-    console.log(`[Spawn] Running: ${binPath} ${args.join(' ')}`)
-    const child = spawn(binPath, args)
-    let stdout = ''
-    let stderr = ''
+  const execute = (path: string): Promise<{ stdout: string }> => {
+    return new Promise((resolve, reject) => {
+      console.log(`[Spawn] Running: ${path} ${args.join(' ')}`)
+      const child = spawn(path, args)
+      let stdout = ''
+      let stderr = ''
 
-    // Timeout agar tidak hang selamanya
-    const timer = setTimeout(() => {
-      child.kill('SIGTERM')
-      reject(new Error(`yt-dlp timeout setelah ${timeoutMs / 1000}s`))
-    }, timeoutMs)
+      const timer = setTimeout(() => {
+        child.kill('SIGTERM')
+        reject(new Error(`yt-dlp timeout setelah ${timeoutMs / 1000}s`))
+      }, timeoutMs)
 
-    child.stdout.on('data', (data) => { stdout += data.toString() })
-    child.stderr.on('data', (data) => { stderr += data.toString() })
+      child.stdout.on('data', (data) => { stdout += data.toString() })
+      child.stderr.on('data', (data) => { stderr += data.toString() })
 
-    child.on('close', (code) => {
-      clearTimeout(timer)
-      if (code === 0) resolve({ stdout })
-      else reject(new Error(stderr || `yt-dlp exited with code ${code}`))
+      child.on('close', (code) => {
+        clearTimeout(timer)
+        if (code === 0) resolve({ stdout })
+        else {
+          const err = new Error(stderr || `yt-dlp exited with code ${code}`)
+          ;(err as any).code = code
+          ;(err as any).stderr = stderr
+          reject(err)
+        }
+      })
+
+      child.on('error', (err) => {
+        clearTimeout(timer)
+        reject(err)
+      })
     })
+  }
 
-    child.on('error', (err) => {
-      clearTimeout(timer)
-      reject(err)
-    })
+  return execute(binPath).catch(async (err) => {
+    const isLocal = binPath.includes('server' + (process.platform === 'win32' ? '\\' : '/') + 'api')
+    // Jika local gagal dan belum coba sistem, coba sistem
+    if (isLocal) {
+      console.warn(`[Spawn] Local yt-dlp gagal (mungkin arsitektur salah), mencoba sistem...`)
+      return execute('yt-dlp')
+    }
+    throw err
   })
 }
 
@@ -422,9 +459,7 @@ function spawnYtdlp(binPath: string, args: string[], timeoutMs = 120_000): Promi
  * Mode 'download': butuh akses DASH manifest penuh untuk bestvideo+bestaudio
  */
 async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 120_000, purpose: 'info' | 'download' = 'info'): Promise<{ stdout: string }> {
-  const isWin = process.platform === 'win32'
-  const binName = isWin ? 'yt-dlp.exe' : 'yt-dlp'
-  const binPath = join(process.cwd(), 'server', 'api', binName)
+  const binPath = getBinaryPath('yt-dlp')
 
   // Deteksi apakah URL YouTube untuk apply strategy khusus
   const isYouTube = /(?:youtube\.com|youtu\.be)/i.test(url)
@@ -532,74 +567,86 @@ function findDownloadedFile(downloadDir: string, jobId: string): { file: string 
  * Gabungkan video + audio fragments menjadi satu file mp4.
  */
 function manualMerge(fragments: string[], outputPath: string, ffmpegPath: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (fragments.length < 2) {
-      // Hanya 1 file — copy langsung
-      const src = fragments[0]
-      if (src) {
-        try {
-          copyFileSync(src, outputPath)
-          return resolve()
-        } catch (e: any) {
-          return reject(new Error(`Copy gagal: ${e.message}`))
+  const execute = (path: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (fragments.length < 2) {
+        // Hanya 1 file — copy langsung
+        const src = fragments[0]
+        if (src) {
+          try {
+            copyFileSync(src, outputPath)
+            return resolve()
+          } catch (e: any) {
+            return reject(new Error(`Copy gagal: ${e.message}`))
+          }
         }
+        return reject(new Error('Tidak ada fragment untuk di-merge'))
       }
-      return reject(new Error('Tidak ada fragment untuk di-merge'))
+
+      // Identifikasi video vs audio BERDASARKAN UKURAN FILE
+      const withSize = fragments.map(f => {
+        try { return { path: f, size: statSync(f).size } }
+        catch { return { path: f, size: 0 } }
+      })
+      withSize.sort((a, b) => b.size - a.size)
+
+      const videoFile = withSize[0]?.path || ''  // File terbesar = video
+      const audioFile = withSize[1]?.path || ''  // File terkecil = audio
+
+      console.log(`[Merge] Video: ${basename(videoFile)} (${(withSize[0].size / 1048576).toFixed(1)}MB)`)
+      console.log(`[Merge] Audio: ${basename(audioFile)} (${(withSize[1].size / 1048576).toFixed(1)}MB)`)
+      console.log(`[Merge] Output: ${basename(outputPath)}`)
+
+      const args = [
+        '-i', videoFile,
+        '-i', audioFile,
+        '-c:v', 'copy',     // Copy video tanpa re-encode (cepat)
+        '-c:a', 'aac',      // Convert audio ke AAC agar kompatibel dengan MP4/Browser
+        '-b:a', '192k',     // Bitrate audio
+        '-movflags', '+faststart',  // Optimasi streaming
+        '-y',               // Overwrite
+        outputPath
+      ]
+
+      const child = spawn(path, args)
+      let stderr = ''
+      child.stderr.on('data', (d) => { stderr += d.toString() })
+
+      const timer = setTimeout(() => {
+        child.kill('SIGTERM')
+        reject(new Error('ffmpeg merge timeout 120s'))
+      }, 120_000)
+
+      child.on('close', (code) => {
+        clearTimeout(timer)
+        if (code === 0 && existsSync(outputPath)) {
+          console.log(`[Merge] Berhasil! → ${basename(outputPath)}`)
+          // Hapus fragments setelah merge sukses
+          for (const f of fragments) {
+            try { unlinkSync(f) } catch {}
+          }
+          resolve()
+        } else {
+          const err = new Error(`ffmpeg merge gagal (code ${code}): ${stderr.substring(0, 300)}`)
+          ;(err as any).code = code
+          reject(err)
+        }
+      })
+
+      child.on('error', (err) => {
+        clearTimeout(timer)
+        reject(err)
+      })
+    })
+  }
+
+  return execute(ffmpegPath).catch(async (err) => {
+    const isLocal = ffmpegPath.includes('server' + (process.platform === 'win32' ? '\\' : '/') + 'api')
+    if (isLocal) {
+      console.warn(`[Merge] Local ffmpeg gagal, mencoba system ffmpeg...`)
+      return execute('ffmpeg')
     }
-
-    // Identifikasi video vs audio BERDASARKAN UKURAN FILE
-    // Video SELALU jauh lebih besar dari audio (5-20x)
-    const withSize = fragments.map(f => {
-      try { return { path: f, size: statSync(f).size } }
-      catch { return { path: f, size: 0 } }
-    })
-    withSize.sort((a, b) => b.size - a.size)
-
-    const videoFile = withSize[0]?.path || ''  // File terbesar = video
-    const audioFile = withSize[1]?.path || ''  // File terkecil = audio
-
-    console.log(`[Merge] Video: ${basename(videoFile)} (${(withSize[0].size / 1048576).toFixed(1)}MB)`)
-    console.log(`[Merge] Audio: ${basename(audioFile)} (${(withSize[1].size / 1048576).toFixed(1)}MB)`)
-    console.log(`[Merge] Output: ${basename(outputPath)}`)
-
-    const args = [
-      '-i', videoFile,
-      '-i', audioFile,
-      '-c:v', 'copy',     // Copy video tanpa re-encode (cepat)
-      '-c:a', 'aac',      // Convert audio ke AAC agar kompatibel dengan MP4/Browser
-      '-b:a', '192k',     // Bitrate audio
-      '-movflags', '+faststart',  // Optimasi streaming
-      '-y',               // Overwrite
-      outputPath
-    ]
-
-    const child = spawn(ffmpegPath, args)
-    let stderr = ''
-    child.stderr.on('data', (d) => { stderr += d.toString() })
-
-    const timer = setTimeout(() => {
-      child.kill('SIGTERM')
-      reject(new Error('ffmpeg merge timeout 120s'))
-    }, 120_000)
-
-    child.on('close', (code) => {
-      clearTimeout(timer)
-      if (code === 0 && existsSync(outputPath)) {
-        console.log(`[Merge] Berhasil! → ${basename(outputPath)}`)
-        // Hapus fragments setelah merge sukses
-        for (const f of fragments) {
-          try { unlinkSync(f) } catch {}
-        }
-        resolve()
-      } else {
-        reject(new Error(`ffmpeg merge gagal (code ${code}): ${stderr.substring(0, 300)}`))
-      }
-    })
-
-    child.on('error', (err) => {
-      clearTimeout(timer)
-      reject(err)
-    })
+    throw err
   })
 }
 
@@ -1012,9 +1059,7 @@ export default defineEventHandler(async (event) => {
       const tmpBase = join(getDownloadDir(), `figo-${jobId}`)
       const tmpFile = `${tmpBase}.%(ext)s`
       
-      const isWin = process.platform === 'win32'
-      const ffmpegName = isWin ? 'ffmpeg.exe' : 'ffmpeg'
-      const ffmpegPath = join(process.cwd(), 'server', 'api', ffmpegName)
+      const ffmpegPath = getBinaryPath('ffmpeg')
 
       const rawTitle = (body?.title as string) || 'Video'
       const uploader = (body?.uploader as string) || 'Unknown'
