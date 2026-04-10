@@ -344,6 +344,55 @@ function cleanupPartialFiles(tmpFile: string): void {
 }
 
 /**
+ * Deteksi error yang tidak perlu di-retry (disk penuh, permission, dll).
+ */
+function isNonRetryableError(errMsg: string): boolean {
+  const fatal = [
+    'No space left on device',
+    'Permission denied',
+    'EACCES',
+    'EROFS',
+    'Connection refused',
+    'Connection reset',
+  ]
+  return fatal.some(f => errMsg.includes(f))
+}
+
+/**
+ * Ambil daftar proxy gratis dari ProxyScrape untuk bypass ISP block.
+ * Prioritaskan SOCKS5 karena lebih reliable untuk streaming.
+ * Fallback ke HTTP proxy jika SOCKS5 tidak tersedia.
+ */
+async function fetchFreeProxies(): Promise<string[]> {
+  const sources = [
+    // SOCKS5 proxy
+    { url: 'https://api.proxyscrape.com/v2/?request=displayproxies&protocol=socks5&timeout=5000&country=all&ssl=all&anonymity=all', prefix: 'socks5://' },
+    // HTTP proxy sebagai fallback
+    { url: 'https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=5000&country=all&ssl=all&anonymity=elite', prefix: 'http://' },
+  ]
+
+  const proxies: string[] = []
+
+  for (const source of sources) {
+    try {
+      const res = await fetch(source.url, { signal: AbortSignal.timeout(8000) })
+      const text = await res.text()
+      const list = text.trim().split('\n')
+        .map(p => p.trim())
+        .filter(p => p && p.includes(':'))
+        .slice(0, 3) // Ambil max 3 per source agar tidak terlalu lama
+        .map(p => `${source.prefix}${p}`)
+      proxies.push(...list)
+    } catch (e: any) {
+      console.warn(`[AutoProxy] Gagal ambil proxy dari ${source.url}: ${e.message}`)
+    }
+  }
+
+  console.log(`[AutoProxy] Ditemukan ${proxies.length} proxy kandidat`)
+  return proxies
+}
+
+/**
  * Implementasi native yt-dlp untuk kompatibilitas Nitro/Rollup.
  * Mendukung extractor-args, user-agent, retry, dan rate limiting.
  */
@@ -381,6 +430,12 @@ function buildYtdlpArgs(url: string, flags: Record<string, any>): string[] {
 
   // Network reconnect via ffmpeg (untuk stream yang putus)
   if (flags.downloaderArgs) args.push('--downloader-args', flags.downloaderArgs)
+
+  // Proxy support (HTTP/SOCKS5)
+  if (flags.proxy) args.push('--proxy', flags.proxy)
+
+  // Referer header
+  if (flags.referer) args.push('--referer', flags.referer)
 
   // URL terakhir
   args.push(url)
@@ -457,6 +512,7 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
   }
 
   let lastError: Error | null = null
+  let isConnectionRefused = false
 
   for (let i = 0; i < strategies.length; i++) {
     try {
@@ -469,18 +525,15 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
       const errMsg = err.message || String(err)
       console.warn(`[Retry] Attempt ${i + 1} gagal: ${errMsg.substring(0, 200)}`)
 
+      if (errMsg.includes('Connection refused') || errMsg.includes('Connection reset')) {
+        isConnectionRefused = true
+      }
+
       // Error fatal (disk penuh, permission) → jangan retry, langsung gagal
-      if (isNonRetryableError(errMsg)) {
+      if (isNonRetryableError(errMsg) && !isConnectionRefused) {
         console.error(`[Retry] Non-retryable error terdeteksi, berhenti.`)
-        // Cleanup partial files sebelum throw
         if (flags.output) cleanupPartialFiles(flags.output)
-        
-        let customMessage = errMsg.includes('No space') ? 'Disk server penuh, coba lagi nanti.' : errMsg
-        if (errMsg.includes('Connection refused')) {
-          customMessage = 'Koneksi ditolak (ISP Block). Gunakan Proxy di backend atau pastikan server bisa mengakses situs tersebut.'
-        }
-        
-        throw new Error(`Server error: ${customMessage}`)
+        throw new Error(`Server error: ${errMsg.includes('No space') ? 'Disk server penuh, coba lagi nanti.' : errMsg}`)
       }
 
       // Cleanup partial files sebelum retry berikutnya
@@ -491,6 +544,29 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
         await new Promise(r => setTimeout(r, (i + 1) * 1000))
       }
     }
+  }
+
+  // Auto-Proxy Fallback: jika Connection refused (ISP block), coba dengan proxy gratis
+  if (isConnectionRefused && !flags.proxy) {
+    console.log(`[AutoProxy] Koneksi ditolak ISP, mencoba proxy otomatis...`)
+    const proxies = await fetchFreeProxies()
+    
+    for (let i = 0; i < proxies.length; i++) {
+      try {
+        const proxyUrl = proxies[i] as string
+        console.log(`[AutoProxy] Attempt ${i + 1}/${proxies.length} — proxy: ${proxyUrl}`)
+        const proxyFlags = { ...strategies[0], proxy: proxyUrl }
+        const args = buildYtdlpArgs(url, proxyFlags)
+        const result = await spawnYtdlp(binPath, args, timeoutMs)
+        console.log(`[AutoProxy] Berhasil dengan proxy: ${proxyUrl}`)
+        return result
+      } catch (proxyErr: any) {
+        console.warn(`[AutoProxy] Proxy ${i + 1} gagal: ${(proxyErr.message || '').substring(0, 100)}`)
+        if (flags.output) cleanupPartialFiles(flags.output)
+      }
+    }
+    
+    throw new Error('Koneksi ditolak oleh ISP (Internet Positif). Semua proxy otomatis juga gagal. Silakan masukkan proxy Anda sendiri di Opsi Lanjutan.')
   }
 
   throw lastError || new Error('Semua strategi download gagal')
