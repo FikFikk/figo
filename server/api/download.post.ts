@@ -586,18 +586,30 @@ function manualMerge(fragments: string[], outputPath: string, ffmpegPath: string
         return reject(new Error('Tidak ada fragment untuk di-merge'))
       }
 
-      // Identifikasi video vs audio BERDASARKAN UKURAN FILE
-      const withSize = fragments.map(f => {
-        try { return { path: f, size: statSync(f).size } }
-        catch { return { path: f, size: 0 } }
+      // Identifikasi video vs audio secara lebih akurat (Ekstensi > Ukuran)
+      const AUDIO_EXTS = ['.m4a', '.mp3', '.opus', '.aac', '.ogg']
+      const withInfo = fragments.map(f => {
+        try { 
+          const size = statSync(f).size
+          const isKnownAudio = AUDIO_EXTS.some(ae => f.toLowerCase().endsWith(ae))
+          return { path: f, size, isKnownAudio }
+        }
+        catch { return { path: f, size: 0, isKnownAudio: false } }
       })
-      withSize.sort((a, b) => b.size - a.size)
 
-      const videoFile = withSize[0]?.path || ''  // File terbesar = video
-      const audioFile = withSize[1]?.path || ''  // File terkecil = audio
+      // Cari mana yang Audio: utamakan yang ekstensinya dikenal audio, atau yang ukurannya lebih kecil jika ragu
+      let audioIdx = withInfo.findIndex(i => i.isKnownAudio)
+      if (audioIdx === -1) {
+        // Jika tidak ada ekstensi audio yang jelas, gunakan ukuran terkecil sebagai indikator fallback
+        const sortedBySize = [...withInfo].sort((a, b) => a.size - b.size)
+        audioIdx = withInfo.indexOf(sortedBySize[0])
+      }
 
-      console.log(`[Merge] Video: ${basename(videoFile)} (${(withSize[0].size / 1048576).toFixed(1)}MB)`)
-      console.log(`[Merge] Audio: ${basename(audioFile)} (${(withSize[1].size / 1048576).toFixed(1)}MB)`)
+      const audioFile = withInfo[audioIdx].path
+      const videoFile = withInfo.find((_, idx) => idx !== audioIdx)?.path || ''
+
+      console.log(`[Merge] Video: ${basename(videoFile)} (${(statSync(videoFile).size / 1048576).toFixed(1)}MB)`)
+      console.log(`[Merge] Audio: ${basename(audioFile)} (${(statSync(audioFile).size / 1048576).toFixed(1)}MB)`)
       console.log(`[Merge] Output: ${basename(outputPath)}`)
 
       const args = [
