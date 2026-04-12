@@ -72,8 +72,10 @@ export async function fetchYouTubeInfo(url: string): Promise<PlatformResult> {
     dumpSingleJson: true,
     noCheckCertificates: true,
     noPlaylist: true,
-    forceIpv4: true,
+    // JANGAN forceIpv4 — IPv6 ke YouTube sering lebih cepat di datacenter
     ignoreErrors: true,
+    noCacheDir: true,       // Skip disk cache (lambat di VPS murah)
+    socketTimeout: 10,      // Cap socket timeout 10s (default 20s)
     retries: 1,
     fragmentRetries: 1,
   }, 30_000) // 30s cukup untuk info mode

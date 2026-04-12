@@ -74,6 +74,9 @@ export function buildYtdlpArgs(url: string, flags: Record<string, any>): string[
   // Post-processor args (e.g. force AAC transcoding for MP4)
   if (flags.postprocessorArgs) args.push('--postprocessor-args', flags.postprocessorArgs)
 
+  // Socket timeout internal yt-dlp (default 20s, kurangi untuk server)
+  if (flags.socketTimeout) args.push('--socket-timeout', String(flags.socketTimeout))
+
   // URL terakhir
   args.push(url)
   return args
