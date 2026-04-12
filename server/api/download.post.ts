@@ -517,9 +517,9 @@ async function execYtdlp(url: string, flags: Record<string, any>, timeoutMs = 12
       // Cleanup partial files sebelum retry berikutnya
       if (flags.output) cleanupPartialFiles(flags.output)
 
-      // Jeda sebelum retry berikutnya (exponential: 1s, 2s, 3s)
+      // Jeda pendek sebelum retry (fixed 500ms, bukan exponential)
       if (i < strategies.length - 1) {
-        await new Promise(r => setTimeout(r, (i + 1) * 1000))
+        await new Promise(r => setTimeout(r, 500))
       }
     }
   }
@@ -977,9 +977,9 @@ export default defineEventHandler(async (event) => {
         noPlaylist: true,
         forceIpv4: true,
         ignoreErrors: true,
-        retries: 3,
-        fragmentRetries: 3,
-      }, 60_000)
+        retries: 1,           // Kurangi internal retry — retry di level strategy
+        fragmentRetries: 1,
+      }, 30_000)              // 30s cukup untuk info mode (sebelumnya 60s)
       const fetchDuration = Date.now() - startTime
       console.log(`[FetchInfo] Success in ${fetchDuration}ms for: ${url}`)
 
