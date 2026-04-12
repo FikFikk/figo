@@ -85,21 +85,41 @@ export function buildYtdlpArgs(url: string, flags: Record<string, any>): string[
 export function spawnYtdlp(binPath: string, args: string[], timeoutMs = 120_000): Promise<{ stdout: string }> {
   const execute = (path: string): Promise<{ stdout: string }> => {
     return new Promise((resolve, reject) => {
+      const spawnStart = Date.now()
       console.log(`[Spawn] Running: ${path} ${args.join(' ')}`)
       const child = spawn(path, args)
       let stdout = ''
       let stderr = ''
+      let firstDataTs = 0
+      let stdoutChunks = 0
 
       const timer = setTimeout(() => {
         child.kill('SIGTERM')
         reject(new Error(`yt-dlp timeout setelah ${timeoutMs / 1000}s`))
       }, timeoutMs)
 
-      child.stdout.on('data', (data) => { stdout += data.toString() })
-      child.stderr.on('data', (data) => { stderr += data.toString() })
+      child.stdout.on('data', (data) => {
+        if (!firstDataTs) {
+          firstDataTs = Date.now()
+          console.log(`[Spawn] ⏱ First stdout data after ${firstDataTs - spawnStart}ms`)
+        }
+        stdoutChunks++
+        stdout += data.toString()
+      })
+      child.stderr.on('data', (data) => {
+        const line = data.toString().trim()
+        // Log stderr yt-dlp untuk insight (extracting, downloading info, etc)
+        if (line && !line.startsWith('WARNING')) {
+          console.log(`[yt-dlp stderr] ${line.substring(0, 150)}`)
+        }
+        stderr += data.toString()
+      })
 
       child.on('close', (code) => {
         clearTimeout(timer)
+        const totalMs = Date.now() - spawnStart
+        const streamMs = firstDataTs ? Date.now() - firstDataTs : 0
+        console.log(`[Spawn] ⏱ Done: total=${totalMs}ms | spawn→data=${firstDataTs ? firstDataTs - spawnStart : 'N/A'}ms | data→close=${streamMs}ms | chunks=${stdoutChunks} | stdout=${(stdout.length / 1024).toFixed(0)}KB`)
         if (code === 0) resolve({ stdout })
         else {
           const err = new Error(stderr || `yt-dlp exited with code ${code}`)

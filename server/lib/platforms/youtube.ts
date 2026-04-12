@@ -67,6 +67,7 @@ export async function fetchYouTubeInfo(url: string): Promise<PlatformResult> {
     }
   }
 
+  const t0 = Date.now()
   const dataRaw = await execYtdlp(url, {
     dumpSingleJson: true,
     noCheckCertificates: true,
@@ -76,8 +77,11 @@ export async function fetchYouTubeInfo(url: string): Promise<PlatformResult> {
     retries: 1,
     fragmentRetries: 1,
   }, 30_000) // 30s cukup untuk info mode
+  const t1 = Date.now()
 
   const data = parseYtdlpOutput(dataRaw.stdout)
+  const t2 = Date.now()
+  console.log(`[YouTube] ⏱ yt-dlp=${t1 - t0}ms | JSON.parse=${t2 - t1}ms | payload=${(dataRaw.stdout.length / 1024).toFixed(0)}KB | formats=${data.formats?.length || 0}`)
 
   // Collect unique (height, ext) combinations
   const formatMap = new Map<string, { height: number; ext: string; size: number }>()
