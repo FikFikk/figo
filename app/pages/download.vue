@@ -493,7 +493,7 @@ function getProxiedMediaUrl(mediaUrl: string, type: 'photo' | 'video' = 'photo')
   // Deteksi domain yg diblokir CORS Hotlink (IG, Twitter CDN, FB)
   const isCORS = mediaUrl.includes('instagram') || mediaUrl.includes('cdninstagram') || mediaUrl.includes('twimg') || mediaUrl.includes('fbcdn') || mediaUrl.includes('ig_')
   if (isCORS) {
-    return `/api/download-twitter?url=${encodeURIComponent(mediaUrl)}&type=${type}&inline=true`
+    return `/api/media-proxy?url=${encodeURIComponent(mediaUrl)}&type=${type}&inline=true`
   }
   return mediaUrl
 }
@@ -622,7 +622,7 @@ function downloadTwitterMedia(mediaUrl: string, type: string, username?: string,
   const safeUsername = (username || 'User').replace(/[^a-zA-Z0-9_\-]/g, '').trim()
   const safeRes = resolution || (type === 'photo' ? 'Original' : 'Video')
   const filename = `figo-${Date.now()}-${safeUsername} - ${safeRes}`
-  window.location.href = `/api/download-twitter?url=${encodeURIComponent(mediaUrl)}&type=${type}&filename=${encodeURIComponent(filename)}`
+  window.location.href = `/api/media-proxy?url=${encodeURIComponent(mediaUrl)}&type=${type}&filename=${encodeURIComponent(filename)}`
   
   // Add to history
   const targetUrl = url.value

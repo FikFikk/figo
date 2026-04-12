@@ -1,7 +1,7 @@
 import { defineEventHandler, getQuery, createError, setResponseHeaders } from 'h3'
 
 /**
- * Proxy download untuk media Twitter (foto/video).
+ * Proxy download untuk media CDN (Twitter, Instagram, TikTok).
  * Menghindari CORS issue ketika download langsung dari browser.
  * Query params: url (URL media), type (photo|video), filename (opsional)
  */
@@ -16,13 +16,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'URL media diperlukan.' })
   }
 
-  // Validasi domain — izinkan domain Twitter media & Instagram media
+  // Validasi domain — izinkan domain media yang dikenal
   try {
     const hostname = new URL(mediaUrl).hostname.toLowerCase()
     const allowed = [
       'twimg.com', 'instagram.com', 'cdninstagram.com', 'fbcdn.net',
       'tikwm.com', 'tiktokcdn.com', 'tiktokcdn-us.com', 'tiktok.com', 'musical.ly',
-      'p16-sign-sg.tiktokcdn.com', 'v19-webapp.tiktok.com', 'v16m-default.tiktokcdn-us.com'
+      'p16-sign-sg.tiktokcdn.com', 'v19-webapp.tiktok.com', 'v16m-default.tiktokcdn-us.com',
     ]
     if (!allowed.some(d => hostname.endsWith(d) || hostname.includes(d))) {
       throw createError({ statusCode: 403, message: 'Domain media tidak diizinkan.' })
@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    console.log(`[Twitter Proxy] Downloading ${type}: ${mediaUrl.substring(0, 100)}...`)
+    console.log(`[Media Proxy] Downloading ${type}: ${mediaUrl.substring(0, 100)}...`)
 
     const response = await fetch(mediaUrl, {
       headers: {
@@ -48,16 +48,16 @@ export default defineEventHandler(async (event) => {
 
     // Tentukan content-type dan ekstensi
     const contentType = response.headers.get('content-type') || ''
-    
+
     let ext = type === 'video' ? 'mp4' : 'jpg'
-    
+
     if (contentType.includes('png')) ext = 'png'
     else if (contentType.includes('webp')) ext = 'webp'
     else if (contentType.includes('gif')) ext = 'gif'
     else if (contentType.includes('jpeg') || contentType.includes('jpg')) ext = 'jpg'
     else if (contentType.includes('mp4') || contentType.includes('video/')) ext = 'mp4'
 
-    let downloadName = filename || `twitter-${type}-${Date.now()}.${ext}`
+    let downloadName = filename || `media-${type}-${Date.now()}.${ext}`
     // Jika filename dari query tidak memiliki ekstensi yang benar, tambahkan ekstensi
     if (filename && !filename.toLowerCase().endsWith(`.${ext}`)) {
       downloadName = `${filename}.${ext}`
@@ -79,11 +79,11 @@ export default defineEventHandler(async (event) => {
     return response.body
 
   } catch (err: any) {
-    console.error('[Twitter Proxy] Error:', err)
+    console.error('[Media Proxy] Error:', err)
     if (err.statusCode) throw err
     throw createError({
       statusCode: 500,
-      message: 'Gagal mengunduh media Twitter: ' + (err.message || String(err))
+      message: 'Gagal mengunduh media: ' + (err.message || String(err)),
     })
   }
 })
