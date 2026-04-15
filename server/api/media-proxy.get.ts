@@ -57,7 +57,7 @@ export default defineEventHandler(async (event) => {
     else if (contentType.includes('jpeg') || contentType.includes('jpg')) ext = 'jpg'
     else if (contentType.includes('mp4') || contentType.includes('video/')) ext = 'mp4'
 
-    let downloadName = filename || `media-${type}-${Date.now()}.${ext}`
+    let downloadName = filename || `figo-${type}.${ext}`
     // Jika filename dari query tidak memiliki ekstensi yang benar, tambahkan ekstensi
     if (filename && !filename.toLowerCase().endsWith(`.${ext}`)) {
       downloadName = `${filename}.${ext}`

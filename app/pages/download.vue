@@ -618,10 +618,15 @@ async function downloadSelected() {
 
 // Download direct URL via proxy untuk media Twitter
 function downloadTwitterMedia(mediaUrl: string, type: string, username?: string, resolution?: string) {
-  // Membersihkan karakter "@" atau spasi berlebih
   const safeUsername = (username || 'User').replace(/[^a-zA-Z0-9_\-]/g, '').trim()
   const safeRes = resolution || (type === 'photo' ? 'Original' : 'Video')
-  const filename = `figo-${Date.now()}-${safeUsername} - ${safeRes}`
+  
+  // Prefix figo- dipertahankan, tanpa timestamp agar nama konsisten untuk konten sama
+  const rawTitle = (videoInfo.value?.title || '').replace(/[/\\?%*:|"<>]/g, '').trim().substring(0, 100)
+  const filename = rawTitle && rawTitle.toLowerCase() !== 'video'
+    ? `figo-${rawTitle} - ${safeUsername} (${safeRes})`
+    : `figo-${safeUsername} - ${safeRes}`
+    
   window.location.href = `/api/media-proxy?url=${encodeURIComponent(mediaUrl)}&type=${type}&filename=${encodeURIComponent(filename)}`
   
   // Add to history

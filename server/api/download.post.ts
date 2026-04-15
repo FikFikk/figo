@@ -164,9 +164,9 @@ export default defineEventHandler(async (event) => {
       const safeTitle = rawTitle.replace(/[/\\?%*:|"<>]/g, '').trim().substring(0, 100)
       const safeUploader = uploader.replace(/[/\\?%*:|"<>@]/g, '').trim()
       
-      let finalName = `${safeUploader} - ${resolution}`
+      let finalName = `figo-${safeUploader} - ${resolution}`
       if (safeTitle && safeTitle.toLowerCase() !== 'video') {
-        finalName = `${safeTitle} - ${safeUploader} (${resolution})`
+        finalName = `figo-${safeTitle} - ${safeUploader} (${resolution})`
       }
 
       downloadJobs.set(jobId, { status: 'processing', ext, title: finalName })
