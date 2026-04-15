@@ -160,10 +160,14 @@ export default defineEventHandler(async (event) => {
 
       const rawTitle = (body?.title as string) || 'Video'
       const uploader = (body?.uploader as string) || 'Unknown'
-      const resolution = (body?.resolution as string) || 'Video'
-      const safeTitle = rawTitle.replace(/[/\\?%*:|"<>]/g, '').trim()
+      const resolution = (body?.resolution as string) || (body?.resolutionLabel as string) || 'Media'
+      const safeTitle = rawTitle.replace(/[/\\?%*:|"<>]/g, '').trim().substring(0, 100)
       const safeUploader = uploader.replace(/[/\\?%*:|"<>@]/g, '').trim()
-      const finalName = `figo-${Date.now()}-${safeUploader} - ${resolution}`
+      
+      let finalName = `${safeUploader} - ${resolution}`
+      if (safeTitle && safeTitle.toLowerCase() !== 'video') {
+        finalName = `${safeTitle} - ${safeUploader} (${resolution})`
+      }
 
       downloadJobs.set(jobId, { status: 'processing', ext, title: finalName })
 
