@@ -63,9 +63,12 @@ export default defineEventHandler(async (event) => {
       downloadName = `${filename}.${ext}`
     }
 
+    // Pastikan filename utama hanya berisi karakter ASCII untuk menghindari error HTTP Header
+    const safeFilename = downloadName.replace(/[^\x20-\x7E]/g, '').replace(/"/g, '') || 'download';
+
     setResponseHeaders(event, {
       'Content-Type': contentType,
-      'Content-Disposition': `${isInline ? 'inline' : 'attachment'}; filename="${downloadName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`,
+      'Content-Disposition': `${isInline ? 'inline' : 'attachment'}; filename="${safeFilename}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`,
       'Cache-Control': 'no-cache',
     })
 
