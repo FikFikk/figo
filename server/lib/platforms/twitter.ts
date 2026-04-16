@@ -51,6 +51,9 @@ export async function fetchTwitterMedia(url: string): Promise<PlatformResult> {
   const data = await response.json() as any
   const tweet = data?.tweet
 
+  // Debug data mentah untuk melihat detail yang didapat (caption/text, dll)
+  console.log('[DEBUG] FxTwitter Raw Tweet:', JSON.stringify(tweet, null, 2))
+
   if (!tweet) {
     throw new Error('Tweet tidak ditemukan atau sudah dihapus.')
   }

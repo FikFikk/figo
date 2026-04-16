@@ -536,6 +536,9 @@ async function fetchInfo() {
       body: { url: url.value, mode: 'info' }
     }) as any
 
+    // Debug response dari server
+    console.log('[DEBUG] Download Fetch Response:', response)
+
     if (['twitter', 'instagram', 'tiktok'].includes(response.source)) {
       videoInfo.value = response
       console.log(`[Figo] Fetch Info Success in ${response.fetchDuration}ms (${response.source})`)
