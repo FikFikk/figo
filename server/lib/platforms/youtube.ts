@@ -164,6 +164,7 @@ export async function fetchYouTubeInfo(url: string): Promise<PlatformResult> {
 
   const result: PlatformResult & { qualities: typeof qualities; duration: number | null } = {
     source,
+    id: data.id || videoId || undefined,
     title: data.title || 'Video',
     uploader: data.uploader || data.channel || 'Unknown',
     thumb: data.thumbnail || null,

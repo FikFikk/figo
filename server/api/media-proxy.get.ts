@@ -33,17 +33,19 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    console.log(`[Media Proxy] Downloading ${type}: ${mediaUrl.substring(0, 100)}...`)
-
     const response = await fetch(mediaUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        'Referer': mediaUrl.includes('twimg') ? 'https://x.com/' : 'https://www.instagram.com/',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': mediaUrl.includes('twimg') ? 'https://x.com/' : undefined,
       },
     })
 
     if (!response.ok) {
-      throw new Error(`Gagal mengunduh media: ${response.status}`)
+      const error: any = new Error(`Gagal mengunduh media: ${response.status}`)
+      error.statusCode = response.status
+      throw error
     }
 
     // Tentukan content-type dan ekstensi
@@ -82,7 +84,12 @@ export default defineEventHandler(async (event) => {
     return response.body
 
   } catch (err: any) {
-    console.error('[Media Proxy] Error:', err)
+    if (err.statusCode === 403 || err.statusCode === 404) {
+      console.warn(`[Media Proxy] Media ${err.statusCode}: Link expired atau di-block oleh platform.`)
+    } else {
+      console.error('[Media Proxy] Error:', err.message || err)
+    }
+    
     if (err.statusCode) throw err
     throw createError({
       statusCode: 500,

@@ -12,6 +12,11 @@ export function isInstagramUrl(url: string): boolean {
   return /(?:instagram\.com|ig\.me)/i.test(url)
 }
 
+function extractIgId(url: string): string {
+  const match = url.match(/(?:p|reel|tv)\/([^/?]+)/i)
+  return match ? match[1]! : ''
+}
+
 /** Parse caption, likes, comments dari raw IG text */
 function parseIgContent(raw: string): { caption: string; likes: string; comments: string } {
   let caption = raw || ''
@@ -74,9 +79,11 @@ async function tryYtdlpExtract(url: string): Promise<PlatformResult | null> {
     const thumb = ytParsed.thumbnail || null
     const rawTitle = ytParsed.description || ytParsed.title || 'Instagram Reel'
     const { caption, likes, comments } = parseIgContent(rawTitle)
+    const igId = ytParsed.id || ytParsed.display_id || extractIgId(url)
 
     return {
       source: 'instagram',
+      id: igId,
       title: caption.substring(0, 200),
       uploader,
       thumb,
@@ -190,9 +197,11 @@ async function tryHtmlScrape(url: string): Promise<PlatformResult | null> {
 
     const rawCaption = ogDescMatch ? ogDescMatch[1]!.replace(/&amp;/g, '&') : (ogTitleMatch ? ogTitleMatch[1]! : 'Instagram Post')
     const { caption, likes, comments } = parseIgContent(rawCaption)
+    const igId = extractIgId(url)
 
     return {
       source: 'instagram',
+      id: igId,
       title: caption.substring(0, 200),
       uploader,
       thumb: mediaItems[0]?.thumbnail || null,

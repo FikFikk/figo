@@ -109,6 +109,7 @@ export default defineEventHandler(async (event) => {
           const result = await fetchInstagramMedia(url)
           return {
             success: true, mode: 'info', source: 'instagram',
+            id: result.id,
             title: result.title,
             uploader: result.uploader,
             thumb: result.thumb,
@@ -134,6 +135,7 @@ export default defineEventHandler(async (event) => {
       return {
         success: true, mode: 'info',
         source: result.source,
+        id: result.id,
         title: result.title,
         thumb: result.thumb,
         duration: (result as any).duration || null,
