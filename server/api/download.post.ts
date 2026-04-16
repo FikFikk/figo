@@ -160,16 +160,13 @@ export default defineEventHandler(async (event) => {
 
       const ffmpegPath = getBinaryPath('ffmpeg')
 
-      const rawTitle = (body?.title as string) || 'Video'
       const uploader = (body?.uploader as string) || 'Unknown'
       const resolution = (body?.resolution as string) || (body?.resolutionLabel as string) || 'Media'
-      const safeTitle = rawTitle.replace(/[/\\?%*:|"<>]/g, '').trim().substring(0, 100)
+      const mediaId = (body?.mediaId as string) || ''
       const safeUploader = uploader.replace(/[/\\?%*:|"<>@]/g, '').trim()
+      const idSuffix = mediaId ? `-[${mediaId}]` : ''
       
-      let finalName = `figo-${safeUploader} - ${resolution}`
-      if (safeTitle && safeTitle.toLowerCase() !== 'video') {
-        finalName = `figo-${safeTitle} - ${safeUploader} (${resolution})`
-      }
+      const finalName = `figo-${safeUploader}${idSuffix} (${resolution})`
 
       downloadJobs.set(jobId, { status: 'processing', ext, title: finalName })
 

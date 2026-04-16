@@ -596,7 +596,8 @@ async function downloadSelected() {
     formatId: selectedFormat.value,
     title: videoInfo.value?.title || 'Video',
     uploader: videoInfo.value?.uploader || 'Unknown',
-    resolutionLabel: selectedObj ? selectedObj.label || 'Media' : 'Media'
+    resolutionLabel: selectedObj ? selectedObj.label || 'Media' : 'Media',
+    mediaId: videoInfo.value?.id || ''
   }
 
   await startDownloadJob(payload)
@@ -626,11 +627,8 @@ function downloadTwitterMedia(mediaUrl: string, type: string, username?: string,
   const mediaId = videoInfo.value?.id || ''
   const idSuffix = mediaId ? `-[${mediaId}]` : ''
   
-  // Prefix figo- dipertahankan, kombinasikan dengan ID unik dari post jika ada
-  const rawTitle = (videoInfo.value?.title || '').replace(/[/\\?%*:|"<>]/g, '').trim().substring(0, 100)
-  const filename = rawTitle && rawTitle.toLowerCase() !== 'video'
-    ? `figo-${rawTitle} - ${safeUsername}${idSuffix} (${safeRes})`
-    : `figo-${safeUsername}${idSuffix} (${safeRes})`
+  // Prefix figo- dipertahankan, kombinasikan dengan ID unik dari post tanpa title
+  const filename = `figo-${safeUsername}${idSuffix} (${safeRes})`
     
   window.location.href = `/api/media-proxy?url=${encodeURIComponent(mediaUrl)}&type=${type}&filename=${encodeURIComponent(filename)}`
   
