@@ -85,6 +85,10 @@ export async function fetchYouTubeInfo(url: string): Promise<PlatformResult> {
   const t2 = Date.now()
   console.log(`[YouTube] ⏱ yt-dlp=${t1 - t0}ms | JSON.parse=${t2 - t1}ms | payload=${(dataRaw.stdout.length / 1024).toFixed(0)}KB | formats=${data.formats?.length || 0}`)
 
+  // Debug log untuk YouTube (tanpa array formats yang sangat panjang)
+  const { formats: _, requested_formats: __, entries: ___, ...safeYouTubeData } = data as any
+  console.log('[DEBUG] YouTube yt-dlp Raw Data:', JSON.stringify(safeYouTubeData, null, 2))
+
   // Collect unique (height, ext) combinations
   const formatMap = new Map<string, { height: number; ext: string; size: number }>()
   let bestAudioSize = 0

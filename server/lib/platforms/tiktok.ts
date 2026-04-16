@@ -29,6 +29,7 @@ export async function fetchTikTokMedia(url: string): Promise<PlatformResult> {
   if (!res.ok) throw new Error(`tikwm API error: HTTP ${res.status}`)
 
   const json = await res.json() as any
+  console.log('[DEBUG] TikWM Raw Data:', JSON.stringify(json, null, 2))
   if (json.code !== 0 || !json.data) {
     throw new Error(json.msg || 'TikTok video tidak ditemukan atau link tidak valid.')
   }

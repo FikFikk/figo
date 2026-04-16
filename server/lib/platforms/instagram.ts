@@ -46,6 +46,10 @@ async function tryYtdlpExtract(url: string): Promise<PlatformResult | null> {
     }, 20000)
 
     const ytParsed = parseYtdlpOutput(ytRaw.stdout)
+    // Simplify output untuk yt-dlp agar tak crash console karena terlalu pajang
+    const { formats: _, ...safeYtParsed } = ytParsed as any
+    console.log('[DEBUG] Instagram yt-dlp Raw Data:', JSON.stringify(safeYtParsed, null, 2))
+
     if (!ytParsed?.title || ytParsed.title.includes('There is no video')) return null
 
     // Format qualities dari yt-dlp formats
@@ -166,6 +170,7 @@ async function tryHtmlScrape(url: string): Promise<PlatformResult | null> {
       const fallbackRes = await fetch(`https://api.vreden.web.id/api/igdownload?url=${encodeURIComponent(url)}`).catch(() => null)
       if (fallbackRes?.ok) {
         const fbJson = await fallbackRes.json() as any
+        console.log('[DEBUG] Instagram Fallback API Raw Data:', JSON.stringify(fbJson, null, 2))
         if (fbJson.status && fbJson.result?.length > 0) {
           for (const item of fbJson.result) {
             const type = item.url.includes('.mp4') ? 'video' : 'photo' as const
