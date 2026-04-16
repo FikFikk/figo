@@ -127,6 +127,7 @@ export async function fetchTwitterMedia(url: string): Promise<PlatformResult> {
 
   return {
     source: 'twitter',
+    id: tweet.id_str || tweet.id || tweetInfo.tweetId,
     title: tweet.text || 'Twitter Post',
     uploader,
     thumb: mediaItems[0]?.thumbnail || null,

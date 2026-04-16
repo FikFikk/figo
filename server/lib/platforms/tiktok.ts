@@ -71,6 +71,7 @@ export async function fetchTikTokMedia(url: string): Promise<PlatformResult> {
 
   return {
     source: 'tiktok',
+    id: data.id,
     title: data.title || 'TikTok Video',
     uploader,
     thumb,

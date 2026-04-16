@@ -33,6 +33,7 @@ export interface MediaStatistics {
 /** Hasil fetch info dari platform manapun — kontrak seragam */
 export interface PlatformResult {
   source: string
+  id?: string
   title: string
   uploader: string
   thumb: string | null

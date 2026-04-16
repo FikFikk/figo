@@ -65,6 +65,7 @@ export default defineEventHandler(async (event) => {
 
           return {
             success: true, mode: 'info', source: 'twitter',
+            id: result.id,
             title: result.title,
             thumb: result.thumb,
             avatar: result.avatar,
@@ -87,6 +88,7 @@ export default defineEventHandler(async (event) => {
           console.log(`[TikTok] Success: ${result.mediaItems.length} media items`)
           return {
             success: true, mode: 'info', source: 'tiktok',
+            id: result.id,
             title: result.title,
             uploader: result.uploader,
             thumb: result.thumb,

@@ -623,12 +623,14 @@ async function downloadSelected() {
 function downloadTwitterMedia(mediaUrl: string, type: string, username?: string, resolution?: string) {
   const safeUsername = (username || 'User').replace(/[^a-zA-Z0-9_\-]/g, '').trim()
   const safeRes = resolution || (type === 'photo' ? 'Original' : 'Video')
+  const mediaId = videoInfo.value?.id || ''
+  const idSuffix = mediaId ? `-[${mediaId}]` : ''
   
-  // Prefix figo- dipertahankan, tanpa timestamp agar nama konsisten untuk konten sama
+  // Prefix figo- dipertahankan, kombinasikan dengan ID unik dari post jika ada
   const rawTitle = (videoInfo.value?.title || '').replace(/[/\\?%*:|"<>]/g, '').trim().substring(0, 100)
   const filename = rawTitle && rawTitle.toLowerCase() !== 'video'
-    ? `figo-${rawTitle} - ${safeUsername} (${safeRes})`
-    : `figo-${safeUsername} - ${safeRes}`
+    ? `figo-${rawTitle} - ${safeUsername}${idSuffix} (${safeRes})`
+    : `figo-${safeUsername}${idSuffix} (${safeRes})`
     
   window.location.href = `/api/media-proxy?url=${encodeURIComponent(mediaUrl)}&type=${type}&filename=${encodeURIComponent(filename)}`
   
