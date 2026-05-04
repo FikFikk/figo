@@ -466,7 +466,11 @@ async function startDownloadJob(body: any) {
         if (status === 'done') {
           clearInterval(pollInterval.value)
           isProcessing.value = false
-          window.location.href = `/api/download-file?id=${jobId}`
+          const a = document.createElement('a')
+          a.href = `/api/download-file?id=${jobId}`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
           increment()
         } else if (status === 'error') {
           clearInterval(pollInterval.value)
@@ -627,10 +631,14 @@ function downloadTwitterMedia(mediaUrl: string, type: string, username?: string,
   const mediaId = videoInfo.value?.id || ''
   const idSuffix = mediaId ? `-[${mediaId}]` : ''
   
-  // Prefix figo- dipertahankan, kombinasikan dengan ID unik dari post tanpa title
   const filename = `figo-${safeUsername}${idSuffix} (${safeRes})`
     
-  window.location.href = `/api/media-proxy?url=${encodeURIComponent(mediaUrl)}&type=${type}&filename=${encodeURIComponent(filename)}`
+  const proxyUrl = `/api/media-proxy?url=${encodeURIComponent(mediaUrl)}&type=${type}&filename=${encodeURIComponent(filename)}`
+  const a = document.createElement('a')
+  a.href = proxyUrl
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
   
   // Add to history
   const targetUrl = url.value
