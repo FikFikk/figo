@@ -81,6 +81,69 @@
               {{ info.pancasuda?.description }}
             </p>
           </div>
+
+          <!-- Divider visual antara info tradisional dan zodiak -->
+          <div class="h-px" :class="isDark ? 'bg-white/5' : 'bg-slate-100'"></div>
+
+          <!-- Zodiak Barat -->
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-2" :class="isDark ? 'text-white/25' : 'text-slate-300'">Zodiak</p>
+            <div class="flex items-start gap-3 px-3.5 py-3 rounded-2xl border"
+              :class="isDark ? 'bg-indigo-500/5 border-indigo-500/10' : 'bg-indigo-50/60 border-indigo-100'"
+            >
+              <span class="text-3xl leading-none mt-0.5">{{ info.zodiac.symbol }}</span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold" :class="isDark ? 'text-white' : 'text-slate-800'">
+                  {{ info.zodiac.name }}
+                  <span class="font-normal opacity-50">· {{ info.zodiac.nameId }}</span>
+                </p>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                    :class="getElementStyle(info.zodiac.element)"
+                  >
+                    {{ info.zodiac.elementEmoji }} {{ info.zodiac.element }}
+                  </span>
+                  <span class="text-[10px] font-medium" :class="isDark ? 'text-white/30' : 'text-slate-400'">
+                    {{ info.zodiac.dateRange }}
+                  </span>
+                </div>
+                <p class="text-[11px] mt-1.5" :class="isDark ? 'text-white/40' : 'text-slate-500'">
+                  {{ info.zodiac.traits }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Shio -->
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-2" :class="isDark ? 'text-white/25' : 'text-slate-300'">Shio</p>
+            <div class="flex items-start gap-3 px-3.5 py-3 rounded-2xl border"
+              :class="isDark ? 'bg-amber-500/5 border-amber-500/10' : 'bg-amber-50/60 border-amber-100'"
+            >
+              <span class="text-3xl leading-none mt-0.5">{{ info.shio.emoji }}</span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold" :class="isDark ? 'text-white' : 'text-slate-800'">
+                  {{ info.shio.nameId }}
+                  <span class="font-normal opacity-50">· {{ info.shio.name }}</span>
+                </p>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                    :class="getElementStyle(info.shio.element)"
+                  >
+                    {{ info.shio.elementEmoji }} {{ info.shio.element }}
+                  </span>
+                  <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
+                    :class="isDark ? 'bg-white/5 text-white/40' : 'bg-slate-100 text-slate-400'"
+                  >
+                    {{ info.shio.yinYang }}
+                  </span>
+                </div>
+                <p class="text-[11px] mt-1.5" :class="isDark ? 'text-white/40' : 'text-slate-500'">
+                  {{ info.shio.traits }}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Close button -->
@@ -120,7 +183,9 @@ const info = computed(() => {
   if (!props.date) return {
     masehi: '', hijri: '', jawa: '', pasaran: '', neptu: 0, wuku: '',
     tanggalJawa: '', tahunJawa: '', winduJawa: '', bulanJawa: '', tahunAngkaJawa: 0,
-    pancasuda: { name: '', description: '' }
+    pancasuda: { name: '', description: '' },
+    zodiac: { name: '', nameId: '', symbol: '', emoji: '', element: '', elementEmoji: '', dateRange: '', traits: '' },
+    shio: { name: '', nameId: '', emoji: '', element: '', elementEmoji: '', yinYang: '', traits: '' },
   }
   return getFullDateInfo(props.date)
 })
@@ -152,6 +217,30 @@ function getPancasudaColor(name?: string): string {
     case 'Satria Wirang': return 'text-rose-600'
     case 'Bumi Kapetak': return 'text-orange-600'
     default: return 'text-slate-800'
+  }
+}
+
+/** Warna badge elemen (untuk zodiak & shio) */
+function getElementStyle(element: string): string {
+  if (isDark.value) {
+    switch (element) {
+      case 'Api': return 'bg-red-500/15 text-red-400'
+      case 'Tanah': return 'bg-amber-500/15 text-amber-400'
+      case 'Udara': return 'bg-sky-500/15 text-sky-400'
+      case 'Air': return 'bg-blue-500/15 text-blue-400'
+      case 'Kayu': return 'bg-emerald-500/15 text-emerald-400'
+      case 'Logam': return 'bg-slate-400/15 text-slate-300'
+      default: return 'bg-white/10 text-white/50'
+    }
+  }
+  switch (element) {
+    case 'Api': return 'bg-red-100 text-red-600'
+    case 'Tanah': return 'bg-amber-100 text-amber-700'
+    case 'Udara': return 'bg-sky-100 text-sky-600'
+    case 'Air': return 'bg-blue-100 text-blue-600'
+    case 'Kayu': return 'bg-emerald-100 text-emerald-700'
+    case 'Logam': return 'bg-slate-200 text-slate-600'
+    default: return 'bg-slate-100 text-slate-500'
   }
 }
 </script>

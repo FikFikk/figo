@@ -1,8 +1,10 @@
 /**
  * Calendar Conversion Utilities
  * Timezone-safe: semua kalkulasi JD menggunakan Date.UTC
- * Mencakup: Hijri, Pasaran, Neptu, Wuku, Tanggal Jawa, Pancasuda
+ * Mencakup: Hijri, Pasaran, Neptu, Wuku, Tanggal Jawa, Pancasuda, Zodiak, Shio
  */
+
+import { getZodiac, getShio, type ZodiacInfo, type ShioInfo } from './calendar-zodiac'
 
 // =============================================================================
 // HELPER: Julian Day Number (timezone-safe)
@@ -311,6 +313,8 @@ export interface DateInfo {
   tahunAngkaJawa: number
   pancasuda: PancasudaResult
   wewaran: ReturnType<typeof getWewaran>
+  zodiac: ZodiacInfo
+  shio: ShioInfo
 }
 
 /** Cache per tanggal — hindari kalkulasi ulang Hijri/Jawa/Wuku setiap render */
@@ -357,7 +361,11 @@ export function getFullDateInfo(date: Date): DateInfo {
     pancasuda,
 
     // Wewaran
-    wewaran: getWewaran(date)
+    wewaran: getWewaran(date),
+
+    // Zodiak & Shio
+    zodiac: getZodiac(date),
+    shio: getShio(date),
   }
 
   _dateInfoCache.set(key, result)
