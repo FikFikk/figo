@@ -32,7 +32,7 @@
         >
           <span class="flex items-center gap-2">
             <span class="material-symbols-outlined text-lg">bolt</span>
-            Simulate Task
+            See It in Action
           </span>
         </button>
       </div>

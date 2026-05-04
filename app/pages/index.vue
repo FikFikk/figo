@@ -44,7 +44,7 @@ useSeoMeta({
   title: 'FiGo — The Ethereal Engine',
   ogTitle: 'FiGo — The Ethereal Engine',
   description: 'High-performance file processing. Compress, convert, download via URL, check links, analyze files — one platform, zero limits.',
-  ogDescription: 'High-performance file processing. One platform, zero limits.',
+  ogDescription: 'Convert, compress, and download anything. No account. No fee. No nonsense.',
 })
 
 const { isDark } = useColorMode()
@@ -54,8 +54,8 @@ const coreTools = [
   {
     icon: 'transform',
     title: 'Convert',
-    description: 'Lossless multi-threaded translation between any file format. From PNG to WEBP, MP4 to GIF, DOCX to PDF — with 99.9% integrity.',
-    actionLabel: 'Start Engine',
+    description: 'Convert any file format without quality loss between any file format. From PNG to WEBP, MP4 to GIF, DOCX to PDF — with 99.9% quality retained.',
+    actionLabel: 'Convert Now',
     iconBgClass: 'bg-blue-50',
     iconBgDark: 'bg-primary/15',
     iconColorClass: 'text-primary',
@@ -64,7 +64,7 @@ const coreTools = [
   {
     icon: 'layers',
     title: 'Compress',
-    description: 'Advanced algorithms reducing payload size by up to 80% without touching quality. Images, videos, PDFs, and archives.',
+    description: 'Advanced algorithms reducing file size by up to 80% without touching quality. Images, videos, PDFs, and archives.',
     actionLabel: 'Optimize Now',
     iconBgClass: 'bg-purple-50',
     iconBgDark: 'bg-tertiary/15',
@@ -75,7 +75,7 @@ const coreTools = [
     icon: 'download',
     title: 'Download',
     description: 'Instant, high-bandwidth delivery from any URL. Paste a link and download the content directly — no accounts, no waiting.',
-    actionLabel: 'Access Edge',
+    actionLabel: 'Start Downloading',
     iconBgClass: 'bg-blue-50',
     iconBgDark: 'bg-primary/15',
     iconColorClass: 'text-primary',

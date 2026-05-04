@@ -42,7 +42,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  actionLabel: 'Start Engine',
+  actionLabel: 'Convert Now',
   iconBgClass: 'bg-blue-50',
   iconColorClass: 'text-primary',
   delay: 0,

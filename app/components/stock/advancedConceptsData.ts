@@ -48,7 +48,7 @@ export const advancedConceptCategories: ConceptCategoryDef[] = [
     // -- Volatilitas --
     {name:'ATR (Average True Range)',icon:'expand',desc:'Rata-rata volatilitas. Dasar stop loss dan position sizing.',detail:[D('Apa itu?','Rata-rata range harian (High-Low + gap). ATR tinggi = volatile. Basis menentukan stop loss.'),D('Position Sizing','Risk per trade ÷ ATR = jumlah lot. Makin besar ATR, makin kecil posisi.')]},
     {name:'Bollinger Band Width',icon:'unfold_more',desc:'Lebar Bollinger Bands. Squeeze rendah = breakout datang.',detail:[D('Apa itu?','Mengukur lebar bands secara numerik. Nilai terendah = squeeze = siap breakout besar.')]},
-    {name:'Historical Volatility',icon:'timeline',desc:'Standar deviasi return historis. Risiko aktual saham.',detail:[D('Apa itu?','Mengukur seberapa besar pergerakan harga sesungguhnya. HV tinggi = saham berisiko tinggi.')]},
+    {name:'Historical Volatility',icon:'timeline',desc:'Standar deviasi return historis. Risiko aktual asset.',detail:[D('Apa itu?','Mengukur seberapa besar pergerakan harga sesungguhnya. HV tinggi = asset berisiko tinggi.')]},
     {name:'Standard Deviation',icon:'straighten',desc:'Ukuran dispersi harga. Dasar dari Bollinger Bands.',detail:[D('Apa itu?','Statistik: seberapa jauh harga menyimpang dari rata-ratanya. Dasar perhitungan Bollinger Bands.')]},
     // -- Pivot --
     {name:'Pivot Points Classic',icon:'adjust',desc:'S1/S2/S3 dan R1/R2/R3 dari HLC kemarin. Level kunci harian.',detail:[D('Apa itu?','Dihitung dari High+Low+Close kemarin. Menghasilkan 7 level kunci. Digunakan trader institusi harian.')]},
@@ -90,7 +90,7 @@ export const advancedConceptCategories: ConceptCategoryDef[] = [
     {name:'Market Profile (TPO)',icon:'view_column',desc:'Distribusi waktu di setiap level harga.',detail:[D('Apa itu?','Time Price Opportunity. Berapa lama harga habiskan di setiap level. POC (Point of Control) = level harga paling aktif.')]},
     {name:'Volume Spread Analysis',icon:'analytics',desc:'Analisis volume + spread candle. Membaca smart money.',detail:[D('Apa itu?','Tom Williams. Analisis BERSAMA antara volume dan ukuran candle. Spread besar + volume kecil = smart money distribusi.')]},
     {name:'Tape Reading',icon:'receipt_long',desc:'Membaca aliran order secara real-time.',detail:[D('Apa itu?','Membaca order flow langsung. Melihat siapa beli/jual, seberapa besar, seberapa agresif. Teknik trader floor klasik.')]},
-    {name:'Intermarket Analysis',icon:'public',desc:'Korelasi antar pasar: saham, bonds, komoditas, forex.',detail:[D('Apa itu?','John Murphy. Bagaimana pasar saling mempengaruhi: Dollar naik → Komoditas turun. Yield naik → Saham turun (biasanya).')]},
+    {name:'Intermarket Analysis',icon:'public',desc:'Korelasi antar pasar: stocks, bonds, komoditas, forex.',detail:[D('Apa itu?','John Murphy. Bagaimana pasar saling mempengaruhi: Dollar naik → Komoditas turun. Yield naik → Stocks turun (biasanya).')]},
     {name:'Sector Rotation',icon:'sync',desc:'Rotasi sektor berdasarkan siklus ekonomi.',detail:[D('Apa itu?','Di setiap fase ekonomi, sektor berbeda outperform. Early cycle: konsumer. Mid: teknologi. Late: energi. Recession: defensif.')]},
   ]},
 

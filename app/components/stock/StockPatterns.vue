@@ -4,7 +4,7 @@
     <div class="glass-panel rounded-2xl border p-5" :class="isDark?'border-white/5':'border-slate-100'">
       <div class="flex items-center gap-3 mb-3">
         <span class="material-symbols-outlined text-2xl text-primary">menu_book</span>
-        <h2 class="font-headline font-bold text-base" :class="isDark?'text-white':'text-slate-900'">Ensiklopedia Saham</h2>
+        <h2 class="font-headline font-bold text-base" :class="isDark?'text-white':'text-slate-900'">Stock Encyclopedia</h2>
       </div>
       <div class="grid grid-cols-4 gap-2">
         <div v-for="s in stats" :key="s.label" class="rounded-xl p-2.5 text-center" :class="isDark?'bg-white/5':'bg-slate-50'">
@@ -387,9 +387,9 @@ const tradingGuide = computed(() => {
   ]
   if (isBear) return [
     { icon:'📍', title:'Kapan Muncul', body:'Pola ini muncul di PUNCAK uptrend atau di dekat area resistance kuat. Semakin panjang uptrend sebelumnya, semakin besar kemungkinan reversal turun.' },
-    { icon:'🎯', title:'Cara Entry', body:'Tunggu candle konfirmasi bearish — candle merah yang menutup di bawah low pola. Untuk trader saham: pertimbangkan untuk JUAL/take profit posisi yang ada, bukan short selling.' },
+    { icon:'🎯', title:'Cara Entry', body:'Tunggu candle konfirmasi bearish — candle merah yang menutup di bawah low pola. Untuk trader stocks: pertimbangkan untuk JUAL/take profit posisi yang ada, bukan short selling.' },
     { icon:'🛑', title:'Stop Loss', body:'Pasang stop loss di ATAS titik tertinggi (high) pola. Jika tembus ke atas = pola gagal, uptrend berlanjut.' },
-    { icon:'💰', title:'Target', body:'Target turun: support terdekat. Untuk saham, gunakan ini sebagai sinyal keluar/take profit, bukan entry short. Fibonacci extension 127.2% dari tinggi pola untuk target jika short.' },
+    { icon:'💰', title:'Target', body:'Target turun: support terdekat. Untuk stocks, gunakan ini sebagai sinyal keluar/take profit, bukan entry short. Fibonacci extension 127.2% dari tinggi pola untuk target jika short.' },
     { icon:'⚠️', title:'Kesalahan Umum', body:'1) Panic selling tanpa konfirmasi. 2) Mengabaikan konteks — pola bearish di tengah uptrend kuat bisa jadi hanya koreksi minor. 3) Tidak memperhatikan volume.' },
     { icon:'💡', title:'Tips Pro', body:'RSI overbought (>70) + pola bearish + bearish divergence = triple confirmation. Volume menurun saat uptrend + pola bearish = smart money sudah distribusi.' },
   ]
@@ -519,7 +519,7 @@ const conceptGuide = computed(() => {
   if (cat.includes('Price Action')) return [
     { icon:'📍', title:'Cara Menentukan', body:'Cari level harga di mana harga memantul minimal 2-3 kali. Semakin sering diuji (disentuh tapi tidak tembus), semakin kuat level tersebut. Gunakan timeframe lebih tinggi (Daily/Weekly) untuk level utama.' },
     { icon:'🎯', title:'Cara Trading', body:'BUY: Saat harga mendekati support + muncul candle reversal bullish (hammer, engulfing). SELL: Saat harga mendekati resistance + muncul candle reversal bearish. Selalu tunggu KONFIRMASI — jangan entry hanya karena menyentuh level.' },
-    { icon:'📐', title:'Contoh Perhitungan', body:'Misal saham BBCA memantul 3x di harga 8.500 (support) dan ditolak 3x di 9.200 (resistance). Range = 700. Entry beli: 8.550 setelah hammer. Stop loss: 8.450 (di bawah support). Target: 9.150 (dekat resistance). Risk = 100, Reward = 600. Risk:Reward = 1:6 — sangat baik!' },
+    { icon:'📐', title:'Contoh Perhitungan', body:'Misal stocks BBCA memantul 3x di harga 8.500 (support) dan ditolak 3x di 9.200 (resistance). Range = 700. Entry beli: 8.550 setelah hammer. Stop loss: 8.450 (di bawah support). Target: 9.150 (dekat resistance). Risk = 100, Reward = 600. Risk:Reward = 1:6 — sangat baik!' },
     { icon:'⚠️', title:'Peringatan', body:'Level yang sering diuji AKHIRNYA akan ditembus. Saat tembus, level berubah peran (support → resistance, resistance → support). Jangan keras kepala mempertahankan level yang sudah break.' },
   ]
   if (cat.includes('Indikator')) return [

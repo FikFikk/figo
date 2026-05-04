@@ -86,7 +86,7 @@ const navLinks = [
   { to: '/compress', label: 'Compress', icon: 'layers' },
   { to: '/download', label: 'Download', icon: 'download' },
   { to: '/tools', label: 'Tools', icon: 'build' },
-  { to: '/saham', label: 'Saham', icon: 'candlestick_chart' },
+  { to: '/stocks', label: 'Stocks', icon: 'candlestick_chart' },
 ]
 
 function isActive(path: string): boolean {

@@ -1,4 +1,4 @@
-// 8 kategori utama ensiklopedia saham — Types & re-exports
+// 8 kategori utama ensiklopedia — Types & re-exports
 // Data di-split ke file terpisah per kategori untuk maintainability
 
 // ═══ TYPE DEFINITIONS ═══

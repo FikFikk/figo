@@ -195,7 +195,7 @@
       >
         <span class="material-symbols-outlined text-orange-500 text-lg mt-0.5">gavel</span>
         <p class="text-[9.5px] leading-relaxed text-orange-700 dark:text-orange-300">
-          <strong>MANAJEMEN RESIKO:</strong> Jika harga menembus ke bawah Stop Loss, DISIPLIN jual. Jangan tambah posisi di saham yang sedang Mark-Down. Gunakan maksimal 5% dari total portofolio per posisi.
+          <strong>RISK MANAGEMENT:</strong> If the price breaks below the Stop Loss, be DISCIPLINED and sell. Do not add to a losing position in an asset that is in a Mark-Down phase. Use a maximum of 5% of your total portfolio per position.
         </p>
       </div>
     </div>
@@ -977,7 +977,7 @@ function analyzeData() {
   }, 1500)
 }
 
-// Reset state jika saham berganti (data kosong)
+// Reset state jika asset berganti (data kosong)
 watch(() => props.data, (newData) => {
   if (!newData || newData.length === 0) {
     isAnalyzed.value = false

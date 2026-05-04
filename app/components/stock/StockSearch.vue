@@ -9,7 +9,7 @@
         <input
           v-model="query"
           type="text"
-          placeholder="Cari saham (cth: BBCA, TLKM, BBRI)..."
+          placeholder="Search stocks (e.g. AAPL, TSLA, BBCA)..."
           class="w-full pl-12 pr-12 py-4 rounded-2xl text-sm font-medium transition-all outline-none"
           :class="isDark
             ? 'bg-white/5 text-white placeholder-gray-600 border border-white/10 focus:border-primary/40'
@@ -56,7 +56,7 @@
         <!-- Loading State -->
         <div v-if="isTyping || loading" class="px-4 py-8 text-center flex flex-col items-center justify-center">
           <span class="material-symbols-outlined text-primary animate-spin text-3xl mb-3 inline-block">progress_activity</span>
-          <p class="text-xs font-bold opacity-70">{{ isTyping ? 'Menunggu...' : 'Mencari saham...' }}</p>
+          <p class="text-xs font-bold opacity-70">{{ isTyping ? 'Waiting...' : 'Searching stocks...' }}</p>
         </div>
 
         <!-- Daftar Saham -->
@@ -115,7 +115,7 @@
             class="px-4 py-8 text-center"
           >
             <span class="material-symbols-outlined text-3xl mb-2 block opacity-20">search_off</span>
-            <p class="text-sm font-bold opacity-80">Saham "{{ query }}" tidak ditemukan</p>
+            <p class="text-sm font-bold opacity-80">Stock "{{ query }}" not found</p>
           </div>
         </div>
       </div>

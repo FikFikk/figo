@@ -13,9 +13,9 @@
           <div>
             <h1 class="text-2xl md:text-3xl font-headline font-black tracking-tight"
               :class="isDark ? 'text-white' : 'text-slate-900'"
-            >Analisa Saham IDX</h1>
+            >Global Stock Analysis</h1>
             <p class="text-xs" :class="isDark ? 'text-gray-500' : 'text-slate-400'">
-              Real-time market data, technical signals &amp; bandarmology
+              Real-time market data, technical signals & institutional flows
             </p>
           </div>
         </div>
@@ -43,7 +43,7 @@
           :class="isDark ? 'bg-white/10 text-white' : 'bg-slate-800/80 text-white'"
         >
           <span class="material-symbols-outlined text-sm">lock</span>
-          <span class="text-xs font-bold">Masukkan PIN untuk mengakses</span>
+          <span class="text-xs font-bold">Enter PIN to access</span>
         </div>
       </div>
       <StockSearch @select="onSelectStock" />
@@ -71,8 +71,8 @@
             >
               <span class="material-symbols-outlined text-2xl">{{ pinError ? 'lock_open_right' : 'lock' }}</span>
             </div>
-            <h2 class="text-lg font-bold font-headline mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">Masukkan PIN</h2>
-            <p class="text-[10px] opacity-50 mb-6">6 digit PIN rahasia untuk membuka fitur Analisa.</p>
+            <h2 class="text-lg font-bold font-headline mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">Enter PIN</h2>
+            <p class="text-[10px] opacity-50 mb-6">6-digit secret PIN to unlock Advanced Analysis.</p>
 
             <form @submit.prevent="checkPin">
               <input 
@@ -89,10 +89,10 @@
                 ]"
                 @input="handlePinInput"
               />
-              <p v-if="pinError" class="text-[10px] font-bold text-red-500 animate-pulse">PIN salah.</p>
+              <p v-if="pinError" class="text-[10px] font-bold text-red-500 animate-pulse">Incorrect PIN.</p>
             </form>
 
-            <button @click="showPinModal = false" class="mt-4 text-[10px] opacity-40 hover:opacity-80 transition-opacity">Tutup</button>
+            <button @click="showPinModal = false" class="mt-4 text-[10px] opacity-40 hover:opacity-80 transition-opacity">Close</button>
           </div>
         </div>
       </Transition>
@@ -170,7 +170,7 @@
       <div>
         <div class="flex items-center gap-2 mb-4">
           <span class="material-symbols-outlined text-lg text-primary">auto_awesome</span>
-          <h2 class="font-headline font-bold text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">Ensiklopedia Pola Saham</h2>
+          <h2 class="font-headline font-bold text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">Stock Patterns Encyclopedia</h2>
         </div>
         <StockPatterns />
       </div>
@@ -185,12 +185,12 @@
 
 <script setup lang="ts">
 /**
- * Halaman utama Analisa Saham IDX
+ * Halaman utama Analisa Saham IDX -> Global Stock Analysis
  * Layout: Search → Overview → Chart + Technical → Bandarmology → Market Movers
  */
 useSeoMeta({
-  title: 'Analisa Saham IDX — FiGo',
-  description: 'Analisa saham Indonesia Stock Exchange (IDX) dengan chart OHLCV, sinyal teknikal, market movers, dan bandarmology. Powered by FiGo.',
+  title: 'Global Stock Analysis — FiGo',
+  description: 'Comprehensive stock market analysis with advanced OHLCV charts, technical signals, market movers, and institutional flows. Powered by FiGo.',
 })
 
 const { isDark } = useColorMode()
@@ -279,7 +279,7 @@ async function loadStockInfo(symbol: string) {
       stockInfo.value = data
     }
   } catch (err: any) {
-    globalError.value = err?.data?.statusMessage || 'Gagal memuat info saham'
+    globalError.value = err?.data?.statusMessage || 'Failed to load stock info'
   } finally {
     loadingInfo.value = false
   }

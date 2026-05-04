@@ -141,7 +141,7 @@
     <!-- Empty state -->
     <div v-else class="text-center py-8">
       <span class="material-symbols-outlined text-3xl opacity-15 mb-2 block">psychology</span>
-      <p class="text-xs opacity-40">Data bandarmology tidak tersedia untuk saham ini</p>
+      <p class="text-xs opacity-40">Institutional flow data is not available for this stock</p>
     </div>
   </div>
 </template>

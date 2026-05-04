@@ -23,7 +23,7 @@
           <span class="material-symbols-outlined text-xl opacity-50">rocket_launch</span>
         </div>
         <h4 class="font-bold text-sm mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">Pantau IPO Terbaru</h4>
-        <p class="text-[10px] opacity-60 mb-4 max-w-[280px]">Analisa sentimen, momentum, dan strategi trading untuk saham IPO Mendatang.</p>
+        <p class="text-[10px] opacity-60 mb-4 max-w-[280px]">Sentiment analysis, momentum, and trading strategies for upcoming IPOs.</p>
         <button @click="handleFetch" class="px-5 py-2 rounded-2xl text-xs font-bold transition-all"
           :class="isDark ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'bg-primary text-white hover:bg-primary/90 shadow-sm'">
           Tampilkan Data
@@ -77,7 +77,7 @@
                 </div>
                 <p class="text-xs font-medium opacity-70">{{ ipo.name }}</p>
                 <div class="flex items-center gap-3 mt-1.5 text-[10px] opacity-60">
-                  <span>Saham Ditawarkan <span v-if="ipo.indicators?.offering_size">({{ ipo.indicators?.offering_size }})</span>: <b :class="isDark ? 'text-white' : 'text-slate-800'">{{ ipo.shares_offered }}</b></span>
+                  <span>Shares Offered <span v-if="ipo.indicators?.offering_size">({{ ipo.indicators?.offering_size }})</span>: <b :class="isDark ? 'text-white' : 'text-slate-800'">{{ ipo.shares_offered }}</b></span>
                   <span>Total Value: <b :class="isDark ? 'text-white' : 'text-slate-800'">Rp {{ ipo.total_value }}</b></span>
                 </div>
               </div>

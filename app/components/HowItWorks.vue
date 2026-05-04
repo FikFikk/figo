@@ -12,7 +12,7 @@
         Built-in Utilities
       </h2>
       <p class="text-base md:text-lg max-w-2xl mx-auto" :class="isDark ? 'text-gray-400' : 'text-secondary'">
-        Beyond core operations. A full suite of developer-grade tools for inspecting, validating, and securing your assets.
+        Beyond core operations. A full suite of developer-grade tools for inspecting, validating, and securing your files.
       </p>
     </div>
 

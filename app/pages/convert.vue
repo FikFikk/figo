@@ -12,7 +12,7 @@
         :class="isDark ? 'text-white' : 'text-slate-900'"
       >Convert Anything</h1>
       <p class="text-base md:text-lg max-w-xl mx-auto" :class="isDark ? 'text-gray-400' : 'text-secondary'">
-        Lossless multi-threaded translation between any file format. PNG, WEBP, JPG, GIF, AVIF — and more.
+        Convert any file format without quality loss between any file format. PNG, WEBP, JPG, GIF, AVIF — and more.
       </p>
     </div>
 

@@ -73,7 +73,7 @@ export default defineNuxtConfig({
         { name: 'description', content: 'FiGo is your all-in-one file utility engine. Compress, convert, download via URL, check links, analyze files — high-performance processing for modern engineers.' },
         { name: 'theme-color', content: '#f7f9fb' },
         { property: 'og:title', content: 'FiGo — The Ethereal Engine' },
-        { property: 'og:description', content: 'High-performance file processing. One platform, zero limits.' },
+        { property: 'og:description', content: 'Convert, compress, and download anything. No account. No fee. No nonsense.' },
         { property: 'og:type', content: 'website' },
       ],
       link: [

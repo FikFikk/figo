@@ -31,7 +31,7 @@
           <span class="material-symbols-outlined text-xl opacity-50">leaderboard</span>
         </div>
         <h4 class="font-bold text-sm mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">Market Movers</h4>
-        <p class="text-[10px] opacity-60 mb-4 max-w-[280px]">Daftar saham teraktif (Top Gainers/Losers/Volume). Klik untuk memuat data.</p>
+        <p class="text-[10px] opacity-60 mb-4 max-w-[280px]">List of most active stocks (Top Gainers/Losers/Volume). Click to load details.</p>
         <button @click="handleUnlock" class="px-5 py-2 rounded-2xl text-xs font-bold transition-all" :class="isDark ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'bg-primary text-white hover:bg-primary/90 shadow-sm'">
           Tampilkan Data
         </button>
@@ -53,7 +53,7 @@
           <!-- Ranking -->
           <span class="text-[10px] font-black w-5 text-center opacity-30">{{ Number(idx) + 1 }}</span>
 
-          <!-- Info Saham -->
+          <!-- Stock Info -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
               <p class="font-headline font-bold text-sm"

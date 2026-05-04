@@ -11,7 +11,7 @@
       <div class="inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-8"
         :class="isDark ? 'bg-primary/15 text-primary border border-primary/20' : 'bg-primary-fixed text-on-primary-fixed'"
       >
-        Ready to Flux?
+        Start for Free?
       </div>
 
       <h2 class="text-3xl sm:text-4xl md:text-6xl font-headline font-extrabold mb-6 md:mb-8 tracking-tight"

@@ -21,9 +21,9 @@
       <p class="text-lg md:text-2xl max-w-2xl mx-auto font-light leading-relaxed"
         :class="isDark ? 'text-gray-400' : 'text-secondary'"
       >
-        High-performance file processing for modern engineers.
+        Convert, compress, and download anything.
         <br class="hidden md:block" />
-        <span :class="isDark ? 'font-medium text-white' : 'font-medium text-slate-900'">One platform, zero limits.</span>
+        <span :class="isDark ? 'font-medium text-white' : 'font-medium text-slate-900'">No account. No fee. No nonsense.</span>
       </p>
     </div>
 
