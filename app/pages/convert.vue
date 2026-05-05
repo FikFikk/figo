@@ -3,22 +3,33 @@
     <!-- Header -->
     <div class="text-center mb-12">
       <div class="inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6"
-        :class="isDark ? 'bg-primary/15 text-primary' : 'bg-primary-fixed text-on-primary-fixed'"
-      >
+        :class="isDark ? 'bg-primary/15 text-primary' : 'bg-primary-fixed text-on-primary-fixed'">
         <span class="material-symbols-outlined text-sm align-middle mr-1">transform</span>
         File Converter
       </div>
       <h1 class="text-3xl md:text-5xl font-headline font-extrabold tracking-tight mb-4"
-        :class="isDark ? 'text-white' : 'text-slate-900'"
-      >Convert Anything</h1>
+        :class="isDark ? 'text-white' : 'text-slate-900'">Convert Anything</h1>
       <p class="text-base md:text-lg max-w-xl mx-auto" :class="isDark ? 'text-gray-400' : 'text-secondary'">
-        Convert any file format without quality loss between any file format. PNG, WEBP, JPG, GIF, AVIF — and more.
+        Smart file detection — upload any file and we'll show you what's possible.
       </p>
+    </div>
+
+    <!-- Supported Formats Badge Grid (tampil saat idle) -->
+    <div v-if="status === 'idle' && files.length === 0" class="mb-6">
+      <p class="text-center text-[10px] font-bold uppercase tracking-widest mb-3" :class="isDark ? 'text-gray-600' : 'text-slate-400'">Supported Input Formats</p>
+      <div class="flex flex-wrap justify-center gap-2">
+        <div v-for="fmt in allSupportedInputs" :key="fmt.ext"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all"
+          :class="isDark ? 'bg-white/5 text-gray-400 border border-white/5' : 'bg-slate-50 text-slate-500 border border-slate-100'">
+          <span class="material-symbols-outlined text-xs" :class="fmt.color">{{ fmt.icon }}</span>
+          {{ fmt.ext }}
+        </div>
+      </div>
     </div>
 
     <!-- Upload Zone -->
     <div
-      v-if="status === 'idle'"
+      v-if="status === 'idle' && files.length === 0"
       class="glass-panel rounded-2xl p-8 md:p-12 text-center cursor-pointer transition-all duration-300 group"
       :class="[
         isDark ? 'border-2 border-dashed border-white/10 hover:border-primary/40' : 'border-2 border-dashed border-slate-200 hover:border-primary/40',
@@ -29,7 +40,7 @@
       @drop.prevent="handleDrop"
       @click="triggerInput"
     >
-      <input ref="fileInput" type="file" class="hidden" multiple accept="image/*,.xlsx,.xls,.csv,.txt" @change="handleFileSelect" />
+      <input ref="fileInput" type="file" class="hidden" multiple @change="handleFileSelect" />
       <div class="mb-4">
         <span class="material-symbols-outlined text-5xl transition-transform duration-300 group-hover:scale-110"
           :class="isDragging ? 'text-primary' : (isDark ? 'text-gray-500' : 'text-slate-400')"
@@ -44,7 +55,16 @@
     </div>
 
     <!-- Selected Files (pre-conversion) -->
-    <div v-if="files.length > 0 && status === 'idle'" class="mt-8 space-y-4">
+    <div v-if="files.length > 0 && status === 'idle'" class="mt-4 space-y-4">
+      <!-- Detected File Type Badge -->
+      <div class="flex items-center justify-center gap-2 mb-2">
+        <div class="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold"
+          :class="isDark ? 'bg-primary/15 text-primary border border-primary/20' : 'bg-blue-50 text-primary border border-blue-100'">
+          <span class="material-symbols-outlined text-sm">{{ detectedCategory.icon }}</span>
+          Terdeteksi: {{ detectedCategory.label }}
+        </div>
+      </div>
+
       <!-- Output Format -->
       <div class="flex items-center gap-3 flex-wrap">
         <span class="text-sm font-bold" :class="isDark ? 'text-gray-400' : 'text-slate-500'">Convert to:</span>
@@ -66,7 +86,7 @@
         class="glass-panel rounded-xl p-4 flex items-center gap-4 transition-all"
         :class="isDark ? 'border border-white/5' : 'border border-slate-100'"
       >
-        <span class="material-symbols-outlined text-2xl text-primary">description</span>
+        <span class="material-symbols-outlined text-2xl text-primary">{{ getFileIcon(file.name) }}</span>
         <div class="flex-1 min-w-0">
           <p class="font-medium truncate text-sm" :class="isDark ? 'text-white' : 'text-slate-900'">{{ file.name }}</p>
           <p class="text-xs" :class="isDark ? 'text-gray-500' : 'text-slate-400'">{{ formatSize(file.size) }}</p>
@@ -74,10 +94,17 @@
         <span class="material-symbols-outlined text-lg" :class="isDark ? 'text-gray-600' : 'text-slate-300'">arrow_forward</span>
         <span class="text-xs font-bold uppercase tracking-wider text-primary">{{ selectedFormat }}</span>
         <button @click="removeFile(idx)" class="ml-2 hover:text-red-500 transition-colors"
-          :class="isDark ? 'text-gray-500' : 'text-slate-400'"
-        >
+          :class="isDark ? 'text-gray-500' : 'text-slate-400'">
           <span class="material-symbols-outlined text-lg">close</span>
         </button>
+      </div>
+
+      <!-- PDF halaman info -->
+      <div v-if="detectedCategory.type === 'pdf' && pdfPageCount > 0"
+        class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold"
+        :class="isDark ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-amber-50 text-amber-700 border border-amber-100'">
+        <span class="material-symbols-outlined text-sm">info</span>
+        PDF memiliki {{ pdfPageCount }} halaman — setiap halaman akan menjadi 1 file {{ selectedFormat }}.
       </div>
 
       <!-- Action Buttons -->
@@ -93,9 +120,7 @@
           class="px-6 py-4 rounded-full font-headline font-bold text-sm transition-all"
           :class="isDark ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
           @click="clearAll"
-        >
-          Clear
-        </button>
+        >Clear</button>
       </div>
     </div>
 
@@ -113,18 +138,15 @@
           </svg>
           <span class="material-symbols-outlined text-3xl text-primary absolute inset-0 flex items-center justify-center">bolt</span>
         </div>
-        <p class="font-headline font-bold text-xl mb-2" :class="isDark ? 'text-white' : 'text-slate-900'">
-          Converting...
-        </p>
+        <p class="font-headline font-bold text-xl mb-2" :class="isDark ? 'text-white' : 'text-slate-900'">Converting...</p>
         <p class="text-sm" :class="isDark ? 'text-gray-500' : 'text-slate-400'">
-          Processing {{ files.length }} file{{ files.length > 1 ? 's' : '' }} to {{ selectedFormat }}
+          {{ progressText }}
         </p>
       </div>
     </div>
 
     <!-- Results -->
     <div v-if="status === 'done'" class="mt-8 space-y-4">
-      <!-- Success Banner -->
       <div class="glass-panel rounded-2xl p-6 text-center" :class="isDark ? 'border border-green-500/20' : 'border border-green-200'">
         <span class="material-symbols-outlined text-4xl text-green-500 mb-2">check_circle</span>
         <p class="font-headline font-bold text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">
@@ -133,7 +155,6 @@
         <p class="text-xs mt-1" :class="isDark ? 'text-gray-500' : 'text-slate-400'">{{ conversionTime }}</p>
       </div>
 
-      <!-- Result Items -->
       <div
         v-for="(result, idx) in results"
         :key="idx"
@@ -154,7 +175,6 @@
         </button>
       </div>
 
-      <!-- Download All + New Conversion -->
       <div class="flex gap-3">
         <button
           v-if="results.length > 1"
@@ -184,15 +204,17 @@
         <button
           class="px-6 py-3 bg-primary text-on-primary rounded-full font-headline font-bold text-sm transition-all hover:shadow-lg"
           @click="resetAll"
-        >
-          Try Again
-        </button>
+        >Try Again</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * Smart File Converter — deteksi tipe file otomatis, format output dinamis
+ * Mendukung: Image (sharp), Spreadsheet (xlsx), PDF→Image (pdfjs-dist client-side)
+ */
 useSeoMeta({ title: 'Convert — FiGo' })
 const { isDark } = useColorMode()
 const { increment } = useHistoryCounter()
@@ -214,51 +236,107 @@ const status = ref<ConversionStatus>('idle')
 const results = ref<ConvertedFile[]>([])
 const errorMessage = ref('')
 const conversionTime = ref('')
+const progressText = ref('Processing...')
+const pdfPageCount = ref(0)
+
+// Semua format input yang didukung
+const allSupportedInputs = [
+  { ext: 'PNG', icon: 'image', color: 'text-blue-500' },
+  { ext: 'JPG', icon: 'image', color: 'text-amber-500' },
+  { ext: 'WEBP', icon: 'image', color: 'text-emerald-500' },
+  { ext: 'GIF', icon: 'gif_box', color: 'text-purple-500' },
+  { ext: 'AVIF', icon: 'image', color: 'text-cyan-500' },
+  { ext: 'TIFF', icon: 'image', color: 'text-indigo-500' },
+  { ext: 'PDF', icon: 'picture_as_pdf', color: 'text-red-500' },
+  { ext: 'XLSX', icon: 'table_chart', color: 'text-green-600' },
+  { ext: 'CSV', icon: 'csv', color: 'text-teal-500' },
+  { ext: 'XLS', icon: 'table_chart', color: 'text-green-700' },
+]
 
 const IMAGE_FORMATS = ['WEBP', 'PNG', 'JPG', 'GIF', 'AVIF', 'TIFF']
 const SHEET_FORMATS = ['XLSX', 'CSV', 'TXT', 'HTML']
+const PDF_OUTPUT_FORMATS = ['PNG', 'JPG', 'WEBP']
 
-// Smart format filtering: hide the input file's format from the options and segregate images from spreadsheets
+// Deteksi kategori file berdasarkan ekstensi
+type FileCategory = { type: 'image' | 'sheet' | 'pdf' | 'unknown'; label: string; icon: string }
+
+const detectedCategory = computed<FileCategory>(() => {
+  if (files.value.length === 0) return { type: 'unknown', label: 'Unknown', icon: 'help' }
+  const ext = files.value[0]?.name.split('.').pop()?.toUpperCase() || ''
+  if (['PNG', 'JPG', 'JPEG', 'WEBP', 'GIF', 'AVIF', 'TIFF', 'BMP', 'SVG'].includes(ext))
+    return { type: 'image', label: 'Image File', icon: 'image' }
+  if (['XLSX', 'XLS', 'CSV', 'TXT'].includes(ext))
+    return { type: 'sheet', label: 'Spreadsheet', icon: 'table_chart' }
+  if (ext === 'PDF')
+    return { type: 'pdf', label: 'PDF Document', icon: 'picture_as_pdf' }
+  return { type: 'unknown', label: ext + ' File', icon: 'description' }
+})
+
+// Format output yang tersedia berdasarkan tipe file
 const availableFormats = computed(() => {
-  if (files.value.length === 0) return [...IMAGE_FORMATS, ...SHEET_FORMATS]
+  const cat = detectedCategory.value.type
+  let filterList: string[]
+  if (cat === 'pdf') filterList = PDF_OUTPUT_FORMATS
+  else if (cat === 'sheet') filterList = SHEET_FORMATS
+  else filterList = IMAGE_FORMATS
 
-  const firstExt = files.value[0]?.name.split('.').pop()?.toUpperCase() || ''
-  const isSheet = SHEET_FORMATS.includes(firstExt) || firstExt === 'XLS'
-  const filterList = isSheet ? SHEET_FORMATS : IMAGE_FORMATS
-
-  // Collect all unique extensions from uploaded files
+  // Hapus format yang sama dengan input
   const inputExtensions = new Set(
     files.value.map(f => {
       const ext = f.name.split('.').pop()?.toUpperCase() || ''
       return ext === 'JPEG' ? 'JPG' : ext
     })
   )
-
   const filtered = filterList.filter(fmt => !inputExtensions.has(fmt))
 
-  // If the currently selected format was removed, auto-select the first available
+  // Auto-select pertama jika format terpilih tidak valid
   if (!filtered.includes(selectedFormat.value) && filtered.length > 0) {
     selectedFormat.value = filtered[0]!
   }
-
   return filtered
 })
+
+// Ikon file berdasarkan ekstensi
+function getFileIcon(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase() || ''
+  if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'tiff', 'bmp'].includes(ext)) return 'image'
+  if (ext === 'pdf') return 'picture_as_pdf'
+  if (['xlsx', 'xls', 'csv'].includes(ext)) return 'table_chart'
+  return 'description'
+}
 
 function triggerInput() { fileInput.value?.click() }
 
 function handleFileSelect(e: Event) {
   const input = e.target as HTMLInputElement
-  if (input.files) files.value.push(...Array.from(input.files))
-  // Reset input so same file can be re-selected
+  if (input.files) addFiles(Array.from(input.files))
   input.value = ''
 }
 
 function handleDrop(e: DragEvent) {
   isDragging.value = false
-  if (e.dataTransfer?.files) files.value.push(...Array.from(e.dataTransfer.files))
+  if (e.dataTransfer?.files) addFiles(Array.from(e.dataTransfer.files))
 }
 
-function removeFile(idx: number) { files.value.splice(idx, 1) }
+async function addFiles(newFiles: File[]) {
+  files.value.push(...newFiles)
+  // Jika PDF, hitung jumlah halaman
+  if (detectedCategory.value.type === 'pdf' && files.value.length === 1) {
+    try {
+      const pdfjsLib = await import('pdfjs-dist')
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
+      const arrayBuf = await files.value[0].arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuf }).promise
+      pdfPageCount.value = pdf.numPages
+      pdf.destroy()
+    } catch { pdfPageCount.value = 0 }
+  }
+}
+
+function removeFile(idx: number) {
+  files.value.splice(idx, 1)
+  if (files.value.length === 0) pdfPageCount.value = 0
+}
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B'
@@ -269,27 +347,24 @@ function formatSize(bytes: number): string {
 function clearAll() {
   files.value = []
   selectedFormat.value = 'WEBP'
+  pdfPageCount.value = 0
 }
 
 function resetAll() {
-  // Revoke any blob URLs to free memory
   results.value.forEach(r => URL.revokeObjectURL(r.url))
   results.value = []
   files.value = []
   status.value = 'idle'
   errorMessage.value = ''
   selectedFormat.value = 'WEBP'
+  pdfPageCount.value = 0
 }
 
 async function triggerDownload(blob: Blob, filename: string) {
-  // 1. IE/Edge fallback
   if (typeof (window.navigator as any).msSaveOrOpenBlob !== 'undefined') {
     (window.navigator as any).msSaveOrOpenBlob(blob, filename)
     return
   }
-  
-  // 2. Standard URL generation and anchor download
-  // We use this standard method so it natively goes to the 'Downloads' folder and appears in Chrome download history
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.style.display = 'none'
@@ -297,58 +372,108 @@ async function triggerDownload(blob: Blob, filename: string) {
   a.download = filename || 'download.file'
   document.body.appendChild(a)
   a.click()
-  
-  setTimeout(() => {
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }, 1000)
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url) }, 1000)
 }
 
 function downloadFile(result: ConvertedFile) {
   triggerDownload(result.blob, result.name)
 }
 
+// Konversi PDF → Image (client-side via pdfjs-dist + Canvas)
+async function convertPdfToImages(file: File, format: string): Promise<ConvertedFile[]> {
+  const pdfjsLib = await import('pdfjs-dist')
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
+
+  const arrayBuf = await file.arrayBuffer()
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuf }).promise
+  const output: ConvertedFile[] = []
+  const baseName = file.name.replace(/\.[^.]+$/, '')
+  const mimeMap: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' }
+  const mime = mimeMap[format.toLowerCase()] || 'image/png'
+  const quality = format.toLowerCase() === 'png' ? undefined : 0.9
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    progressText.value = `Rendering halaman ${i} / ${pdf.numPages}...`
+    const page = await pdf.getPage(i)
+    const scale = 2 // 2x untuk kualitas tinggi
+    const viewport = page.getViewport({ scale })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    const ctx = canvas.getContext('2d')!
+
+    await page.render({ canvasContext: ctx, viewport }).promise
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (b) => b ? resolve(b) : reject(new Error('Canvas toBlob failed')),
+        mime,
+        quality
+      )
+    })
+
+    const ts = Date.now()
+    const outputName = `${baseName}-page${i}-figo-${ts}.${format.toLowerCase()}`
+    output.push({
+      name: outputName,
+      size: blob.size,
+      url: URL.createObjectURL(blob),
+      blob,
+    })
+    page.cleanup()
+  }
+  pdf.destroy()
+  return output
+}
+
+// Konversi image/spreadsheet via server
+async function convertViaServer(file: File, format: string): Promise<ConvertedFile> {
+  const formData = new FormData()
+  formData.append('format', format.toLowerCase())
+  formData.append('files', file)
+
+  const response = await fetch('/api/convert', { method: 'POST', body: formData })
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({ message: 'Unknown error' }))
+    throw new Error(errData.message || `Server returned ${response.status}`)
+  }
+
+  const blob = await response.blob()
+  let outputName = response.headers.get('X-Output-Name')
+  if (!outputName) {
+    const baseName = file.name.replace(/\.[^.]+$/, '')
+    outputName = `${baseName}-figo-${Date.now()}.${format.toLowerCase()}`
+  }
+
+  return { name: outputName, size: blob.size, url: URL.createObjectURL(blob), blob }
+}
+
 async function startConversion() {
   if (files.value.length === 0) return
-
   status.value = 'converting'
   errorMessage.value = ''
+  progressText.value = 'Processing...'
   const startTime = performance.now()
 
   try {
-    const promises = files.value.map(async (file) => {
-      const formData = new FormData()
-      formData.append('format', selectedFormat.value.toLowerCase())
-      formData.append('files', file) // Send individually
+    const cat = detectedCategory.value.type
+    let allResults: ConvertedFile[] = []
 
-      const response = await fetch('/api/convert', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({ message: 'Unknown error' }))
-        throw new Error(errData.message || `Server returned ${response.status}`)
+    if (cat === 'pdf') {
+      // PDF → Image: client-side
+      for (const file of files.value) {
+        const pageResults = await convertPdfToImages(file, selectedFormat.value)
+        allResults.push(...pageResults)
       }
+    } else {
+      // Image / Spreadsheet → server-side
+      progressText.value = `Converting ${files.value.length} file(s) to ${selectedFormat.value}...`
+      const promises = files.value.map(f => convertViaServer(f, selectedFormat.value))
+      allResults = await Promise.all(promises)
+    }
 
-      const blob = await response.blob()
-      let outputName = response.headers.get('X-Output-Name')
-      if (!outputName) {
-        const baseName = file.name.replace(/\.[^.]+$/, '')
-        const timestamp = Date.now()
-        outputName = `${baseName}-figo-${timestamp}.${selectedFormat.value.toLowerCase()}`
-      }
-
-      return {
-        name: outputName,
-        size: blob.size,
-        url: URL.createObjectURL(blob), // Still used for display preview if needed
-        blob,
-      }
-    })
-
-    results.value = await Promise.all(promises)
-
+    results.value = allResults
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1)
     conversionTime.value = `Completed in ${elapsed}s`
     increment(files.value.length)
@@ -360,33 +485,35 @@ async function startConversion() {
 }
 
 async function downloadAllZip() {
-  if (files.value.length === 0) return
-
+  if (results.value.length <= 1) return
   try {
-    const prevStatus = status.value
-    status.value = 'converting' // Show spinner
-    
-    const formData = new FormData()
-    formData.append('format', selectedFormat.value.toLowerCase())
-    for (const file of files.value) {
-      formData.append('files', file)
+    // Jika dari server (image/sheet), kirim ulang sebagai batch
+    if (detectedCategory.value.type !== 'pdf') {
+      const prevStatus = status.value
+      status.value = 'converting'
+      progressText.value = 'Creating ZIP...'
+
+      const formData = new FormData()
+      formData.append('format', selectedFormat.value.toLowerCase())
+      for (const file of files.value) formData.append('files', file)
+
+      const response = await fetch('/api/convert', { method: 'POST', body: formData })
+      if (!response.ok) throw new Error('Failed to create ZIP')
+      const blob = await response.blob()
+      await triggerDownload(blob, `figo-converted-${Date.now()}.zip`)
+      status.value = prevStatus
+      return
     }
 
-    const response = await fetch('/api/convert', {
-      method: 'POST',
-      body: formData,
-    })
-
-    if (!response.ok) throw new Error('Failed to create ZIP')
-
-    const blob = await response.blob()
-    const timestamp = Date.now()
-    await triggerDownload(blob, `figo-converted-${timestamp}.zip`)
-    
-    status.value = prevStatus
+    // Untuk PDF results, buat ZIP di client via JSZip-style manual (download satu per satu fallback)
+    for (const result of results.value) {
+      await triggerDownload(result.blob, result.name)
+      // Delay kecil antar download agar browser tidak block
+      await new Promise(r => setTimeout(r, 300))
+    }
   } catch (err: any) {
     console.error(err)
-    alert('Gagal mendownload ZIP: ' + err.message)
+    alert('Gagal mendownload: ' + err.message)
     status.value = 'done'
   }
 }
