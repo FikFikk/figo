@@ -90,6 +90,9 @@
             <div v-else-if="activeTool === 'color'">
               <ToolsColorGenerator />
             </div>
+            <div v-else-if="activeTool === 'metadata'">
+              <ToolsFileMetadata />
+            </div>
             
             <!-- Default Welcome (unlikely but safe) -->
             <div v-else class="glass-panel rounded-3xl p-12 text-center" :class="isDark ? 'border border-white/5' : 'border border-slate-100'">
@@ -132,6 +135,7 @@ const availableTools = [
   { id: 'editor', name: 'AI Image Editor', icon: 'photo_filter' },
   { id: 'color', name: 'Color Palette', icon: 'palette' },
   { id: 'safety', name: 'Link Safety', icon: 'shield_lock' },
+  { id: 'metadata', name: 'File Metadata', icon: 'analytics' },
 ]
 
 function handleToolClick(id: string) {
@@ -147,7 +151,6 @@ function handleToolClick(id: string) {
 // Configuration for upcoming tools
 const soonTools = [
   { name: 'Hash Generator', icon: 'fingerprint' },
-  { name: 'File Metadata', icon: 'analytics' },
   { name: 'QR Engine', icon: 'qr_code_2' },
   { name: 'Base64 Stream', icon: 'text_format' },
 ]
