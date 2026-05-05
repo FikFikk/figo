@@ -239,6 +239,13 @@ const conversionTime = ref('')
 const progressText = ref('Processing...')
 const pdfPageCount = ref(0)
 
+// Helper: inisialisasi pdfjs-dist dengan worker dari /public
+async function initPdfJs() {
+  const pdfjsLib = await import('pdfjs-dist')
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+  return pdfjsLib
+}
+
 // Semua format input yang didukung
 const allSupportedInputs = [
   { ext: 'PNG', icon: 'image', color: 'text-blue-500' },
@@ -255,7 +262,7 @@ const allSupportedInputs = [
 
 const IMAGE_FORMATS = ['WEBP', 'PNG', 'JPG', 'GIF', 'AVIF', 'TIFF']
 const SHEET_FORMATS = ['XLSX', 'CSV', 'TXT', 'HTML']
-const PDF_OUTPUT_FORMATS = ['PNG', 'JPG', 'WEBP']
+const PDF_OUTPUT_FORMATS = ['PNG', 'JPG', 'WEBP', 'HTML']
 
 // Deteksi kategori file berdasarkan ekstensi
 type FileCategory = { type: 'image' | 'sheet' | 'pdf' | 'unknown'; label: string; icon: string }
@@ -323,8 +330,7 @@ async function addFiles(newFiles: File[]) {
   // Jika PDF, hitung jumlah halaman
   if (detectedCategory.value.type === 'pdf' && files.value.length === 1) {
     try {
-      const pdfjsLib = await import('pdfjs-dist')
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
+      const pdfjsLib = await initPdfJs()
       const arrayBuf = await files.value[0].arrayBuffer()
       const pdf = await pdfjsLib.getDocument({ data: arrayBuf }).promise
       pdfPageCount.value = pdf.numPages
@@ -381,8 +387,7 @@ function downloadFile(result: ConvertedFile) {
 
 // Konversi PDF → Image (client-side via pdfjs-dist + Canvas)
 async function convertPdfToImages(file: File, format: string): Promise<ConvertedFile[]> {
-  const pdfjsLib = await import('pdfjs-dist')
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
+  const pdfjsLib = await initPdfJs()
 
   const arrayBuf = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: arrayBuf }).promise
@@ -427,6 +432,94 @@ async function convertPdfToImages(file: File, format: string): Promise<Converted
   return output
 }
 
+// Konversi PDF → HTML (client-side via pdfjs-dist text extraction + visual render)
+async function convertPdfToHtml(file: File): Promise<ConvertedFile[]> {
+  const pdfjsLib = await initPdfJs()
+
+  const arrayBuf = await file.arrayBuffer()
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuf }).promise
+  const baseName = file.name.replace(/\.[^.]+$/, '')
+  const pages: string[] = []
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    progressText.value = `Extracting halaman ${i} / ${pdf.numPages}...`
+    const page = await pdf.getPage(i)
+    
+    // Gunakan scale besar (2x) untuk kualitas gambar yang tajam
+    const renderScale = 2.0
+    const renderViewport = page.getViewport({ scale: renderScale })
+    
+    // Render halaman ke canvas untuk menangkap SEMUA visual (gambar, background, vector, dll)
+    const canvas = document.createElement('canvas')
+    canvas.width = renderViewport.width
+    canvas.height = renderViewport.height
+    const ctx = canvas.getContext('2d')!
+    await page.render({ canvasContext: ctx, viewport: renderViewport }).promise
+    
+    // Konversi canvas menjadi base64 image (kualitas 0.85 cukup baik dan tidak terlalu besar)
+    const imgDataUrl = canvas.toDataURL('image/jpeg', 0.85)
+
+    // Untuk text layer, kita pakai scale 1x agar sesuai dengan ukuran CSS asli
+    const cssViewport = page.getViewport({ scale: 1.0 })
+    const textContent = await page.getTextContent()
+
+    // Bangun HTML per halaman: Background Image + Transparent Text Layer (agar bisa di-block/copy)
+    let pageHtml = `<div class="pdf-page" style="position:relative;width:${Math.round(cssViewport.width)}px;height:${Math.round(cssViewport.height)}px;margin:0 auto 24px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);">`
+    
+    // Layer 1: Visual (Gambar dari canvas)
+    pageHtml += `<img src="${imgDataUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;pointer-events:none;" alt="Page ${i} background" />`
+    
+    // Layer 2: Text Layer (Teks transparan yang posisinya persis di atas gambar)
+    pageHtml += `<div class="text-layer" style="position:absolute;top:0;left:0;width:100%;height:100%;color:transparent;">`
+    
+    for (const item of textContent.items) {
+      if (!('str' in item) || !item.str.trim()) continue
+      const tx = (item as any).transform
+      if (!tx) continue
+      
+      // Hitung ukuran font & posisi berdasarkan matrix transform
+      const fontSize = Math.round(Math.sqrt(tx[0] * tx[0] + tx[1] * tx[1]))
+      const left = tx[4]
+      const top = cssViewport.height - tx[5]
+      
+      const escaped = item.str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      // Menggunakan transparent color dan selection warna agar bisa dicopy
+      pageHtml += `<span style="position:absolute;left:${left}px;top:${top}px;font-size:${fontSize}px;line-height:1;white-space:pre;transform:translateY(-100%); transform-origin: left bottom;font-family:sans-serif;">${escaped}</span>`
+    }
+    
+    pageHtml += `</div></div>`
+    pages.push(pageHtml)
+    page.cleanup()
+  }
+  pdf.destroy()
+
+  // Gabungkan semua halaman ke satu file HTML standalone
+  const fullHtml = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${baseName} — Converted by FiGo</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#e2e8f0; padding:32px 16px; font-family:sans-serif; }
+    .pdf-page::selection, .pdf-page *::selection { background: rgba(59, 130, 246, 0.3); color: transparent; }
+  </style>
+</head>
+<body>
+  ${pages.join('\n')}
+</body>
+</html>`
+
+  const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' })
+  return [{
+    name: `${baseName}-figo-${Date.now()}.html`,
+    size: blob.size,
+    url: URL.createObjectURL(blob),
+    blob,
+  }]
+}
+
 // Konversi image/spreadsheet via server
 async function convertViaServer(file: File, format: string): Promise<ConvertedFile> {
   const formData = new FormData()
@@ -461,10 +554,15 @@ async function startConversion() {
     let allResults: ConvertedFile[] = []
 
     if (cat === 'pdf') {
-      // PDF → Image: client-side
+      // PDF → Image atau HTML: client-side
       for (const file of files.value) {
-        const pageResults = await convertPdfToImages(file, selectedFormat.value)
-        allResults.push(...pageResults)
+        if (selectedFormat.value === 'HTML') {
+          const htmlResults = await convertPdfToHtml(file)
+          allResults.push(...htmlResults)
+        } else {
+          const pageResults = await convertPdfToImages(file, selectedFormat.value)
+          allResults.push(...pageResults)
+        }
       }
     } else {
       // Image / Spreadsheet → server-side
