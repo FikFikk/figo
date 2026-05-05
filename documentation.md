@@ -8,7 +8,11 @@ graph TD
 ```
 
 ## Entity Rules
-*No complex database entities currently managed in this Nuxt app.*
+
+| Entity | Rule | Notes |
+|---|---|---|
+| AI Trading Plan | Kalkulasi mult-indikator | Menggunakan SMA, EMA, RSI, MACD, BB, Vol, ATR, Fib |
+| Analisa KG | Deteksi Flat & Trending | Menggunakan BB SD 1 sebagai batas Normal/Ubnormal |
 
 ## Status Transitions
 *N/A*

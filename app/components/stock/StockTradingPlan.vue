@@ -1037,14 +1037,14 @@ function calcMACD(prices: number[]): { macdLine: number; signalLine: number; his
   return { macdLine, signalLine, histogram: macdLine - signalLine }
 }
 
-// Bollinger Bands (20 period, 2 std dev)
-function calcBollinger(prices: number[], period = 20): { upper: number; middle: number; lower: number; bandwidth: number } {
+// Bollinger Bands (20 period, configurable std dev)
+function calcBollinger(prices: number[], period = 20, sdMultiplier = 2): { upper: number; middle: number; lower: number; bandwidth: number } {
   const sma = calcSMA(prices, period)
   const slice = prices.slice(0, Math.min(period, prices.length))
   const variance = slice.reduce((sum, p) => sum + Math.pow(p - sma, 2), 0) / slice.length
   const stdDev = Math.sqrt(variance)
-  const bandwidth = sma > 0 ? ((sma + 2 * stdDev) - (sma - 2 * stdDev)) / sma * 100 : 0
-  return { upper: sma + 2 * stdDev, middle: sma, lower: sma - 2 * stdDev, bandwidth }
+  const bandwidth = sma > 0 ? ((sma + sdMultiplier * stdDev) - (sma - sdMultiplier * stdDev)) / sma * 100 : 0
+  return { upper: sma + sdMultiplier * stdDev, middle: sma, lower: sma - sdMultiplier * stdDev, bandwidth }
 }
 
 // Volume trend
@@ -1114,6 +1114,8 @@ const allMethods = computed<MethodResult[]>(() => {
   const rsi = calcRSI(closePrices)
   const macd = calcMACD(closePrices)
   const bb = calcBollinger(closePrices)
+  const bbSD1 = calcBollinger(closePrices, 20, 1) // KG Analysis BB SD 1
+  const kgMacdHist = cp - sma20 // Simple KG MACD based on SMA20
   const volTrend = calcVolumeTrend(volumes)
   const atr = calcATR(highPrices, lowPrices, closePrices)
   const atrPct = cp > 0 ? (atr / cp) * 100 : 0
@@ -1300,6 +1302,34 @@ const allMethods = computed<MethodResult[]>(() => {
     ]
   })
 
+  // 11. KG Analysis — Flat / Consolidation
+  const kgF1 = cp >= bbSD1.lower && cp <= bbSD1.upper
+  const kgF2 = Math.abs(kgMacdHist) < (atr / 2)
+  methods.push({
+    id: 'kg_flat', name: 'Analisa KG — Fase Normal (Flat/Konsolidasi)', category: 'Kang Gun Analysis',
+    description: 'Harga bergerak dalam batas Normal (di antara Bollinger Bands Standard Deviation 1). Pelaku pasar seimbang.',
+    score: Math.round(([kgF1, kgF2].filter(Boolean).length / 2) * 100),
+    bias: 'NEUTRAL', action: `🔵 Beli di dekat Lower SD 1 (${Math.round(bbSD1.lower)}), Jual di Upper SD 1 (${Math.round(bbSD1.upper)}).`,
+    conditions: [
+      { label: `Harga (${Math.round(cp)}) di dalam area BB SD 1 (${Math.round(bbSD1.lower)} - ${Math.round(bbSD1.upper)})`, met: kgF1 },
+      { label: `KG MACD relatif kecil (Sideways terkonfirmasi)`, met: kgF2 },
+    ]
+  })
+
+  // 12. KG Analysis — Trending / Ubnormal
+  const kgT1 = cp > bbSD1.upper || cp < bbSD1.lower
+  const kgT2 = (cp > bbSD1.upper && sma20 > sma50) || (cp < bbSD1.lower && sma20 < sma50)
+  methods.push({
+    id: 'kg_trending', name: 'Analisa KG — Fase Ubnormal (Trending)', category: 'Kang Gun Analysis',
+    description: 'Harga telah keluar dari batas Normal (BB SD 1). Menandakan dominasi kuat Buyer atau Seller yang memulai gelombang Trending.',
+    score: Math.round(([kgT1, kgT2].filter(Boolean).length / 2) * 100),
+    bias: cp > bbSD1.upper ? 'BULLISH' : 'BEARISH', action: cp > bbSD1.upper ? `🟢 Beli (Follow Trend Up). Harga > Upper SD 1.` : `🔴 Jual (Follow Trend Down). Harga < Lower SD 1.`,
+    conditions: [
+      { label: `Harga (${Math.round(cp)}) berada di luar BB SD 1`, met: kgT1 },
+      { label: `Arah breakout searah dengan kemiringan MA`, met: kgT2 },
+    ]
+  })
+
   // Sort by score descending
   return methods.sort((a, b) => b.score - a.score)
 })
@@ -1324,6 +1354,7 @@ const plan = computed(() => {
   const rsi = calcRSI(closePrices)
   const macd = calcMACD(closePrices)
   const bollinger = calcBollinger(closePrices)
+  const bollingerSD1 = calcBollinger(closePrices, 20, 1)
   const volTrend = calcVolumeTrend(volumes)
 
   const support1 = Math.min(...lowPrices.slice(0, Math.min(20, len)))
@@ -1358,10 +1389,14 @@ const plan = computed(() => {
   else if (currentPrice >= bollinger.upper) signals.push({ name: 'BB', value: `> Upper`, bias: 'BEARISH' })
   else signals.push({ name: 'BB', value: 'Mid Band', bias: 'NEUTRAL' })
 
-  // 6. Volume Confirmation
   if (volTrend === 'RISING') signals.push({ name: 'VOL', value: 'Naik ↑', bias: 'BULLISH' })
   else if (volTrend === 'FALLING') signals.push({ name: 'VOL', value: 'Turun ↓', bias: 'BEARISH' })
   else signals.push({ name: 'VOL', value: 'Stabil', bias: 'NEUTRAL' })
+
+  // 7. KG Analysis (BB SD 1)
+  if (currentPrice > bollingerSD1.upper) signals.push({ name: 'KG-BB', value: '> Upper SD1', bias: 'BULLISH' })
+  else if (currentPrice < bollingerSD1.lower) signals.push({ name: 'KG-BB', value: '< Lower SD1', bias: 'BEARISH' })
+  else signals.push({ name: 'KG-BB', value: 'Dalam SD1', bias: 'NEUTRAL' })
 
   // === Hitung Skor Kepercayaan ===
   const bullishCount = signals.filter(s => s.bias === 'BULLISH').length
