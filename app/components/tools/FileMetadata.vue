@@ -423,21 +423,17 @@ function analyzeThreats(f: File, buffer: ArrayBuffer) {
       str += String.fromCharCode.apply(null, Array.from(pdfView.subarray(i, i + 10000)))
     }
     
-    if (str.includes('/JavaScript') || str.includes('/JS')) {
+    // Gunakan Regex dengan boundary untuk menghindari false positive pada binary stream
+    if (/\/JavaScript[\s\/<\[]|\/JS[\s\/<\[]/.test(str)) {
       threats.value.push({ 
         severity: 'medium', 
         message: 'Peringatan /JavaScript: Ada skrip aktif tertanam di dalam PDF. Biasa dipakai hacker untuk mengeksploitasi celah di PDF Reader.',
         advice: 'Buka menggunakan Browser Web (Chrome/Edge/Firefox) karena browser akan otomatis memblokir eksekusi skrip PDF. Hindari pakai Adobe Acrobat versi lama.'
       })
     }
-    if (str.includes('/OpenAction') || str.includes('/AA')) {
-      threats.value.push({ 
-        severity: 'medium', 
-        message: 'Peringatan /OpenAction: File dikonfigurasi untuk "otomatis mengeksekusi aksi" tanpa interaksi Anda saat PDF dibuka.',
-        advice: 'Sering muncul (False Positive) pada PDF normal buatan OpenOffice/Word yang hanya mengatur Auto-Fit Zoom. Namun jika file dari pengirim tak dikenal, buka via Browser (Chrome) agar 100% aman.'
-      })
-    }
-    if (str.includes('/Launch')) {
+    
+    // Check for Launch actions
+    if (/\/Launch[\s\/<\[]/.test(str)) {
       threats.value.push({ 
         severity: 'high', 
         message: 'Sangat Berbahaya (/Launch): PDF ini secara paksa mencoba meluncurkan program aplikasi lain di komputer Anda. Ini adalah indikator kuat virus pencuri data.',
