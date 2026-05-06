@@ -15,7 +15,7 @@
     <!-- Tabs -->
     <div class="flex flex-wrap gap-2 mb-6 bg-black/5 dark:bg-white/5 p-1 rounded-2xl">
       <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
-        class="flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all"
+        class="flex-1 py-2 px-4 rounded-2xl text-sm font-bold transition-all"
         :class="activeTab === tab.id ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200'"
       >
         {{ tab.label }}
@@ -27,7 +27,7 @@
          :class="isDark ? 'bg-black/30 border-white/10' : 'bg-slate-50 border-slate-200'">
       <div class="flex items-center justify-between gap-4">
         <!-- Input Mode for Hash -->
-        <input v-if="activeTab === 'hash'" v-model="hashInput" type="text" placeholder="Type text to hash..."
+        <input v-if="activeTab === 'hash'" v-model="hashInput" type="text" :placeholder="hashMode === 'encode' ? 'Type text to hash...' : 'Paste MD5, SHA or Base64...'"
                class="flex-1 bg-transparent font-mono text-lg outline-none w-full"
                :class="isDark ? 'text-white placeholder-gray-600' : 'text-slate-900 placeholder-slate-300'">
                
@@ -62,29 +62,29 @@
             <span class="font-bold font-mono">{{ pwdOptions.length }}</span>
           </div>
           <input type="range" v-model.number="pwdOptions.length" min="5" max="128" @input="generate"
-                 class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary">
+                 class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-2xl appearance-none cursor-pointer accent-primary">
         </div>
         <div class="grid grid-cols-2 gap-4">
           <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" v-model="pwdOptions.uppercase" @change="generate" class="rounded accent-primary w-4 h-4">
+            <input type="checkbox" v-model="pwdOptions.uppercase" @change="generate" class="rounded-2xl accent-primary w-4 h-4">
             <span class="text-sm">A-Z</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" v-model="pwdOptions.lowercase" @change="generate" class="rounded accent-primary w-4 h-4">
+            <input type="checkbox" v-model="pwdOptions.lowercase" @change="generate" class="rounded-2xl accent-primary w-4 h-4">
             <span class="text-sm">a-z</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" v-model="pwdOptions.numbers" @change="generate" class="rounded accent-primary w-4 h-4">
+            <input type="checkbox" v-model="pwdOptions.numbers" @change="generate" class="rounded-2xl accent-primary w-4 h-4">
             <span class="text-sm">0-9</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" v-model="pwdOptions.special" @change="generate" class="rounded accent-primary w-4 h-4">
+            <input type="checkbox" v-model="pwdOptions.special" @change="generate" class="rounded-2xl accent-primary w-4 h-4">
             <span class="text-sm">!@#$%^&*</span>
           </label>
         </div>
         <div class="pt-2 border-t border-black/5 dark:border-white/5">
            <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" v-model="pwdOptions.avoidAmbiguous" @change="generate" class="rounded accent-primary w-4 h-4">
+            <input type="checkbox" v-model="pwdOptions.avoidAmbiguous" @change="generate" class="rounded-2xl accent-primary w-4 h-4">
             <span class="text-sm">Avoid ambiguous characters (l, I, O, 0)</span>
           </label>
         </div>
@@ -98,12 +98,12 @@
             <span class="font-bold font-mono">{{ passOptions.words }}</span>
           </div>
           <input type="range" v-model.number="passOptions.words" min="3" max="20" @input="generate"
-                 class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary">
-        </div>
+                 class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-2xl appearance-none cursor-pointer accent-primary">
+        </div> 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="flex flex-col gap-1">
             <span class="text-xs opacity-70">Word separator</span>
-            <input type="text" v-model="passOptions.separator" @input="generate" class="w-full p-2 rounded-lg text-sm outline-none border" :class="isDark ? 'bg-black/20 border-white/10' : 'bg-slate-50 border-slate-200'">
+            <input type="text" v-model="passOptions.separator" @input="generate" class="w-full p-2 rounded-2xl text-sm outline-none border" :class="isDark ? 'bg-black/20 border-white/10' : 'bg-slate-50 border-slate-200'">
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4 pt-2 border-t border-black/5 dark:border-white/5">
@@ -122,7 +122,7 @@
       <div v-if="activeTab === 'username'" class="space-y-5">
         <div class="flex flex-col gap-1">
           <span class="text-xs opacity-70">Type</span>
-          <select v-model="userOptions.type" @change="generate" class="w-full p-2 rounded-lg text-sm outline-none border" :class="isDark ? 'bg-black/20 border-white/10' : 'bg-slate-50 border-slate-200'">
+          <select v-model="userOptions.type" @change="generate" class="w-full p-2 rounded-2xl text-sm outline-none border" :class="isDark ? 'bg-black/20 border-white/10' : 'bg-slate-50 border-slate-200'">
             <option value="catchall">Catch-all email (random@domain.com)</option>
             <option value="plus">Plus addressed (email+random@domain.com)</option>
             <option value="word">Random Word</option>
@@ -130,31 +130,54 @@
         </div>
         <div v-if="userOptions.type !== 'word'" class="flex flex-col gap-1">
           <span class="text-xs opacity-70">{{ userOptions.type === 'catchall' ? 'Domain' : 'Base Email' }}</span>
-          <input type="text" v-model="userOptions.domain" @input="generate" placeholder="example.com" class="w-full p-2 rounded-lg text-sm outline-none border" :class="isDark ? 'bg-black/20 border-white/10' : 'bg-slate-50 border-slate-200'">
+          <input type="text" v-model="userOptions.domain" @input="generate" placeholder="example.com" class="w-full p-2 rounded-2xl text-sm outline-none border" :class="isDark ? 'bg-black/20 border-white/10' : 'bg-slate-50 border-slate-200'">
         </div>
       </div>
 
-      <!-- Hash Results -->
-      <div v-if="activeTab === 'hash'" class="space-y-3">
-        <div class="flex items-center justify-between group">
-          <span class="opacity-60 text-xs uppercase font-bold tracking-wider w-20">MD5</span>
-          <div class="flex-1 font-mono text-sm truncate mx-2 select-all">{{ hashOutput.md5 || '-' }}</div>
-          <button @click="copy(hashOutput.md5)" class="opacity-0 group-hover:opacity-100 text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+      <!-- Hash Tools -->
+      <div v-if="activeTab === 'hash'" class="space-y-5">
+        <div class="flex gap-2 p-1 bg-black/5 dark:bg-white/5 rounded-2xl w-fit">
+          <button @click="hashMode = 'encode'" class="px-4 py-1.5 rounded-2xl text-xs font-bold transition-all" :class="hashMode === 'encode' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-gray-300'">Encode / Hash</button>
+          <button @click="hashMode = 'decode'" class="px-4 py-1.5 rounded-2xl text-xs font-bold transition-all" :class="hashMode === 'decode' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-gray-300'">Decode / Unhash</button>
         </div>
-        <div class="flex items-center justify-between group">
-          <span class="opacity-60 text-xs uppercase font-bold tracking-wider w-20">SHA-1</span>
-          <div class="flex-1 font-mono text-sm truncate mx-2 select-all">{{ hashOutput.sha1 || '-' }}</div>
-          <button @click="copy(hashOutput.sha1)" class="opacity-0 group-hover:opacity-100 text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+
+        <div v-if="hashMode === 'encode'" class="space-y-3">
+          <div class="flex items-center justify-between group">
+            <span class="opacity-60 text-xs uppercase font-bold tracking-wider w-20">MD5</span>
+            <div class="flex-1 font-mono text-sm truncate mx-2 select-all">{{ hashOutput.md5 || '-' }}</div>
+            <button @click="copy(hashOutput.md5)" class="opacity-0 group-hover:opacity-100 text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+          </div>
+          <div class="flex items-center justify-between group">
+            <span class="opacity-60 text-xs uppercase font-bold tracking-wider w-20">SHA-1</span>
+            <div class="flex-1 font-mono text-sm truncate mx-2 select-all">{{ hashOutput.sha1 || '-' }}</div>
+            <button @click="copy(hashOutput.sha1)" class="opacity-0 group-hover:opacity-100 text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+          </div>
+          <div class="flex items-center justify-between group">
+            <span class="opacity-60 text-xs uppercase font-bold tracking-wider w-20">SHA-256</span>
+            <div class="flex-1 font-mono text-sm truncate mx-2 select-all">{{ hashOutput.sha256 || '-' }}</div>
+            <button @click="copy(hashOutput.sha256)" class="opacity-0 group-hover:opacity-100 text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+          </div>
+          <div class="flex items-center justify-between group">
+            <span class="opacity-60 text-xs uppercase font-bold tracking-wider w-20">Base64</span>
+            <div class="flex-1 font-mono text-sm truncate mx-2 select-all">{{ hashOutput.base64 || '-' }}</div>
+            <button @click="copy(hashOutput.base64)" class="opacity-0 group-hover:opacity-100 text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+          </div>
         </div>
-        <div class="flex items-center justify-between group">
-          <span class="opacity-60 text-xs uppercase font-bold tracking-wider w-20">SHA-256</span>
-          <div class="flex-1 font-mono text-sm truncate mx-2 select-all">{{ hashOutput.sha256 || '-' }}</div>
-          <button @click="copy(hashOutput.sha256)" class="opacity-0 group-hover:opacity-100 text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
-        </div>
-        <div class="flex items-center justify-between group">
-          <span class="opacity-60 text-xs uppercase font-bold tracking-wider w-20">Base64</span>
-          <div class="flex-1 font-mono text-sm truncate mx-2 select-all">{{ hashOutput.base64 || '-' }}</div>
-          <button @click="copy(hashOutput.base64)" class="opacity-0 group-hover:opacity-100 text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+
+        <div v-else class="space-y-4">
+          <div v-if="decodeResult.type" class="p-4 rounded-2xl border" :class="isDark ? 'bg-primary/5 border-primary/20' : 'bg-blue-50 border-blue-100'">
+            <div class="text-[10px] uppercase tracking-wider font-bold text-primary mb-1">Detected Type: {{ decodeResult.type }}</div>
+            <div class="font-mono text-lg break-all" :class="isDark ? 'text-white' : 'text-slate-900'">{{ decodeResult.text }}</div>
+          </div>
+          <div v-else-if="hashInput" class="p-4 rounded-2xl border border-dashed flex items-center gap-2 opacity-70" :class="isDark ? 'border-white/20' : 'border-slate-300'">
+            <span v-if="isDecoding" class="material-symbols-outlined text-xl animate-spin">refresh</span>
+            <span v-else class="material-symbols-outlined text-xl">search_off</span>
+            <span class="text-sm">{{ isDecoding ? 'Searching rainbow tables...' : 'No valid hash or base64 detected in tables' }}</span>
+          </div>
+          <div class="text-xs opacity-60 bg-black/5 dark:bg-white/5 p-3 rounded-2xl border border-black/5 dark:border-white/5 mt-2">
+            <p><strong>Supported decodes:</strong> Base64, MD5 (via rainbow table lookup).</p>
+            <p class="mt-1 opacity-80"><em>Note: SHA-1 and SHA-256 are highly secure and typically cannot be unhashed unless it is a very common dictionary word.</em></p>
+          </div>
         </div>
       </div>
     </div>
@@ -178,6 +201,9 @@ const tabs = [
 const activeTab = ref('password')
 const generatedOutput = ref('')
 const hashInput = ref('')
+const hashMode = ref('encode')
+const isDecoding = ref(false)
+const decodeResult = reactive({ type: '', text: '' })
 
 // Options
 const pwdOptions = reactive({ length: 14, uppercase: true, lowercase: true, numbers: true, special: false, avoidAmbiguous: false })
@@ -305,6 +331,50 @@ async function computeHashes(text: string) {
   }
 }
 
+async function tryDecode(text: string) {
+  decodeResult.type = ''
+  decodeResult.text = ''
+  if (!text) return
+  
+  const clean = text.trim()
+  
+  // 1. Check Base64 (Quick client-side check)
+  try {
+    const decoded = decodeURIComponent(escape(atob(clean)))
+    // Basic validation: if we re-encode it and it matches, or it's valid UTF-8
+    if (btoa(unescape(encodeURIComponent(decoded))) === clean || clean.endsWith('=')) {
+      decodeResult.type = 'Base64'
+      decodeResult.text = decoded
+      return
+    }
+  } catch(e) {}
+
+  // 2. Check MD5/SHA via API
+  const isMD5 = /^[a-f0-9]{32}$/i.test(clean)
+  const isSHA1 = /^[a-f0-9]{40}$/i.test(clean)
+  const isSHA256 = /^[a-f0-9]{64}$/i.test(clean)
+  
+  if (isMD5 || isSHA1 || isSHA256) {
+    isDecoding.value = true
+    try {
+      const type = isMD5 ? 'md5' : isSHA1 ? 'sha1' : 'sha256'
+      const res = await $fetch<{success: boolean, result?: string, message?: string}>(`/api/tools/unhash?hash=${clean}&type=${type}`)
+      if (res.success && res.result) {
+        decodeResult.type = type.toUpperCase()
+        decodeResult.text = res.result
+      } else {
+        decodeResult.type = `${type.toUpperCase()} (Not Found)`
+        decodeResult.text = 'The original text is not found in public rainbow tables.'
+      }
+    } catch (e) {
+      decodeResult.type = 'Error'
+      decodeResult.text = 'Failed to lookup hash'
+    } finally {
+      isDecoding.value = false
+    }
+  }
+}
+
 function generate() {
   increment()
   if (activeTab.value === 'password') generatePassword()
@@ -316,8 +386,20 @@ function copy(text: string) {
   if (text && navigator.clipboard) navigator.clipboard.writeText(text)
 }
 
+let timeoutId: any = null
 watch(activeTab, () => generate())
-watch(hashInput, (val) => computeHashes(val))
+watch(hashInput, (val) => {
+  if (hashMode.value === 'encode') {
+    computeHashes(val)
+  } else {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => tryDecode(val), 500)
+  }
+})
+watch(hashMode, (val) => {
+  if (val === 'encode') computeHashes(hashInput.value)
+  else tryDecode(hashInput.value)
+})
 
 onMounted(() => {
   generate()
