@@ -5,10 +5,10 @@
       <!-- Mobile Navigation (Sticky) -->
       <div class="lg:hidden sticky top-[72px] z-30 -mx-6 px-6 py-3 bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-black/5 dark:border-white/5 mb-6 overflow-x-auto no-scrollbar">
         <div class="flex items-center gap-2 min-w-max">
-          <button 
+          <NuxtLink
             v-for="tool in availableTools"
             :key="tool.id"
-            @click="handleToolClick(tool.id)"
+            :to="tool.external || `/tools/${tool.slug}`"
             class="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap"
             :style="activeTool === tool.id ? 'transform: scale(1.05)' : ''"
             :class="activeTool === tool.id 
@@ -17,7 +17,7 @@
           >
             <span class="material-symbols-outlined text-base">{{ tool.icon }}</span>
             {{ tool.name }}
-          </button>
+          </NuxtLink>
         </div>
       </div>
 
@@ -37,10 +37,10 @@
 
           <!-- Tool List (Desktop) -->
           <nav class="space-y-1.5">
-            <button 
+            <NuxtLink 
               v-for="tool in availableTools"
               :key="tool.id"
-              @click="handleToolClick(tool.id)"
+              :to="tool.external || `/tools/${tool.slug}`"
               class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden"
               :class="activeTool === tool.id 
                 ? (isDark ? 'bg-primary/20 text-white border border-primary/30' : 'bg-primary text-white shadow-lg shadow-primary/20')
@@ -51,7 +51,7 @@
                 {{ tool.icon }}
               </span>
               <span class="font-headline font-bold text-sm">{{ tool.name }}</span>
-            </button>
+            </NuxtLink>
           </nav>
 
           <!-- Soon Section (Desktop Sidebar) -->
@@ -96,6 +96,9 @@
             <div v-else-if="activeTool === 'generator'">
               <ToolsSecureGenerator />
             </div>
+            <div v-else-if="activeTool === 'qr'">
+              <ToolsQrEngine />
+            </div>
             
             <!-- Default Welcome (unlikely but safe) -->
             <div v-else class="glass-panel rounded-3xl p-12 text-center" :class="isDark ? 'border border-white/5' : 'border border-slate-100'">
@@ -123,38 +126,41 @@
 
 <script setup lang="ts">
 /**
- * Tools Page - Refactored Sidebar Layout
- * Components are auto-imported from components/tools/
+ * Tools Page - Dynamic URL routing per tool
+ * URL: /tools/[slug] → resolves to tool component
  */
 useSeoMeta({ title: 'Toolkit — FiGo' })
 const { isDark } = useColorMode()
-const router = useRouter()
+const route = useRoute()
 
-const activeTool = ref('color')
+// Mapping slug → tool id
+const slugToId: Record<string, string> = {
+  'color-palette': 'color',
+  'link-safety': 'safety',
+  'file-metadata': 'metadata',
+  'secure-generator': 'generator',
+  'qr-engine': 'qr',
+}
 
-// Configuration for active tools
+// Configuration for active tools (with URL slug)
 const availableTools = [
-  { id: 'calendar', name: 'Calendar 2026', icon: 'calendar_month' },
-  { id: 'editor', name: 'AI Image Editor', icon: 'photo_filter' },
-  { id: 'color', name: 'Color Palette', icon: 'palette' },
-  { id: 'safety', name: 'Link Safety', icon: 'shield_lock' },
-  { id: 'metadata', name: 'File Metadata', icon: 'analytics' },
-  { id: 'generator', name: 'Secure Generator', icon: 'vpn_key' },
+  { id: 'calendar', slug: 'calendar', name: 'Calendar 2026', icon: 'calendar_month', external: '/kalender' },
+  { id: 'editor', slug: 'editor', name: 'AI Image Editor', icon: 'photo_filter', external: '/editor' },
+  { id: 'color', slug: 'color-palette', name: 'Color Palette', icon: 'palette' },
+  { id: 'safety', slug: 'link-safety', name: 'Link Safety', icon: 'shield_lock' },
+  { id: 'metadata', slug: 'file-metadata', name: 'File Metadata', icon: 'analytics' },
+  { id: 'generator', slug: 'secure-generator', name: 'Secure Generator', icon: 'vpn_key' },
+  { id: 'qr', slug: 'qr-engine', name: 'QR Engine', icon: 'qr_code_2' },
 ]
 
-function handleToolClick(id: string) {
-  if (id === 'calendar') {
-    router.push('/kalender')
-  } else if (id === 'editor') {
-    router.push('/editor')
-  } else {
-    activeTool.value = id
-  }
-}
+// Resolve active tool dari slug di URL
+const activeTool = computed(() => {
+  const slug = route.params.slug as string
+  return slugToId[slug] || 'color'
+})
 
 // Configuration for upcoming tools
 const soonTools = [
-  { name: 'QR Engine', icon: 'qr_code_2' },
   { name: 'Base64 Stream', icon: 'text_format' },
 ]
 </script>

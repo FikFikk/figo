@@ -39,7 +39,7 @@
 
         <!-- Get Started -->
         <NuxtLink
-          to="/tools"
+          to="/tools/color-palette"
           class="px-6 py-2.5 rounded-2xl font-headline text-sm font-semibold hover:scale-102 transition-all ease-out active:scale-95 hidden md:block shadow-lg"
           :class="isDark
             ? 'bg-gradient-to-r from-primary to-[#4d8ef7] text-white shadow-primary/30 hover:shadow-primary/50'
@@ -85,11 +85,12 @@ const navLinks = [
   { to: '/convert', label: 'Convert', icon: 'transform' },
   { to: '/compress', label: 'Compress', icon: 'layers' },
   { to: '/download', label: 'Download', icon: 'download' },
-  { to: '/tools', label: 'Tools', icon: 'build' },
+  { to: '/tools/color-palette', label: 'Tools', icon: 'build' },
   { to: '/stocks', label: 'Stocks', icon: 'candlestick_chart' },
 ]
 
 function isActive(path: string): boolean {
+  if (path.startsWith('/tools')) return route.path.startsWith('/tools')
   return route.path === path
 }
 </script>
