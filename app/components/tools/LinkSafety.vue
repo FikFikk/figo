@@ -20,7 +20,7 @@
           v-model="checkUrl"
           type="url"
           placeholder="Enter URL to check (e.g. https://example.com)"
-          class="w-full pl-12 pr-4 py-3.5 rounded-xl text-sm font-medium transition-all outline-none"
+          class="w-full pl-12 pr-4 py-3.5 rounded-2xl text-sm font-medium transition-all outline-none"
           :class="isDark
             ? 'bg-white/5 text-white placeholder-gray-600 border border-white/10 focus:border-primary/40'
             : 'bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 focus:border-primary'"
@@ -28,7 +28,7 @@
         />
       </div>
       <button
-        class="px-6 py-3.5 bg-primary text-on-primary rounded-xl font-headline font-bold text-sm hover:scale-[1.02] hover:shadow-lg transition-all active:scale-[0.98] flex items-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+        class="px-6 py-3.5 bg-primary text-on-primary rounded-2xl font-headline font-bold text-sm hover:scale-[1.02] hover:shadow-lg transition-all active:scale-[0.98] flex items-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         @click="checkLink"
         :disabled="!checkUrl.trim() || isChecking"
       >
@@ -48,7 +48,7 @@
     </div>
 
     <!-- Error -->
-    <div v-if="error" class="rounded-xl p-5 border" :class="isDark ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-red-50 text-red-800 border-red-200'">
+    <div v-if="error" class="rounded-2xl p-5 border" :class="isDark ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-red-50 text-red-800 border-red-200'">
       <div class="flex items-start gap-3">
         <span class="material-symbols-outlined text-2xl">error</span>
         <div>
@@ -66,7 +66,7 @@
     >
       <div v-if="result" class="space-y-4 font-normal">
         <!-- Score Header -->
-        <div class="rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4" :class="resultHeaderClass">
+        <div class="rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4" :class="resultHeaderClass">
           <div class="flex items-center gap-3 flex-1">
             <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl font-black" :class="scoreCircleClass">
               {{ result.score }}
@@ -80,7 +80,7 @@
 
         <!-- Quick Stats -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
-          <div class="rounded-xl p-2.5 md:p-3 text-center border" :class="isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'">
+          <div class="rounded-2xl p-2.5 md:p-3 text-center border" :class="isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'">
             <div class="flex items-center justify-center gap-1 mb-1">
               <span class="material-symbols-outlined text-sm" :class="result.ssl ? 'text-green-500' : 'text-red-500'">
                 {{ result.ssl ? 'lock' : 'lock_open' }}
@@ -91,27 +91,37 @@
               {{ result.ssl ? 'Encrypted' : 'Not Secure' }}
             </p>
           </div>
-          <div class="rounded-xl p-2.5 md:p-3 text-center border" :class="isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'">
+          <div class="rounded-2xl p-2.5 md:p-3 text-center border" :class="isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'">
             <div class="flex items-center justify-center gap-1 mb-1">
-              <span class="material-symbols-outlined text-sm opacity-50">speed</span>
-              <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-50">Speed</span>
+              <span class="material-symbols-outlined text-sm" :class="result.dnsValid ? 'text-green-500' : 'text-red-500'">
+                {{ result.dnsValid ? 'dns' : 'dns' }}
+              </span>
+              <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-50">DNS</span>
             </div>
-            <p class="text-[11px] md:text-xs font-bold">{{ result.responseTime ? result.responseTime + 'ms' : 'N/A' }}</p>
+            <p class="text-[11px] md:text-xs font-bold" :class="result.dnsValid ? 'text-green-500' : 'text-red-500'">
+              {{ result.dnsValid ? 'Valid IP' : 'Invalid' }}
+            </p>
           </div>
-          <div class="rounded-xl p-2.5 md:p-3 text-center border" :class="isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'">
+          <div class="rounded-2xl p-2.5 md:p-3 text-center border" :class="isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'">
             <div class="flex items-center justify-center gap-1 mb-1">
-              <span class="material-symbols-outlined text-sm opacity-50">http</span>
-              <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-50">Status</span>
+              <span class="material-symbols-outlined text-sm" :class="result.dnsblStatus === 'clean' ? 'text-green-500' : result.dnsblStatus === 'listed' ? 'text-red-500' : 'opacity-50'">
+                {{ result.dnsblStatus === 'clean' ? 'verified_user' : result.dnsblStatus === 'listed' ? 'gpp_bad' : 'help' }}
+              </span>
+              <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-50">DNSBL</span>
             </div>
-            <p class="text-[11px] md:text-xs font-bold">{{ result.status || 'Failed' }}</p>
+            <p class="text-[11px] md:text-xs font-bold" :class="result.dnsblStatus === 'clean' ? 'text-green-500' : result.dnsblStatus === 'listed' ? 'text-red-500' : ''">
+              {{ result.dnsblStatus === 'clean' ? 'Clean' : result.dnsblStatus === 'listed' ? 'Blacklisted' : 'Unknown' }}
+            </p>
           </div>
-          <div class="rounded-xl p-2.5 md:p-3 text-center border" :class="isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'">
+          <div class="rounded-2xl p-2.5 md:p-3 text-center border" :class="isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'">
             <div class="flex items-center justify-center gap-1 mb-1">
-              <span class="material-symbols-outlined text-sm opacity-50">open_in_new</span>
-              <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-50">Redirects</span>
+              <span class="material-symbols-outlined text-sm" :class="result.safeBrowsing === 'safe' ? 'text-green-500' : result.safeBrowsing === 'unsafe' ? 'text-red-500' : 'opacity-50'">
+                {{ result.safeBrowsing === 'safe' ? 'verified' : result.safeBrowsing === 'unsafe' ? 'dangerous' : 'api' }}
+              </span>
+              <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-50">Safe Browsing</span>
             </div>
-            <p class="text-[11px] md:text-xs font-bold" :class="result.redirected ? 'text-yellow-500' : ''">
-              {{ result.redirected ? 'Yes' : 'None' }}
+            <p class="text-[11px] md:text-xs font-bold" :class="result.safeBrowsing === 'safe' ? 'text-green-500' : result.safeBrowsing === 'unsafe' ? 'text-red-500' : ''">
+              {{ result.safeBrowsing === 'safe' ? 'Safe' : result.safeBrowsing === 'unsafe' ? 'Flagged' : 'Untested' }}
             </p>
           </div>
         </div>
@@ -125,7 +135,7 @@
             <div
               v-for="(threat, idx) in result.threats"
               :key="idx"
-              class="rounded-xl p-4 flex items-start gap-3 transition-all border"
+              class="rounded-2xl p-4 flex items-start gap-3 transition-all border"
               :class="threatRowClass(threat.severity)"
             >
               <span class="material-symbols-outlined text-lg mt-0.5 flex-shrink-0">{{ severityIcon(threat.severity) }}</span>
@@ -143,7 +153,7 @@
         </div>
 
         <!-- Final URL -->
-        <div v-if="result.finalUrl !== result.url" class="rounded-xl p-3 bg-white/5 border border-white/5 flex items-center gap-2 text-[10px] font-medium opacity-60">
+        <div v-if="result.finalUrl !== result.url" class="rounded-2xl p-3 bg-white/5 border border-white/5 flex items-center gap-2 text-[10px] font-medium opacity-60">
           <span class="material-symbols-outlined text-sm">link</span>
           <span>Final Redirect:</span>
           <span class="truncate">{{ result.finalUrl }}</span>
@@ -181,6 +191,9 @@ interface AnalysisResult {
   score: number
   level: 'safe' | 'warning' | 'danger'
   summary: string
+  dnsValid: boolean
+  dnsblStatus: 'clean' | 'listed' | 'unknown'
+  safeBrowsing: 'safe' | 'unsafe' | 'untested'
 }
 
 const result = ref<AnalysisResult | null>(null)

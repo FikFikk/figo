@@ -1,4 +1,5 @@
 import { defineEventHandler, readBody, createError } from 'h3'
+import dns from 'node:dns/promises'
 
 // ============================================================
 // LINK SAFETY CHECKER — Real URL Scraping + Threat Analysis
@@ -23,6 +24,9 @@ interface AnalysisResult {
   score: number // 0-100, higher = safer
   level: 'safe' | 'warning' | 'danger'
   summary: string
+  dnsValid: boolean
+  dnsblStatus: 'clean' | 'listed' | 'unknown'
+  safeBrowsing: 'safe' | 'unsafe' | 'untested'
 }
 
 // Known suspicious TLDs and free hosting patterns
@@ -82,6 +86,71 @@ function extractRootDomain(hostname: string): string {
 // ==================
 // ANALYSIS FUNCTIONS
 // ==================
+
+async function checkDNS(hostname: string): Promise<{ valid: boolean; ip: string | null; hasMX: boolean }> {
+  try {
+    const aRecords = await dns.resolve4(hostname)
+    const valid = aRecords.length > 0
+    let hasMX = false
+    try {
+      const mx = await dns.resolveMx(hostname)
+      hasMX = mx.length > 0
+    } catch { /* ignore MX error */ }
+    return { valid, ip: aRecords[0] || null, hasMX }
+  } catch (err) {
+    return { valid: false, ip: null, hasMX: false }
+  }
+}
+
+async function checkDNSBL(ip: string): Promise<'clean' | 'listed' | 'unknown'> {
+  if (!ip) return 'unknown'
+  const reversed = ip.split('.').reverse().join('.')
+  const dnsblDomain = `${reversed}.zen.spamhaus.org`
+  try {
+    const result = await dns.resolve4(dnsblDomain)
+    if (result && result.length > 0 && result[0]!.startsWith('127.0.0.')) {
+      return 'listed'
+    }
+    return 'clean'
+  } catch (err: any) {
+    if (err.code === 'ENOTFOUND') return 'clean'
+    return 'unknown'
+  }
+}
+
+async function checkGoogleSafeBrowsing(url: string): Promise<{ status: 'safe' | 'unsafe' | 'untested', findings: ThreatFinding[] }> {
+  const apiKey = process.env.GOOGLE_SAFE_BROWSING_KEY
+  if (!apiKey) return { status: 'untested', findings: [] }
+  
+  try {
+    const body = {
+      client: { clientId: "figo-toolkit", clientVersion: "1.0.0" },
+      threatInfo: {
+        threatTypes: ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"],
+        platformTypes: ["ANY_PLATFORM"],
+        threatEntryTypes: ["URL"],
+        threatEntries: [{ url }]
+      }
+    }
+    const res = await $fetch<any>(`https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${apiKey}`, {
+      method: 'POST',
+      body
+    })
+    
+    if (res && res.matches && res.matches.length > 0) {
+      const threats: ThreatFinding[] = res.matches.map((m: any) => ({
+        category: 'Safe Browsing',
+        severity: 'critical',
+        title: `Google Safe Browsing Flag`,
+        description: `Google actively flagged this URL as dangerous. Reason: ${m.threatType.replace(/_/g, ' ')}.`
+      }))
+      return { status: 'unsafe', findings: threats }
+    }
+    return { status: 'safe', findings: [] }
+  } catch (e) {
+    return { status: 'untested', findings: [] }
+  }
+}
 
 function analyzeUrl(url: string, hostname: string): ThreatFinding[] {
   const findings: ThreatFinding[] = []
@@ -602,6 +671,46 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // --- NEW: DNS & Threat Intelligence Analysis ---
+  const dnsResult = await checkDNS(hostname)
+  let dnsblStatus: 'clean' | 'listed' | 'unknown' = 'unknown'
+  
+  if (!dnsResult.valid && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+    allThreats.push({
+      category: 'Network',
+      severity: 'high',
+      title: 'Invalid DNS (Domain Not Found)',
+      description: 'The domain does not have a valid IP address. It may be dead, newly registered, or fake.',
+    })
+  } else if (dnsResult.ip) {
+    dnsblStatus = await checkDNSBL(dnsResult.ip)
+    if (dnsblStatus === 'listed') {
+      allThreats.push({
+        category: 'Malware',
+        severity: 'critical',
+        title: 'IP Blacklisted (Spamhaus DNSBL)',
+        description: 'The server hosting this domain is globally blacklisted for hosting malware, spam, or botnets.',
+      })
+    }
+    
+    // If it's a domain (not raw IP) and has no MX record, it's slightly suspicious
+    if (!dnsResult.hasMX && hostname.includes('.')) {
+       // Only flag if other suspicious things exist, or just as an info
+       allThreats.push({
+         category: 'Domain',
+         severity: 'info',
+         title: 'No Mail Exchange (MX) Record',
+         description: 'This domain cannot receive emails. Disposable phishing domains often skip configuring MX records.',
+       })
+    }
+  }
+
+  // Google Safe Browsing
+  const gsb = await checkGoogleSafeBrowsing(url)
+  if (gsb.status === 'unsafe') {
+    allThreats.push(...gsb.findings)
+  }
+
   // 4. Redirect analysis
   allThreats.push(...analyzeRedirects(redirected, redirectCount, url, finalUrl))
 
@@ -644,6 +753,9 @@ export default defineEventHandler(async (event) => {
     score,
     level,
     summary: generateSummary(level, allThreats),
+    dnsValid: dnsResult.valid,
+    dnsblStatus,
+    safeBrowsing: gsb.status
   }
 
   return result
