@@ -53,6 +53,18 @@
       </p>
     </div>
 
+    <!-- Security: File Rejected Warning -->
+    <div v-if="rejectedFiles.length > 0" class="mt-4 rounded-xl p-4 border border-red-500/20 bg-red-500/10 space-y-1.5 animate-fade-in">
+      <div class="flex items-center gap-2 text-red-500 mb-1">
+        <span class="material-symbols-outlined text-sm">shield</span>
+        <span class="text-xs font-bold uppercase tracking-wider">File Ditolak</span>
+      </div>
+      <p v-for="(msg, i) in rejectedFiles" :key="i" class="text-xs text-red-400 flex items-start gap-1.5">
+        <span class="material-symbols-outlined text-[11px] mt-0.5 shrink-0">close</span>
+        {{ msg }}
+      </p>
+    </div>
+
     <!-- Files Loaded -->
     <div v-if="files.length > 0 && status === 'idle'" class="mt-4 space-y-4">
       <!-- Detected Badge -->
@@ -264,6 +276,69 @@ const supportedFormats = [
   { ext: 'XLSX', icon: 'table_chart', color: 'text-green-600' },
 ]
 
+// === SECURITY: Whitelist ekstensi dan batas ===
+const ALLOWED_EXTS = new Set(['png','jpg','jpeg','webp','gif','avif','tiff','bmp','pdf','docx','pptx','xlsx'])
+const DANGEROUS_EXTS = new Set(['exe','bat','cmd','com','scr','vbs','js','ps1','msi','dll','sh','php','py','rb'])
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+const MAX_FILE_COUNT = 10
+const rejectedFiles = ref<string[]>([])
+
+// Validasi file sebelum ditambahkan
+function validateFiles(incoming: File[]): File[] {
+  const accepted: File[] = []
+  const rejected: string[] = []
+
+  for (const f of incoming) {
+    const ext = (f.name.split('.').pop() || '').toLowerCase()
+
+    // Cek ekstensi berbahaya
+    if (DANGEROUS_EXTS.has(ext)) {
+      rejected.push(`${f.name} — file executable berbahaya`)
+      continue
+    }
+
+    // Cek double extension (contoh: image.jpg.exe)
+    const parts = f.name.split('.')
+    if (parts.length > 2) {
+      const lastExt = (parts[parts.length - 1] || '').toLowerCase()
+      if (DANGEROUS_EXTS.has(lastExt)) {
+        rejected.push(`${f.name} — double extension terdeteksi`)
+        continue
+      }
+    }
+
+    // Cek whitelist
+    if (!ALLOWED_EXTS.has(ext)) {
+      rejected.push(`${f.name} — format .${ext} tidak didukung`)
+      continue
+    }
+
+    // Cek ukuran
+    if (f.size > MAX_FILE_SIZE) {
+      rejected.push(`${f.name} — melebihi batas 50MB`)
+      continue
+    }
+
+    accepted.push(f)
+  }
+
+  // Cek total file count
+  const totalAfter = files.value.length + accepted.length
+  if (totalAfter > MAX_FILE_COUNT) {
+    const allowed = MAX_FILE_COUNT - files.value.length
+    rejected.push(`${accepted.length - allowed} file ditolak — maks ${MAX_FILE_COUNT} file`)
+    accepted.splice(allowed)
+  }
+
+  rejectedFiles.value = rejected
+  // Auto-hide pesan rejected setelah 5 detik
+  if (rejected.length > 0) {
+    setTimeout(() => { rejectedFiles.value = [] }, 5000)
+  }
+
+  return accepted
+}
+
 type FileCategory = { type: 'image' | 'office' | 'pdf' | 'unknown'; label: string; icon: string }
 const detectedCategory = computed<FileCategory>(() => {
   if (files.value.length === 0) return { type: 'unknown', label: 'Unknown', icon: 'help' }
@@ -294,12 +369,18 @@ const totalSavings = computed(() => totalOriginal.value > 0 ? ((1 - totalCompres
 function triggerInput() { fileInput.value?.click() }
 function handleFileSelect(e: Event) {
   const input = e.target as HTMLInputElement
-  if (input.files) files.value.push(...Array.from(input.files))
+  if (input.files) {
+    const valid = validateFiles(Array.from(input.files))
+    files.value.push(...valid)
+  }
   input.value = ''
 }
 function handleDrop(e: DragEvent) {
   isDragging.value = false
-  if (e.dataTransfer?.files) files.value.push(...Array.from(e.dataTransfer.files))
+  if (e.dataTransfer?.files) {
+    const valid = validateFiles(Array.from(e.dataTransfer.files))
+    files.value.push(...valid)
+  }
 }
 function formatSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B'
@@ -350,7 +431,9 @@ async function startCompression() {
       }
 
       const blob = await response.blob()
-      const outputName = response.headers.get('X-Output-Name') || `${file.name.replace(/\.[^.]+$/, '')}-compressed.${file.name.split('.').pop()}`
+      // Decode encoded header (server pakai encodeURIComponent untuk keamanan)
+      const rawOutputName = response.headers.get('X-Output-Name')
+      const outputName = rawOutputName ? decodeURIComponent(rawOutputName) : `${file.name.replace(/\.[^.]+$/, '')}-compressed.${file.name.split('.').pop()}`
       const originalSize = parseInt(response.headers.get('X-Original-Size') || String(file.size), 10)
 
       allResults.push({ name: outputName, size: blob.size, originalSize, blob })

@@ -3,6 +3,14 @@ import JSZip from 'jszip'
 import { PDFDocument } from 'pdf-lib'
 import { PassThrough } from 'stream'
 import archiver from 'archiver'
+import {
+  validateMagicBytes,
+  sanitizeFilename,
+  checkRateLimit,
+  safeContentDisposition,
+  getClientIp,
+  UPLOAD_LIMITS,
+} from '~/server/lib/security'
 
 // Ekstensi yang didukung per kategori
 const IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'tiff', 'bmp']
@@ -123,6 +131,14 @@ export default defineEventHandler(async (event) => {
   const startTime = performance.now()
 
   try {
+    // === SECURITY: Rate limiting ===
+    const clientIp = getClientIp(event)
+    const rl = checkRateLimit(clientIp, 'compress', UPLOAD_LIMITS.RATE_LIMIT_REQUESTS, UPLOAD_LIMITS.RATE_LIMIT_WINDOW_MS)
+    setResponseHeader(event, 'X-RateLimit-Remaining', String(rl.remaining))
+    if (!rl.allowed) {
+      throw createError({ statusCode: 429, message: 'Terlalu banyak request. Coba lagi dalam 1 menit.' })
+    }
+
     const formData = await readMultipartFormData(event)
     if (!formData || formData.length === 0) {
       throw createError({ statusCode: 400, message: 'No files provided' })
@@ -138,18 +154,37 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: 'No file data found' })
     }
 
-    // Batas 50MB per file
-    const MAX_SIZE = 50 * 1024 * 1024
+    // === SECURITY: Batas jumlah file ===
+    if (fileEntries.length > UPLOAD_LIMITS.MAX_FILE_COUNT) {
+      throw createError({ statusCode: 400, message: `Maksimal ${UPLOAD_LIMITS.MAX_FILE_COUNT} file per request` })
+    }
+
+    // === SECURITY: Batas ukuran per file + total ===
+    let totalSize = 0
     for (const entry of fileEntries) {
-      if (entry.data.length > MAX_SIZE) {
-        throw createError({ statusCode: 413, message: `File terlalu besar: ${entry.filename} (max 50MB)` })
+      if (entry.data.length > UPLOAD_LIMITS.MAX_FILE_SIZE) {
+        throw createError({ statusCode: 413, message: `File terlalu besar: ${sanitizeFilename(entry.filename)} (max 50MB)` })
+      }
+      totalSize += entry.data.length
+    }
+    if (totalSize > UPLOAD_LIMITS.MAX_TOTAL_SIZE) {
+      throw createError({ statusCode: 413, message: `Total upload terlalu besar (max 200MB)` })
+    }
+
+    // === SECURITY: Validasi magic bytes setiap file ===
+    for (const entry of fileEntries) {
+      const safeName = sanitizeFilename(entry.filename)
+      const ext = getExt(safeName)
+      if (!validateMagicBytes(entry.data, ext)) {
+        console.warn(`[compress] BLOCKED: Magic bytes mismatch — ${safeName} (claimed .${ext})`)
+        throw createError({ statusCode: 400, message: `File ditolak: ${safeName} — isi file tidak sesuai format yang diklaim` })
       }
     }
 
     // === SINGLE FILE ===
     if (fileEntries.length === 1) {
       const entry = fileEntries[0]!
-      const filename = entry.filename || 'file'
+      const filename = sanitizeFilename(entry.filename)
       const ext = getExt(filename)
       const originalSize = entry.data.length
 
@@ -170,11 +205,11 @@ export default defineEventHandler(async (event) => {
 
       setResponseHeaders(event, {
         'Content-Type': 'application/octet-stream',
-        'Content-Disposition': `attachment; filename="${outputName}"`,
+        'Content-Disposition': safeContentDisposition(outputName),
         'Content-Length': String(compressed.length),
         'X-Original-Size': String(originalSize),
         'X-Compressed-Size': String(compressed.length),
-        'X-Output-Name': outputName,
+        'X-Output-Name': encodeURIComponent(outputName),
       })
 
       const elapsed = (performance.now() - startTime).toFixed(1)
@@ -187,7 +222,7 @@ export default defineEventHandler(async (event) => {
     // === MULTIPLE FILES → ZIP ===
     const compressedFiles = await Promise.all(
       fileEntries.map(async (entry) => {
-        const filename = entry.filename || 'file'
+        const filename = sanitizeFilename(entry.filename)
         const ext = getExt(filename)
         let compressed: Buffer
 
@@ -210,9 +245,10 @@ export default defineEventHandler(async (event) => {
       })
     )
 
+    const zipFilename = `figo-compressed-${Date.now()}.zip`
     setResponseHeaders(event, {
       'Content-Type': 'application/zip',
-      'Content-Disposition': `attachment; filename="figo-compressed-${Date.now()}.zip"`,
+      'Content-Disposition': safeContentDisposition(zipFilename),
     })
 
     const passThrough = new PassThrough()

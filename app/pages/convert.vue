@@ -54,6 +54,18 @@
       </p>
     </div>
 
+    <!-- Security: File Rejected Warning -->
+    <div v-if="rejectedFiles.length > 0" class="mt-4 rounded-xl p-4 border border-red-500/20 bg-red-500/10 space-y-1.5 animate-fade-in">
+      <div class="flex items-center gap-2 text-red-500 mb-1">
+        <span class="material-symbols-outlined text-sm">shield</span>
+        <span class="text-xs font-bold uppercase tracking-wider">File Ditolak</span>
+      </div>
+      <p v-for="(msg, i) in rejectedFiles" :key="i" class="text-xs text-red-400 flex items-start gap-1.5">
+        <span class="material-symbols-outlined text-[11px] mt-0.5 shrink-0">close</span>
+        {{ msg }}
+      </p>
+    </div>
+
     <!-- Selected Files (pre-conversion) -->
     <div v-if="files.length > 0 && status === 'idle'" class="mt-4 space-y-4">
       <!-- Detected File Type Badge -->
@@ -325,8 +337,71 @@ function handleDrop(e: DragEvent) {
   if (e.dataTransfer?.files) addFiles(Array.from(e.dataTransfer.files))
 }
 
+// === SECURITY: Whitelist ekstensi dan batas ===
+const ALLOWED_EXTS = new Set(['png','jpg','jpeg','webp','gif','avif','tiff','bmp','svg','pdf','xlsx','xls','csv','txt'])
+const DANGEROUS_EXTS = new Set(['exe','bat','cmd','com','scr','vbs','js','ps1','msi','dll','sh','php','py','rb'])
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+const MAX_FILE_COUNT = 10
+const rejectedFiles = ref<string[]>([])
+
+// Validasi file sebelum ditambahkan
+function validateAndFilter(incoming: File[]): File[] {
+  const accepted: File[] = []
+  const rejected: string[] = []
+
+  for (const f of incoming) {
+    const ext = (f.name.split('.').pop() || '').toLowerCase()
+
+    // Cek ekstensi berbahaya
+    if (DANGEROUS_EXTS.has(ext)) {
+      rejected.push(`${f.name} — file executable berbahaya`)
+      continue
+    }
+
+    // Cek double extension
+    const parts = f.name.split('.')
+    if (parts.length > 2) {
+      const lastExt = (parts[parts.length - 1] || '').toLowerCase()
+      if (DANGEROUS_EXTS.has(lastExt)) {
+        rejected.push(`${f.name} — double extension terdeteksi`)
+        continue
+      }
+    }
+
+    // Cek whitelist
+    if (!ALLOWED_EXTS.has(ext)) {
+      rejected.push(`${f.name} — format .${ext} tidak didukung`)
+      continue
+    }
+
+    // Cek ukuran
+    if (f.size > MAX_FILE_SIZE) {
+      rejected.push(`${f.name} — melebihi batas 50MB`)
+      continue
+    }
+
+    accepted.push(f)
+  }
+
+  // Cek total file count
+  const totalAfter = files.value.length + accepted.length
+  if (totalAfter > MAX_FILE_COUNT) {
+    const allowed = MAX_FILE_COUNT - files.value.length
+    rejected.push(`${accepted.length - allowed} file ditolak — maks ${MAX_FILE_COUNT} file`)
+    accepted.splice(allowed)
+  }
+
+  rejectedFiles.value = rejected
+  if (rejected.length > 0) {
+    setTimeout(() => { rejectedFiles.value = [] }, 5000)
+  }
+
+  return accepted
+}
+
 async function addFiles(newFiles: File[]) {
-  files.value.push(...newFiles)
+  const validated = validateAndFilter(newFiles)
+  files.value.push(...validated)
   // Jika PDF, hitung jumlah halaman
   if (detectedCategory.value.type === 'pdf' && files.value.length === 1) {
     try {
@@ -534,7 +609,10 @@ async function convertViaServer(file: File, format: string): Promise<ConvertedFi
 
   const blob = await response.blob()
   let outputName = response.headers.get('X-Output-Name')
-  if (!outputName) {
+  if (outputName) {
+    // Decode encoded header (server pakai encodeURIComponent untuk keamanan)
+    try { outputName = decodeURIComponent(outputName) } catch {}
+  } else {
     const baseName = file.name.replace(/\.[^.]+$/, '')
     outputName = `${baseName}-figo-${Date.now()}.${format.toLowerCase()}`
   }

@@ -43,4 +43,24 @@
 | Rate Limit | 15 requests per minute per IP. Header: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset |
 | Notes | Public QR Code generator API. Mendukung custom warna, ukuran, format, error correction level, dan margin. Mengembalikan HTTP 429 jika rate limit terlampaui. |
 
+| Field | Detail |
+|---|---|
+| Method + Endpoint | POST /api/compress |
+| Auth Required | No |
+| Headers | `Content-Type: multipart/form-data` |
+| Query Params | N/A |
+| Request Body | `files`: File[] (Maks 10 file, Total 200MB, Per-file 50MB)<br>`quality`: Number (1-100) |
+| Response | HTTP 200 + `application/octet-stream` (Single) atau `application/zip` (Multiple) |
+| Notes | Mendukung ekstensi gambar, PDF, dan dokumen Office. Menggunakan proteksi magic bytes untuk mencegah eksesusi malware (contoh file .exe disamarkan). |
+
+| Field | Detail |
+|---|---|
+| Method + Endpoint | POST /api/convert |
+| Auth Required | No |
+| Headers | `Content-Type: multipart/form-data` |
+| Query Params | N/A |
+| Request Body | `files`: File[] (Maks 10 file, Total 200MB, Per-file 50MB)<br>`format`: String (Target Ekstensi) |
+| Response | HTTP 200 + stream file sesuai target atau `application/zip` |
+| Notes | Konversi gambar dan spreadsheet (server-side). PDF diproses client-side via WebAssembly. Menggunakan Magic Bytes Guard dan RFC 5987 content disposition untuk sanitasi nama file. |
+
 No scheduled tasks (cron jobs) configured.

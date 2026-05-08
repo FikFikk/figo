@@ -2,6 +2,14 @@ import sharp from 'sharp'
 import archiver from 'archiver'
 import { Readable, PassThrough } from 'stream'
 import * as XLSX from 'xlsx'
+import {
+  validateMagicBytes,
+  sanitizeFilename,
+  checkRateLimit,
+  safeContentDisposition,
+  getClientIp,
+  UPLOAD_LIMITS,
+} from '~/server/lib/security'
 
 // Supported output formats
 const IMAGE_FORMATS = ['webp', 'png', 'jpg', 'jpeg', 'gif', 'avif', 'tiff'] as const
@@ -99,6 +107,14 @@ async function convertBuffer(
 export default defineEventHandler(async (event) => {
   const reqStartTime = performance.now()
   try {
+    // === SECURITY: Rate limiting ===
+    const clientIp = getClientIp(event)
+    const rl = checkRateLimit(clientIp, 'convert', UPLOAD_LIMITS.RATE_LIMIT_REQUESTS, UPLOAD_LIMITS.RATE_LIMIT_WINDOW_MS)
+    setResponseHeader(event, 'X-RateLimit-Remaining', String(rl.remaining))
+    if (!rl.allowed) {
+      throw createError({ statusCode: 429, message: 'Terlalu banyak request. Coba lagi dalam 1 menit.' })
+    }
+
     const parseStartTime = performance.now()
     const formData = await readMultipartFormData(event)
     const parseTime = performance.now() - parseStartTime
@@ -123,18 +139,37 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: 'No file data found' })
     }
 
-    // Enforce size limit (50MB per file)
-    const MAX_SIZE = 50 * 1024 * 1024
+    // === SECURITY: Batas jumlah file ===
+    if (fileEntries.length > UPLOAD_LIMITS.MAX_FILE_COUNT) {
+      throw createError({ statusCode: 400, message: `Maksimal ${UPLOAD_LIMITS.MAX_FILE_COUNT} file per request` })
+    }
+
+    // === SECURITY: Batas ukuran per file + total ===
+    let totalSize = 0
     for (const entry of fileEntries) {
-      if (entry.data.length > MAX_SIZE) {
-        throw createError({ statusCode: 413, message: `File too large: ${entry.filename} (max 50MB)` })
+      if (entry.data.length > UPLOAD_LIMITS.MAX_FILE_SIZE) {
+        throw createError({ statusCode: 413, message: `File too large: ${sanitizeFilename(entry.filename)} (max 50MB)` })
+      }
+      totalSize += entry.data.length
+    }
+    if (totalSize > UPLOAD_LIMITS.MAX_TOTAL_SIZE) {
+      throw createError({ statusCode: 413, message: `Total upload terlalu besar (max 200MB)` })
+    }
+
+    // === SECURITY: Validasi magic bytes setiap file ===
+    for (const entry of fileEntries) {
+      const safeName = sanitizeFilename(entry.filename)
+      const ext = (safeName.split('.').pop() || '').toLowerCase()
+      if (!validateMagicBytes(entry.data, ext)) {
+        console.warn(`[convert] BLOCKED: Magic bytes mismatch — ${safeName} (claimed .${ext})`)
+        throw createError({ statusCode: 400, message: `File ditolak: ${safeName} — isi file tidak sesuai format yang diklaim` })
       }
     }
 
     // === SINGLE FILE: direct response ===
     if (fileEntries.length === 1) {
       const entry = fileEntries[0]!
-      const originalName = entry.filename || 'file'
+      const originalName = sanitizeFilename(entry.filename)
       const baseName = originalName.replace(/\.[^.]+$/, '')
       const timestamp = Date.now()
       const outputName = `${baseName}-figo-${timestamp}.${targetFormat === 'jpeg' ? 'jpg' : targetFormat}`
@@ -145,10 +180,10 @@ export default defineEventHandler(async (event) => {
 
       setResponseHeaders(event, {
         'Content-Type': getOutputMime(targetFormat),
-        'Content-Disposition': `attachment; filename="${outputName}"`,
+        'Content-Disposition': safeContentDisposition(outputName),
         'Content-Length': String(converted.length),
-        'X-Original-Name': originalName,
-        'X-Output-Name': outputName,
+        'X-Original-Name': encodeURIComponent(originalName),
+        'X-Output-Name': encodeURIComponent(outputName),
         'X-Output-Size': String(converted.length),
       })
 
@@ -162,7 +197,7 @@ export default defineEventHandler(async (event) => {
     const convertStartTime = performance.now()
     const convertedFiles = await Promise.all(
       fileEntries.map(async (entry) => {
-        const originalName = entry.filename || 'file'
+        const originalName = sanitizeFilename(entry.filename)
         const baseName = originalName.replace(/\.[^.]+$/, '')
         const timestamp = Date.now()
         const outputName = `${baseName}-figo-${timestamp}.${targetFormat === 'jpeg' ? 'jpg' : targetFormat}`
@@ -172,10 +207,10 @@ export default defineEventHandler(async (event) => {
     )
 
     // Stream ZIP response directly — no temp files
-    const timestamp = Date.now()
+    const zipFilename = `figo-converted-${Date.now()}.zip`
     setResponseHeaders(event, {
       'Content-Type': 'application/zip',
-      'Content-Disposition': `attachment; filename="figo-converted-${timestamp}.zip"`,
+      'Content-Disposition': safeContentDisposition(zipFilename),
     })
 
     const passThrough = new PassThrough()
