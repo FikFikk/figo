@@ -10,7 +10,7 @@ import {
   safeContentDisposition,
   getClientIp,
   UPLOAD_LIMITS,
-} from '~/server/lib/security'
+} from '../lib/security'
 
 // Ekstensi yang didukung per kategori
 const IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'tiff', 'bmp']

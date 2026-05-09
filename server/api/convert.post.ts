@@ -9,7 +9,7 @@ import {
   safeContentDisposition,
   getClientIp,
   UPLOAD_LIMITS,
-} from '~/server/lib/security'
+} from '../lib/security'
 
 // Supported output formats
 const IMAGE_FORMATS = ['webp', 'png', 'jpg', 'jpeg', 'gif', 'avif', 'tiff'] as const
