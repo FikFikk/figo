@@ -146,6 +146,7 @@ const slugToId: Record<string, string> = {
 const availableTools = [
   { id: 'calendar', slug: 'calendar', name: 'Calendar 2026', icon: 'calendar_month', external: '/kalender' },
   { id: 'editor', slug: 'editor', name: 'AI Image Editor', icon: 'photo_filter', external: '/editor' },
+  { id: 'recipes', slug: 'recipes', name: 'Resep Makanan', icon: 'restaurant', external: '/recipes' },
   { id: 'color', slug: 'color-palette', name: 'Color Palette', icon: 'palette' },
   { id: 'safety', slug: 'link-safety', name: 'Link Safety', icon: 'shield_lock' },
   { id: 'metadata', slug: 'file-metadata', name: 'File Metadata', icon: 'analytics' },
