@@ -52,8 +52,12 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Filter berdasarkan judul (case-insensitive, partial match)
-    const matched = index.filter(r => r.title.toLowerCase().includes(search))
+    // Filter berdasarkan judul (harus mengandung semua kata kunci)
+    const searchWords = search.split(/\s+/).filter(word => word.length > 0)
+    const matched = index.filter(r => {
+      const titleLower = r.title.toLowerCase()
+      return searchWords.every(word => titleLower.includes(word))
+    })
     const total = matched.length
     const offset = (page - 1) * limit
     const paged = matched.slice(offset, offset + limit)
