@@ -8,7 +8,7 @@
       style="transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);"
     >
       <!-- Badge -->
-      <div class="inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-8"
+      <div class="inline-block px-4 py-1.5 rounded-2xl text-xs font-bold tracking-widest uppercase mb-8"
         :class="isDark ? 'bg-primary/15 text-primary border border-primary/20' : 'bg-primary-fixed text-on-primary-fixed'"
       >
         Start for Free?
@@ -28,13 +28,13 @@
 
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6">
         <button
-          class="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 bg-primary text-on-primary rounded-full font-bold text-base md:text-lg hover:scale-105 shadow-xl shadow-primary/20 transition-all active:scale-95"
+          class="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 bg-primary text-on-primary rounded-2xl font-bold text-base md:text-lg hover:scale-105 shadow-xl shadow-primary/20 transition-all active:scale-95"
           @click="scrollTo('tools')"
         >
           Launch Dashboard
         </button>
         <button
-          class="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 rounded-full font-bold text-base md:text-lg transition-all"
+          class="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 rounded-2xl font-bold text-base md:text-lg transition-all"
           :class="isDark ? 'bg-white/10 text-white hover:bg-white/15 border border-white/10' : 'bg-white text-slate-900 hover:bg-slate-50 border border-slate-200'"
           @click="scrollTo('toolkit')"
         >

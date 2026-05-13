@@ -1,7 +1,7 @@
 <template>
   <div
     ref="cardRef"
-    class="glass-panel p-8 md:p-10 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] group hover:shadow-[0_12px_40px_rgba(0,88,190,0.08)] transition-all duration-500 flex flex-col justify-between min-h-[360px] md:min-h-[400px]"
+    class="glass-panel p-8 md:p-10 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] group hover:shadow-[0_12px_40px_rgba(0,88,190,0.08)] transition-all duration-500 flex flex-col justify-between min-h-[360px] md:min-h-[400px]"
     :class="[
       isDark ? 'border border-white/8 hover:border-white/15' : 'border border-white/50',
       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
@@ -10,7 +10,7 @@
   >
     <div>
       <div
-        class="w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 transition-transform duration-300"
+        class="w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 transition-transform duration-300"
         :class="iconBgClass"
       >
         <span class="material-symbols-outlined text-3xl md:text-4xl" :class="iconColorClass">{{ icon }}</span>
