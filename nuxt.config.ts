@@ -60,6 +60,7 @@ export default defineNuxtConfig({
     families: {
       'Inter': [300, 400, 500, 600],
       'Manrope': [500, 600, 700, 800],
+      'Playfair Display': [400, 700, 800, 900],
     },
     display: 'swap',
     prefetch: true,

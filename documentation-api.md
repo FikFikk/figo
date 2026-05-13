@@ -63,4 +63,12 @@
 | Response | HTTP 200 + stream file sesuai target atau `application/zip` |
 | Notes | Konversi gambar dan spreadsheet (server-side). PDF diproses client-side via WebAssembly. Menggunakan Magic Bytes Guard dan RFC 5987 content disposition untuk sanitasi nama file. |
 
+| Method + Endpoint | GET /api/foods |
+| Auth Required | Yes (HF_TOKEN via server) |
+| Headers | None specific |
+| Query Params | page (number), limit (number, max 100), country (string, e.g., 'en:japan'), search (string) |
+| Request Body | N/A |
+| Response | HTTP 200 + JSON `{foods: Food[], total: number, page: number, ...}` |
+| Notes | Proxy ke HuggingFace OpenFoodFacts dataset. Melakukan transformasi data nutrisi dan mapping image URL ke OpenFoodFacts CDN. |
+
 No scheduled tasks (cron jobs) configured.
