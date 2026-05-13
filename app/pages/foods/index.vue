@@ -54,10 +54,11 @@
       <!-- Grid Layout -->
       <div v-else-if="foods.length > 0">
         <div class="food-grid">
-          <div 
+          <NuxtLink 
             v-for="food in foods" 
             :key="food.code" 
-            class="food-card group"
+            :to="`/foods/${food.code}`"
+            class="food-card group cursor-pointer"
           >
             <div class="card-inner">
               <!-- Image Section -->
@@ -112,7 +113,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </NuxtLink>
         </div>
 
         <!-- Pagination Area -->
