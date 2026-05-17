@@ -86,8 +86,8 @@ export default defineEventHandler(async (event) => {
   } catch (err: any) {
     const statusCode = err.statusCode || 500
 
-    // Log peringatan biasa, menghindari penulisan error unhandled di server log
-    console.warn(`[Media Proxy] Media ${statusCode}: Link expired atau di-block oleh platform. Pesan: ${err.message || String(err)}`)
+    // Log info biasa, menghindari penulisan ke stderr (agar tidak dianggap error merah di PM2/log)
+    console.info(`[Media Proxy] Media ${statusCode}: Link expired atau di-block oleh platform. Pesan: ${err.message || String(err)}`)
 
     // Jika request inline dan untuk tipe foto, kembalikan gambar fallback SVG yang cantik
     if (isInline && type === 'photo') {
