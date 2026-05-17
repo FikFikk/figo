@@ -84,16 +84,33 @@ export default defineEventHandler(async (event) => {
     return response.body
 
   } catch (err: any) {
-    if (err.statusCode === 403 || err.statusCode === 404) {
-      console.warn(`[Media Proxy] Media ${err.statusCode}: Link expired atau di-block oleh platform.`)
-    } else {
-      console.error('[Media Proxy] Error:', err.message || err)
+    const statusCode = err.statusCode || 500
+
+    // Log peringatan biasa, menghindari penulisan error unhandled di server log
+    console.warn(`[Media Proxy] Media ${statusCode}: Link expired atau di-block oleh platform. Pesan: ${err.message || String(err)}`)
+
+    // Jika request inline dan untuk tipe foto, kembalikan gambar fallback SVG yang cantik
+    if (isInline && type === 'photo') {
+      setResponseHeaders(event, {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      })
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <rect width="100%" height="100%" fill="#0a0f1d" />
+  <circle cx="50" cy="50" r="30" fill="#1e293b" opacity="0.15" />
+  <g transform="translate(38, 38)" stroke="#475569" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="0" y="0" width="24" height="24" rx="2" ry="2" />
+    <circle cx="8" cy="8" r="2.5" />
+    <path d="M22 21L16 12L12 18L9 15L2 21" />
+  </g>
+</svg>`
     }
-    
-    if (err.statusCode) throw err
+
+    // Untuk unduhan atau tipe video, lempar error terstruktur yang ditangani dengan baik
     throw createError({
-      statusCode: 500,
-      message: 'Gagal mengunduh media: ' + (err.message || String(err)),
+      statusCode: statusCode,
+      message: err.message || 'Gagal mengunduh media.',
+      fatal: false
     })
   }
 })

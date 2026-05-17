@@ -2,15 +2,15 @@
 
 ## Endpoints
 
-| Field | Detail |
+| Bidang | Rincian |
 |---|---|
-| Method + Endpoint | GET /api/media-proxy |
-| Auth Required | No |
-| Headers | None specific |
-| Query Params | url (string, required), type (string), filename (string) |
-| Request Body | N/A |
-| Response | HTTP 200 + File Stream (Content-Disposition: attachment) |
-| Notes | Used to proxy media downloads and avoid CORS issues |
+| Metode + Endpoint | GET /api/media-proxy |
+| Membutuhkan Autentikasi | Tidak |
+| Header | Tidak ada yang khusus |
+| Parameter Query | url (string, wajib), type (string, opsional: 'photo'\|'video', default: 'photo'), filename (string, opsional), inline (string, opsional: 'true'\|'false', default: 'false') |
+| Body Permintaan | N/A |
+| Respons | HTTP 200 + File Stream (Content-Disposition: inline atau attachment) / Mengembalikan gambar SVG Fallback jika inline=true dan gagal memuat |
+| Catatan | Digunakan sebagai proxy media untuk menghindari masalah CORS. Jika tautan kedaluwarsa atau diblokir platform (misal: thumbnail Instagram 403), endpoint secara otomatis mengembalikan gambar SVG fallback kustom minimalis bertema gelap dengan ikon default di tengah demi estetika frontend, dan mencatat log sebagai peringatan biasa (bukan error fatal unhandled). |
 
 | Field | Detail |
 |---|---|

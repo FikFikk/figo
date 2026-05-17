@@ -71,9 +71,9 @@
         <!-- Video Preview -->
         <div class="flex flex-col md:flex-row gap-6 mb-8">
           <div class="w-full md:w-64 shrink-0 rounded-md overflow-hidden shadow-lg aspect-video bg-black/10">
-            <img v-if="videoInfo.thumb" :src="getProxiedMediaUrl(videoInfo.thumb)" class="w-full h-full object-cover" alt="Thumbnail" />
-            <div v-else class="w-full h-full flex items-center justify-center">
-              <span class="material-symbols-outlined text-4xl text-gray-500">movie</span>
+            <img v-if="videoInfo.thumb && !failedThumbnails[videoInfo.thumb]" :src="getProxiedMediaUrl(videoInfo.thumb)" class="w-full h-full object-cover" alt="Thumbnail" @error="handleThumbnailError(videoInfo.thumb)" />
+            <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+              <span class="material-symbols-outlined text-4xl text-white/20">movie</span>
             </div>
           </div>
           <div class="flex-1 min-w-0">
@@ -185,8 +185,11 @@
         <div class="space-y-4">
           <div v-for="(item, idx) in videoInfo.mediaItems" :key="idx" class="flex flex-col sm:flex-row gap-4 p-4 rounded-2xl border transition-all hover:shadow-md" :class="isDark ? 'border-white/5 bg-white/5 hover:border-white/10' : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'">
             <div class="w-full sm:w-48 shrink-0 rounded-2xl overflow-hidden shadow-sm aspect-video bg-black/10 relative">
-               <img v-if="item.thumbnail || item.url" :src="getProxiedMediaUrl(item.thumbnail || item.url)" class="w-full h-full object-cover" />
-               <div v-if="item.type === 'video' || item.type === 'gif'" class="absolute inset-0 flex items-center justify-center bg-black/20">
+               <img v-if="(item.thumbnail || item.url) && !failedThumbnails[item.thumbnail || item.url]" :src="getProxiedMediaUrl(item.thumbnail || item.url)" class="w-full h-full object-cover" @error="handleThumbnailError(item.thumbnail || item.url)" />
+               <div v-else class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                 <span class="material-symbols-outlined text-4xl text-white/20">{{ item.type === 'photo' ? 'image' : 'movie' }}</span>
+               </div>
+               <div v-if="(item.type === 'video' || item.type === 'gif') && !failedThumbnails[item.thumbnail || item.url]" class="absolute inset-0 flex items-center justify-center bg-black/20">
                  <span class="material-symbols-outlined text-3xl text-white drop-shadow-md shadow-black">play_circle</span>
                </div>
             </div>
@@ -252,12 +255,13 @@
           >
             <!-- Thumbnail Background -->
             <img 
-              v-if="item.thumbnail" 
+              v-if="item.thumbnail && !failedThumbnails[item.thumbnail]" 
               :src="getProxiedMediaUrl(item.thumbnail)" 
               class="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-70 transition-opacity"
+              @error="handleThumbnailError(item.thumbnail)"
             />
             <div v-else class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
-               <span class="material-symbols-outlined text-4xl text-white/20">movie</span>
+               <span class="material-symbols-outlined text-4xl text-white/20">{{ item.metadata?.type === 'photo' ? 'image' : 'movie' }}</span>
             </div>
 
             <!-- Content Overlay -->
@@ -363,6 +367,15 @@ const isDownloading = ref(false)
 const error = ref('')
 const videoInfo = ref<any>(null)
 const selectedFormat = ref<string>('')
+
+// Menyimpan status kegagalan pemuatan thumbnail untuk merender fallback di frontend secara reaktif
+const failedThumbnails = ref<Record<string, boolean>>({})
+
+function handleThumbnailError(thumbUrl: string) {
+  if (thumbUrl) {
+    failedThumbnails.value[thumbUrl] = true
+  }
+}
 
 function resetAll() {
   url.value = ''
@@ -497,7 +510,7 @@ function getProxiedMediaUrl(mediaUrl: string, type: 'photo' | 'video' = 'photo')
   // Deteksi domain yg diblokir CORS Hotlink (IG, Twitter CDN, FB)
   const isCORS = mediaUrl.includes('instagram') || mediaUrl.includes('cdninstagram') || mediaUrl.includes('twimg') || mediaUrl.includes('fbcdn') || mediaUrl.includes('ig_')
   if (isCORS) {
-    return `/api/media-proxy?url=${encodeURIComponent(mediaUrl)}&type=${type}&inline=true`
+    return `/api/media-proxy?url=${encodeURIComponent(mediaUrl)}&type=${type}&inline=true&v=3`
   }
   return mediaUrl
 }

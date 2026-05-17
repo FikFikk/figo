@@ -77,7 +77,7 @@ export async function fetchTikTokMedia(url: string): Promise<PlatformResult> {
     uploader,
     thumb,
     avatar: avatar
-      ? `/api/media-proxy?url=${encodeURIComponent(avatar)}&type=photo&inline=true`
+      ? `/api/media-proxy?url=${encodeURIComponent(avatar)}&type=photo&inline=true&v=3`
       : `https://ui-avatars.com/api/?name=${encodeURIComponent(uploader.replace('@', ''))}&background=010101&color=fff&size=128`,
     mediaItems,
     statistics: {
