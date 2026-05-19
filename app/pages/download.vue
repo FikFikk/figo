@@ -308,11 +308,85 @@
         </div>
       </div>
     </div>
+    <!-- FAQ Section untuk SEO — konten teks yang bisa di-crawl Google -->
+    <section class="mt-16 mb-8" :class="isDark ? 'text-gray-400' : 'text-slate-600'">
+      <h2 class="font-headline font-bold text-xl mb-6" :class="isDark ? 'text-white' : 'text-slate-900'">
+        <span class="material-symbols-outlined text-lg align-middle mr-1">help</span>
+        Frequently Asked Questions
+      </h2>
+      <div class="space-y-3">
+        <details class="group rounded-xl border p-4 transition-all" :class="isDark ? 'border-white/5 bg-white/[0.02] hover:bg-white/[0.04]' : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'">
+          <summary class="cursor-pointer font-bold text-sm list-none flex items-center justify-between" :class="isDark ? 'text-white' : 'text-slate-900'">
+            Bagaimana cara download video TikTok tanpa watermark?
+            <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+          </summary>
+          <p class="mt-3 text-xs leading-relaxed">Buka aplikasi TikTok, salin link video yang ingin didownload, paste di kolom URL FiGo di atas, klik "Fetch Info", pilih kualitas video yang diinginkan, lalu klik Download. Video akan otomatis terdownload tanpa watermark secara gratis.</p>
+        </details>
+        <details class="group rounded-xl border p-4 transition-all" :class="isDark ? 'border-white/5 bg-white/[0.02] hover:bg-white/[0.04]' : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'">
+          <summary class="cursor-pointer font-bold text-sm list-none flex items-center justify-between" :class="isDark ? 'text-white' : 'text-slate-900'">
+            Apakah FiGo bisa download YouTube ke MP3?
+            <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+          </summary>
+          <p class="mt-3 text-xs leading-relaxed">Ya, FiGo mendukung download audio dari YouTube ke format MP3 berkualitas tinggi. Cukup paste link YouTube, sistem akan menampilkan opsi "Audio" di daftar kualitas, pilih dan klik Download untuk menyimpan file MP3.</p>
+        </details>
+        <details class="group rounded-xl border p-4 transition-all" :class="isDark ? 'border-white/5 bg-white/[0.02] hover:bg-white/[0.04]' : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'">
+          <summary class="cursor-pointer font-bold text-sm list-none flex items-center justify-between" :class="isDark ? 'text-white' : 'text-slate-900'">
+            Platform apa saja yang didukung FiGo Downloader?
+            <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+          </summary>
+          <p class="mt-3 text-xs leading-relaxed">FiGo mendukung download dari YouTube, TikTok, Instagram (Reels, Stories, Posts), Twitter/X, Facebook, dan Reddit. Mendukung format video MP4, audio MP3, serta foto dari carousel Instagram.</p>
+        </details>
+        <details class="group rounded-xl border p-4 transition-all" :class="isDark ? 'border-white/5 bg-white/[0.02] hover:bg-white/[0.04]' : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'">
+          <summary class="cursor-pointer font-bold text-sm list-none flex items-center justify-between" :class="isDark ? 'text-white' : 'text-slate-900'">
+            Apakah download video di FiGo gratis dan aman?
+            <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+          </summary>
+          <p class="mt-3 text-xs leading-relaxed">Ya, 100% gratis dan aman. Tidak perlu login atau membuat akun. Tidak ada iklan popup. Semua proses berjalan di server yang aman dan file langsung didownload ke perangkat Anda.</p>
+        </details>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-useSeoMeta({ title: 'Download — FiGo' })
+useSeoMeta({
+  title: 'Download Video TikTok, YouTube, Instagram & Twitter Gratis Online — FiGo',
+  ogTitle: 'Download Video TikTok, YouTube, Instagram Gratis — FiGo Downloader',
+  description: 'Download video TikTok tanpa watermark, YouTube to MP3/MP4, Instagram Reels & Stories, Twitter/X video gratis. Paste link, pilih kualitas, download langsung. Tanpa login, tanpa iklan, tanpa batas.',
+  ogDescription: 'Free online video downloader for TikTok, YouTube, Instagram, Twitter. No watermark. No signup. Supports MP3, MP4, HD quality.',
+  twitterCard: 'summary_large_image',
+})
+
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: 'FiGo Video Downloader',
+        url: 'https://go.fikfikk.my.id/download',
+        applicationCategory: 'MultimediaApplication',
+        operatingSystem: 'All',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        description: 'Download videos from TikTok, YouTube, Instagram, and Twitter for free in HD quality.',
+        featureList: 'TikTok Video Download, YouTube to MP3, Instagram Reels Download, Twitter Video Download, No Watermark'
+      })
+    },
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: 'Bagaimana cara download video TikTok tanpa watermark?', acceptedAnswer: { '@type': 'Answer', text: 'Buka TikTok, salin link video, paste di FiGo, klik Fetch Info, lalu pilih kualitas dan download. Video akan terdownload tanpa watermark secara gratis.' } },
+          { '@type': 'Question', name: 'Apakah FiGo bisa download YouTube ke MP3?', acceptedAnswer: { '@type': 'Answer', text: 'Ya, FiGo mendukung download audio YouTube ke format MP3 berkualitas tinggi. Cukup paste link YouTube, pilih format Audio, dan download.' } },
+          { '@type': 'Question', name: 'Apakah download video di FiGo gratis?', acceptedAnswer: { '@type': 'Answer', text: 'Ya, sepenuhnya gratis. Tidak perlu login, tidak ada iklan, dan tidak ada batasan jumlah download.' } },
+        ]
+      })
+    }
+  ]
+})
 const { isDark } = useColorMode()
 const { increment } = useHistoryCounter()
 

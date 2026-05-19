@@ -100,10 +100,30 @@
 
 <script setup lang="ts">
 useSeoMeta({
-  title: 'FiGo — The Ethereal Engine',
-  ogTitle: 'FiGo — The Ethereal Engine',
-  description: 'High-performance file processing. Compress, convert, download via URL, check links, analyze files — one platform, zero limits.',
-  ogDescription: 'Convert, compress, and download anything. No account. No fee. No nonsense.',
+  title: 'FiGo — Free Online File Tools: Download Video, Compress, Convert',
+  ogTitle: 'FiGo — Free Online Tools: Download TikTok, YouTube, Instagram Videos',
+  description: 'FiGo is a free all-in-one platform to download videos from TikTok, YouTube, Instagram & Twitter, compress images & PDFs up to 80%, convert files between PNG, JPG, WEBP, PDF, and more. No signup. No limits.',
+  ogDescription: 'Download videos from TikTok, YouTube, Instagram for free. Compress images & PDFs. Convert files between any format. Generate QR codes, check link safety, and more.',
+  twitterCard: 'summary_large_image',
+})
+
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: 'FiGo',
+        url: 'https://go.fikfikk.my.id',
+        applicationCategory: 'UtilitiesApplication',
+        operatingSystem: 'All',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        description: 'Free online tools to download videos from TikTok, YouTube, Instagram, compress images & PDFs, convert file formats, generate QR codes.',
+        featureList: 'Video Downloader, Image Compressor, File Converter, QR Code Generator, Password Generator, Color Palette Generator'
+      })
+    }
+  ]
 })
 
 const { isDark } = useColorMode()

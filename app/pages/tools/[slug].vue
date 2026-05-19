@@ -129,9 +129,46 @@
  * Tools Page - Dynamic URL routing per tool
  * URL: /tools/[slug] → resolves to tool component
  */
-useSeoMeta({ title: 'Toolkit — FiGo' })
-const { isDark } = useColorMode()
+// SEO dinamis berdasarkan tool yang aktif
+const toolSeoMap: Record<string, { title: string; description: string }> = {
+  'color-palette': {
+    title: 'Color Palette Generator Online Gratis — FiGo Tools',
+    description: 'Generate color palette dan gradient secara otomatis. Pilih warna, lihat kode HEX/RGB/HSL, copy langsung ke clipboard. Gratis untuk desainer dan developer.'
+  },
+  'link-safety': {
+    title: 'Cek Keamanan Link Online — Link Safety Checker — FiGo Tools',
+    description: 'Periksa apakah sebuah link/URL aman atau berbahaya sebelum diklik. Deteksi phishing, malware, dan situs mencurigakan. Gratis dan instan.'
+  },
+  'file-metadata': {
+    title: 'Cek Metadata File Online — EXIF, Size & Info — FiGo Tools',
+    description: 'Analisis metadata file: ukuran, tipe MIME, EXIF data foto, dimensi gambar, dan informasi teknis lainnya. Upload file dan lihat detailnya secara gratis.'
+  },
+  'secure-generator': {
+    title: 'Password Generator Online — Buat Password Kuat & Aman — FiGo Tools',
+    description: 'Generate password kuat dan aman secara acak. Atur panjang, huruf besar/kecil, angka, simbol. Copy langsung ke clipboard. 100% gratis dan aman.'
+  },
+  'qr-engine': {
+    title: 'QR Code Generator Online Gratis — Buat QR Code Instan — FiGo Tools',
+    description: 'Buat QR code dari teks, URL, nomor telepon, atau data apapun secara gratis. Download QR code sebagai gambar PNG. Instan, tanpa login, tanpa batas.'
+  },
+}
+
 const route = useRoute()
+const currentSlug = computed(() => route.params.slug as string)
+const currentSeo = computed(() => toolSeoMap[currentSlug.value] || {
+  title: 'Developer Tools — QR Code, Password Generator & More — FiGo',
+  description: 'Koleksi developer tools gratis: QR code generator, password generator, color palette, link checker, file metadata analyzer. Semua gratis, tanpa signup.'
+})
+
+useSeoMeta({
+  title: () => currentSeo.value.title,
+  ogTitle: () => currentSeo.value.title,
+  description: () => currentSeo.value.description,
+  ogDescription: () => currentSeo.value.description,
+  twitterCard: 'summary_large_image',
+})
+
+const { isDark } = useColorMode()
 
 // Mapping slug → tool id
 const slugToId: Record<string, string> = {

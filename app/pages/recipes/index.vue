@@ -102,8 +102,11 @@
  * Halaman daftar resep - card compact: ikon kecil di kiri atas, judul besar
  */
 useSeoMeta({
-  title: 'Resep Nusantara — FiGo',
-  description: 'Koleksi 66.000+ resep masakan Indonesia lengkap dengan bahan dan langkah memasak.',
+  title: 'Resep Masakan Indonesia Lengkap — 66.000+ Resep Nusantara — FiGo',
+  ogTitle: 'Resep Masakan Indonesia — Koleksi 66.000+ Resep Nusantara',
+  description: 'Kumpulan 66.000+ resep masakan Indonesia lengkap dengan bahan dan langkah memasak. Cari resep favorit dari berbagai daerah Nusantara. Gratis dan mudah diikuti.',
+  ogDescription: 'Koleksi 66.000+ resep masakan Indonesia lengkap. Cari resep berdasarkan nama, bahan, atau kategori.',
+  twitterCard: 'summary_large_image',
 })
 
 const { isDark } = useColorMode()

@@ -219,6 +219,37 @@
         >Try Again</button>
       </div>
     </div>
+
+    <!-- FAQ Section untuk SEO -->
+    <section v-if="status === 'idle' && files.length === 0" class="mt-16 mb-8" :class="isDark ? 'text-gray-400' : 'text-slate-600'">
+      <h2 class="font-headline font-bold text-xl mb-6" :class="isDark ? 'text-white' : 'text-slate-900'">
+        <span class="material-symbols-outlined text-lg align-middle mr-1">help</span>
+        Frequently Asked Questions
+      </h2>
+      <div class="space-y-3">
+        <details class="group rounded-xl border p-4 transition-all" :class="isDark ? 'border-white/5 bg-white/[0.02]' : 'border-slate-100 bg-slate-50/50'">
+          <summary class="cursor-pointer font-bold text-sm list-none flex items-center justify-between" :class="isDark ? 'text-white' : 'text-slate-900'">
+            Bagaimana cara convert PNG ke JPG online?
+            <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+          </summary>
+          <p class="mt-3 text-xs leading-relaxed">Upload file PNG ke FiGo Converter, pilih format output JPG dari daftar yang tersedia, klik Convert. File JPG akan langsung bisa didownload dengan kualitas tinggi.</p>
+        </details>
+        <details class="group rounded-xl border p-4 transition-all" :class="isDark ? 'border-white/5 bg-white/[0.02]' : 'border-slate-100 bg-slate-50/50'">
+          <summary class="cursor-pointer font-bold text-sm list-none flex items-center justify-between" :class="isDark ? 'text-white' : 'text-slate-900'">
+            Apakah FiGo bisa convert PDF ke gambar?
+            <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+          </summary>
+          <p class="mt-3 text-xs leading-relaxed">Ya, setiap halaman PDF akan dikonversi menjadi gambar PNG, JPG, atau WEBP dengan resolusi 2x untuk kualitas tajam. Semua proses dilakukan di browser tanpa upload ke server, menjaga privasi file Anda.</p>
+        </details>
+        <details class="group rounded-xl border p-4 transition-all" :class="isDark ? 'border-white/5 bg-white/[0.02]' : 'border-slate-100 bg-slate-50/50'">
+          <summary class="cursor-pointer font-bold text-sm list-none flex items-center justify-between" :class="isDark ? 'text-white' : 'text-slate-900'">
+            Format file apa saja yang bisa di-convert?
+            <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+          </summary>
+          <p class="mt-3 text-xs leading-relaxed">Gambar: PNG, JPG, WEBP, GIF, AVIF, TIFF (saling convert). PDF: convert ke PNG, JPG, WEBP, atau HTML. Spreadsheet: XLSX, XLS, CSV, TXT (saling convert). Maksimal 50MB per file.</p>
+        </details>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -227,7 +258,30 @@
  * Smart File Converter — deteksi tipe file otomatis, format output dinamis
  * Mendukung: Image (sharp), Spreadsheet (xlsx), PDF→Image (pdfjs-dist client-side)
  */
-useSeoMeta({ title: 'Convert — FiGo' })
+useSeoMeta({
+  title: 'Convert File Online Gratis — PNG ke JPG, PDF ke Image, XLSX ke CSV — FiGo',
+  ogTitle: 'Free Online File Converter — PNG to JPG, PDF to Image — FiGo',
+  description: 'Convert file online gratis tanpa batas. PNG ke JPG, JPG ke WEBP, PDF ke gambar, XLSX ke CSV, dan banyak lagi. Drag & drop, langsung convert dan download. Tanpa signup.',
+  ogDescription: 'Free file converter: PNG to JPG, WEBP, PDF to Image, XLSX to CSV. No signup, instant conversion, high quality output.',
+  twitterCard: 'summary_large_image',
+})
+
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: 'Bagaimana cara convert PNG ke JPG online?', acceptedAnswer: { '@type': 'Answer', text: 'Upload file PNG ke FiGo Converter, pilih format output JPG, klik Convert. File JPG akan langsung bisa didownload dengan kualitas tinggi.' } },
+          { '@type': 'Question', name: 'Apakah FiGo bisa convert PDF ke gambar?', acceptedAnswer: { '@type': 'Answer', text: 'Ya, FiGo bisa mengubah setiap halaman PDF menjadi gambar PNG, JPG, atau WEBP dengan resolusi 2x untuk kualitas tajam. Proses dilakukan di browser tanpa upload ke server.' } },
+          { '@type': 'Question', name: 'Format file apa saja yang bisa di-convert?', acceptedAnswer: { '@type': 'Answer', text: 'Gambar: PNG, JPG, WEBP, GIF, AVIF, TIFF. Dokumen: PDF ke gambar/HTML. Spreadsheet: XLSX, XLS, CSV antar format.' } },
+        ]
+      })
+    }
+  ]
+})
 const { isDark } = useColorMode()
 const { increment } = useHistoryCounter()
 

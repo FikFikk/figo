@@ -237,6 +237,36 @@
         </button>
       </div>
     </div>
+    <!-- FAQ Section untuk SEO -->
+    <section v-if="status === 'idle' && files.length === 0" class="mt-16 mb-8" :class="isDark ? 'text-gray-400' : 'text-slate-600'">
+      <h2 class="font-headline font-bold text-xl mb-6" :class="isDark ? 'text-white' : 'text-slate-900'">
+        <span class="material-symbols-outlined text-lg align-middle mr-1">help</span>
+        Frequently Asked Questions
+      </h2>
+      <div class="space-y-3">
+        <details class="group rounded-xl border p-4 transition-all" :class="isDark ? 'border-white/5 bg-white/[0.02]' : 'border-slate-100 bg-slate-50/50'">
+          <summary class="cursor-pointer font-bold text-sm list-none flex items-center justify-between" :class="isDark ? 'text-white' : 'text-slate-900'">
+            Bagaimana cara kompres foto online gratis?
+            <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+          </summary>
+          <p class="mt-3 text-xs leading-relaxed">Drag & drop foto ke area upload di atas atau klik untuk memilih file. Atur level kompresi sesuai kebutuhan, lalu klik tombol Compress. File hasil kompresi bisa langsung didownload.</p>
+        </details>
+        <details class="group rounded-xl border p-4 transition-all" :class="isDark ? 'border-white/5 bg-white/[0.02]' : 'border-slate-100 bg-slate-50/50'">
+          <summary class="cursor-pointer font-bold text-sm list-none flex items-center justify-between" :class="isDark ? 'text-white' : 'text-slate-900'">
+            Apakah kompresi mengurangi kualitas gambar?
+            <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+          </summary>
+          <p class="mt-3 text-xs leading-relaxed">FiGo menggunakan algoritma smart compression (MozJPEG, PNG9, WebP) yang bisa mengurangi ukuran file hingga 80% tanpa penurunan kualitas yang terlihat oleh mata manusia.</p>
+        </details>
+        <details class="group rounded-xl border p-4 transition-all" :class="isDark ? 'border-white/5 bg-white/[0.02]' : 'border-slate-100 bg-slate-50/50'">
+          <summary class="cursor-pointer font-bold text-sm list-none flex items-center justify-between" :class="isDark ? 'text-white' : 'text-slate-900'">
+            Format apa saja yang didukung?
+            <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+          </summary>
+          <p class="mt-3 text-xs leading-relaxed">Mendukung gambar (PNG, JPG, WEBP, GIF, AVIF, TIFF), dokumen Office (DOCX, PPTX, XLSX), dan PDF. Batas maksimal 50MB per file, hingga 10 file sekaligus.</p>
+        </details>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -245,7 +275,30 @@
  * Smart File Compressor — deteksi tipe file, kompresi optimal per format
  * Image: Sharp (mozjpeg/png9/webp), Office: JSZip+Sharp, PDF: pdf-lib
  */
-useSeoMeta({ title: 'Compress — FiGo' })
+useSeoMeta({
+  title: 'Kompres Gambar, PDF & Dokumen Online Gratis — FiGo Compressor',
+  ogTitle: 'Compress Image & PDF Online Free — FiGo',
+  description: 'Kompres foto JPG, PNG, WEBP hingga 80% lebih kecil tanpa kehilangan kualitas. Compress PDF, DOCX, PPTX, XLSX online gratis. Drag & drop, langsung download. Tanpa signup, tanpa batas.',
+  ogDescription: 'Free online image & file compressor. Reduce JPG, PNG, PDF, DOCX file sizes up to 80%. No quality loss. No signup required.',
+  twitterCard: 'summary_large_image',
+})
+
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: 'Bagaimana cara kompres foto online?', acceptedAnswer: { '@type': 'Answer', text: 'Upload foto ke FiGo Compressor, atur level kompresi, klik Compress. File akan langsung di-compress dan bisa didownload tanpa perlu login.' } },
+          { '@type': 'Question', name: 'Apakah kompresi gambar mengurangi kualitas?', acceptedAnswer: { '@type': 'Answer', text: 'FiGo menggunakan algoritma smart compression (MozJPEG, PNG9, WebP) yang bisa mengurangi ukuran file hingga 80% dengan tetap menjaga kualitas visual yang hampir identik.' } },
+          { '@type': 'Question', name: 'Format file apa saja yang bisa di-compress?', acceptedAnswer: { '@type': 'Answer', text: 'FiGo mendukung kompresi gambar (PNG, JPG, WEBP, GIF, AVIF, TIFF), dokumen (PDF, DOCX, PPTX, XLSX). Maksimal 50MB per file.' } },
+        ]
+      })
+    }
+  ]
+})
 const { isDark } = useColorMode()
 const { increment } = useHistoryCounter()
 

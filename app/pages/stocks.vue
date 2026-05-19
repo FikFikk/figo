@@ -189,8 +189,11 @@
  * Layout: Search → Overview → Chart + Technical → Bandarmology → Market Movers
  */
 useSeoMeta({
-  title: 'Global Stock Analysis — FiGo',
-  description: 'Comprehensive stock market analysis with advanced OHLCV charts, technical signals, market movers, and institutional flows. Powered by FiGo.',
+  title: 'Analisa Saham — OHLCV Chart, Technical Analysis & Market Movers — FiGo',
+  ogTitle: 'Stock Analysis Tools — Technical Signals & Market Movers — FiGo',
+  description: 'Analisa saham lengkap dengan chart OHLCV, sinyal teknikal, market movers, bandarmology, dan IPO momentum. Mendukung Yahoo Finance dan IDX. Gratis dan real-time.',
+  ogDescription: 'Comprehensive stock market analysis with OHLCV charts, technical signals, institutional flows. Free real-time data.',
+  twitterCard: 'summary_large_image',
 })
 
 const { isDark } = useColorMode()

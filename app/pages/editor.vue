@@ -237,6 +237,14 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
 
+useSeoMeta({
+  title: 'Edit Foto Online Gratis — AI Photo Editor & Image Studio — FiGo',
+  ogTitle: 'Free AI Photo Editor Online — FiGo Image Studio',
+  description: 'Edit foto online gratis dengan AI. Adjust brightness, contrast, saturation, sharpen, dan denoise. Bandingkan before/after secara real-time. Export JPG kualitas tinggi. Tanpa signup, langsung pakai.',
+  ogDescription: 'Free online AI photo editor. Adjust brightness, contrast, sharpness. Compare before/after in real-time. No signup required.',
+  twitterCard: 'summary_large_image',
+})
+
 const { isDark } = useColorMode()
 
 const aiModels = [

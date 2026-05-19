@@ -1,2 +1,8 @@
 User-Agent: *
-Disallow:
+Allow: /
+Disallow: /api/
+
+User-Agent: Googlebot
+Allow: /
+
+Sitemap: https://go.fikfikk.my.id/sitemap.xml

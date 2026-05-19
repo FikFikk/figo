@@ -183,8 +183,11 @@
  */
 
 useSeoMeta({
-  title: 'The Nutrition Index — FiGo Nutrition',
-  description: 'Explore a curated registry of high-fidelity nutritional data from across the globe.',
+  title: 'Cek Nutrisi Makanan Online — Kalori, Protein, Lemak & Karbo — FiGo Nutrition',
+  ogTitle: 'Nutrition Facts Database — FiGo Nutrition Index',
+  description: 'Cek informasi nutrisi makanan lengkap: kalori, protein, lemak, karbohidrat, Nutri-Score. Database ribuan produk makanan dari seluruh dunia. Gratis dan akurat.',
+  ogDescription: 'Search nutrition facts for thousands of food products worldwide. Calories, protein, fat, carbs, and Nutri-Score data.',
+  twitterCard: 'summary_large_image',
 })
 
 const { isDark } = useColorMode()

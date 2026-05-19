@@ -148,8 +148,11 @@
 import { getFullDateInfo } from '~/utils/calendar-converter'
 
 useSeoMeta({
-  title: 'Cek Weton Jawa & Neptu Online — FiGo',
-  description: 'Hitung weton kelahiran, jumlah neptu, wuku, dan pancasuda berdasarkan penanggalan kalender Jawa kuno akurat.'
+  title: 'Cek Weton Jawa Online — Hitung Neptu, Wuku & Pancasuda Akurat — FiGo',
+  ogTitle: 'Cek Weton Jawa & Hitung Neptu Online — FiGo',
+  description: 'Cek weton kelahiran, hitung neptu, wuku, pancasuda, dan wewaran berdasarkan kalender Jawa kuno. Akurat, gratis, dan mudah digunakan. Cukup masukkan tanggal lahir Anda.',
+  ogDescription: 'Hitung weton Jawa, neptu, wuku, dan pancasuda berdasarkan tanggal lahir. Kalkulator kalender Jawa online akurat.',
+  twitterCard: 'summary_large_image',
 })
 
 const { isDark } = useColorMode()

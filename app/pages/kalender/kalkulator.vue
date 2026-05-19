@@ -137,8 +137,11 @@
 const { isDark } = useColorMode()
 
 useSeoMeta({
-  title: 'Kalkulator Hari & Tanggal — FiGo',
-  description: 'Hitung selisih antar tanggal dan tentukan penambahan atau pengurangan hari dari tanggal awal secara akurat.'
+  title: 'Kalkulator Hari & Selisih Tanggal Online — Hitung Hari Akurat — FiGo',
+  ogTitle: 'Kalkulator Hari & Selisih Tanggal Online — FiGo',
+  description: 'Hitung selisih hari antara dua tanggal atau tentukan tanggal berdasarkan jumlah hari dari tanggal tertentu. Kalkulator tanggal online akurat, gratis, dan mudah digunakan.',
+  ogDescription: 'Kalkulator hari online: hitung selisih tanggal dan penambahan/pengurangan hari secara akurat.',
+  twitterCard: 'summary_large_image',
 })
 
 const activeMode = ref<'selisih' | 'hitung'>('selisih')
