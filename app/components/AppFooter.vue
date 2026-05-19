@@ -8,11 +8,12 @@
         <a 
           v-for="link in footerLinks" 
           :key="link.label" 
-          class="font-headline text-xs tracking-wide hover:text-primary transition-colors"
+          class="font-headline text-xs tracking-wide hover:text-primary transition-colors cursor-pointer"
           :class="isDark ? 'text-gray-500' : 'text-slate-400'" 
-          :href="link.href"
+          :href="link.href || 'javascript:void(0)'"
           :target="link.target || '_self'"
           :rel="link.target === '_blank' ? 'noopener noreferrer' : undefined"
+          @click="link.onClick ? link.onClick($event) : null"
         >
           {{ link.label }}
         </a>
@@ -28,13 +29,23 @@
 const { isDark } = useColorMode()
 const currentYear = new Date().getFullYear()
 
-// Daftar tautan dinamis di footer
+const { open: openSupport } = useSupportModal()
+
+// Daftar tautan dinamis di footer dengan tambahan Portfolio dan Support modal global
 const footerLinks = [
   { label: 'Privacy', href: '#' },
   { label: 'Terms', href: '#' },
   { label: 'Status', href: '#' },
   { label: 'API', href: '#' },
-  { label: 'Dukung', href: 'https://trakteer.id/8glcaxeiv6nrtxa4ykur/tip?open=true', target: '_blank' }
+  { label: 'Portfolio', href: 'https://fikfikk.my.id/', target: '_blank' },
+  { 
+    label: 'Support', 
+    href: '#', 
+    onClick: (e: Event) => {
+      e.preventDefault()
+      openSupport()
+    }
+  }
 ]
 </script>
 
