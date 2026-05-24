@@ -441,6 +441,8 @@ const isDownloading = ref(false)
 const error = ref('')
 const videoInfo = ref<any>(null)
 const selectedFormat = ref<string>('')
+// AbortController untuk membatalkan fetch yang sedang berjalan saat user reset
+let fetchAbortController: AbortController | null = null
 
 // Menyimpan status kegagalan pemuatan thumbnail untuk merender fallback di frontend secara reaktif
 const failedThumbnails = ref<Record<string, boolean>>({})
@@ -456,6 +458,19 @@ function resetAll() {
   error.value = ''
   videoInfo.value = null
   selectedFormat.value = ''
+  isLoading.value = false
+  isDownloading.value = false
+  isProcessing.value = false
+  // Batalkan fetch yang sedang berjalan agar response lama tidak overwrite state baru
+  if (fetchAbortController) {
+    fetchAbortController.abort()
+    fetchAbortController = null
+  }
+  // Hentikan polling job yang sedang berjalan (jika ada)
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+  }
 }
 
 async function pasteFromClipboard() {
@@ -614,7 +629,14 @@ function formatSize(bytes: number): string {
 
 // STEP 1: Fetch video info & available qualities
 async function fetchInfo() {
-  if (!url.value.trim() || isLoading.value) return
+  if (!url.value.trim()) return
+
+  // Batalkan request sebelumnya jika masih berjalan
+  if (fetchAbortController) {
+    fetchAbortController.abort()
+  }
+  fetchAbortController = new AbortController()
+  const { signal } = fetchAbortController
 
   isLoading.value = true
   error.value = ''
@@ -624,8 +646,12 @@ async function fetchInfo() {
   try {
     const response = await $fetch('/api/download', {
       method: 'POST',
-      body: { url: url.value, mode: 'info' }
+      body: { url: url.value, mode: 'info' },
+      signal,
     }) as any
+
+    // Jika request sudah di-abort sebelum response tiba, jangan proses
+    if (signal.aborted) return
 
     // Debug response dari server
     console.log('[DEBUG] Download Fetch Response:', response)
@@ -659,9 +685,14 @@ async function fetchInfo() {
       error.value = 'Tidak ada format yang tersedia untuk URL ini.'
     }
   } catch (err: any) {
+    // Abaikan error dari request yang sengaja di-abort
+    if (err.name === 'AbortError' || signal.aborted) return
     error.value = err.data?.message || 'Gagal mengambil info video.'
   } finally {
-    isLoading.value = false
+    // Hanya set isLoading=false jika ini masih request aktif (bukan yang di-abort)
+    if (!signal.aborted) {
+      isLoading.value = false
+    }
   }
 }
 
