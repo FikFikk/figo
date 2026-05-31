@@ -1,14 +1,16 @@
-import sharp from 'sharp'
 import JSZip from 'jszip'
 import { PDFDocument } from 'pdf-lib'
 import { PassThrough } from 'stream'
 import archiver from 'archiver'
+import { createSharp } from '../lib/image'
+import { imageSemaphore, mapWithLimit } from '../lib/concurrency'
 import {
   validateMagicBytes,
   sanitizeFilename,
   checkRateLimit,
   safeContentDisposition,
   getClientIp,
+  guardContentLength,
   UPLOAD_LIMITS,
 } from '../lib/security'
 
@@ -20,14 +22,26 @@ function getExt(filename: string): string {
   return (filename.split('.').pop() || '').toLowerCase()
 }
 
-// Kompresi gambar via Sharp berdasarkan quality (0-100)
-async function compressImage(buf: Buffer, ext: string, quality: number): Promise<Buffer> {
-  let pipeline = sharp(buf, { sequentialRead: true, limitInputPixels: 268_402_689 })
-
-  // Strip metadata selalu
-  pipeline = pipeline.rotate() // Auto-rotate lalu strip EXIF
-
+// Kompresi gambar via Sharp berdasarkan quality (0-100).
+// maxDimension opsional: downscale sisi terpanjang agar pengurangan ukuran lebih agresif.
+async function compressImage(buf: Buffer, ext: string, quality: number, maxDimension = 0): Promise<Buffer> {
   const fmt = ext === 'jpg' ? 'jpeg' : ext
+  // Source & target sama (kompresi tidak ubah format) → animasi dipertahankan
+  let pipeline = createSharp(buf, ext, fmt)
+
+  // Auto-rotate sesuai EXIF lalu strip metadata
+  pipeline = pipeline.rotate()
+
+  // Downscale opsional (hanya mengecilkan, tidak memperbesar)
+  if (maxDimension > 0) {
+    pipeline = pipeline.resize({
+      width: maxDimension,
+      height: maxDimension,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+  }
+
   switch (fmt) {
     case 'png':
       // PNG: compressionLevel 9 = max, strip metadata
@@ -139,6 +153,9 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 429, message: 'Terlalu banyak request. Coba lagi dalam 1 menit.' })
     }
 
+    // === SECURITY: Tolak payload raksasa sebelum di-buffer ke memori ===
+    guardContentLength(event, UPLOAD_LIMITS.MAX_TOTAL_SIZE)
+
     const formData = await readMultipartFormData(event)
     if (!formData || formData.length === 0) {
       throw createError({ statusCode: 400, message: 'No files provided' })
@@ -147,6 +164,11 @@ export default defineEventHandler(async (event) => {
     // Ambil quality dari form
     const qualityField = formData.find(f => f.name === 'quality')
     const quality = Math.min(100, Math.max(1, parseInt(qualityField?.data?.toString() || '75', 10)))
+
+    // Ambil maxDimension opsional (0 = tidak ada resize). Clamp ke rentang wajar.
+    const maxDimField = formData.find(f => f.name === 'maxDimension')
+    const rawMaxDim = parseInt(maxDimField?.data?.toString() || '0', 10) || 0
+    const maxDimension = rawMaxDim > 0 ? Math.min(10000, Math.max(240, rawMaxDim)) : 0
 
     // Kumpulkan file entries
     const fileEntries = formData.filter(f => f.name === 'files' && f.data && f.data.length > 0)
@@ -191,9 +213,9 @@ export default defineEventHandler(async (event) => {
       let compressed: Buffer
 
       if (IMAGE_EXTS.includes(ext)) {
-        compressed = await compressImage(entry.data, ext, quality)
+        compressed = await imageSemaphore.run(() => compressImage(entry.data, ext, quality, maxDimension))
       } else if (OFFICE_EXTS.includes(ext)) {
-        compressed = await compressOfficeDoc(entry.data, quality)
+        compressed = await imageSemaphore.run(() => compressOfficeDoc(entry.data, quality))
       } else if (ext === 'pdf') {
         compressed = await compressPdf(entry.data)
       } else {
@@ -220,30 +242,29 @@ export default defineEventHandler(async (event) => {
     }
 
     // === MULTIPLE FILES → ZIP ===
-    const compressedFiles = await Promise.all(
-      fileEntries.map(async (entry) => {
-        const filename = sanitizeFilename(entry.filename)
-        const ext = getExt(filename)
-        let compressed: Buffer
+    // Konkurensi dibatasi semaphore agar CPU/RAM tidak oversubscribe
+    const compressedFiles = await mapWithLimit(fileEntries, imageSemaphore, async (entry) => {
+      const filename = sanitizeFilename(entry.filename)
+      const ext = getExt(filename)
+      let compressed: Buffer
 
-        try {
-          if (IMAGE_EXTS.includes(ext)) {
-            compressed = await compressImage(entry.data, ext, quality)
-          } else if (OFFICE_EXTS.includes(ext)) {
-            compressed = await compressOfficeDoc(entry.data, quality)
-          } else if (ext === 'pdf') {
-            compressed = await compressPdf(entry.data)
-          } else {
-            compressed = entry.data // Format tidak didukung, kembalikan apa adanya
-          }
-        } catch {
-          compressed = entry.data
+      try {
+        if (IMAGE_EXTS.includes(ext)) {
+          compressed = await compressImage(entry.data, ext, quality, maxDimension)
+        } else if (OFFICE_EXTS.includes(ext)) {
+          compressed = await compressOfficeDoc(entry.data, quality)
+        } else if (ext === 'pdf') {
+          compressed = await compressPdf(entry.data)
+        } else {
+          compressed = entry.data // Format tidak didukung, kembalikan apa adanya
         }
+      } catch {
+        compressed = entry.data
+      }
 
-        const baseName = filename.replace(/\.[^.]+$/, '')
-        return { outputName: `${baseName}-compressed.${ext}`, buffer: compressed, originalSize: entry.data.length }
-      })
-    )
+      const baseName = filename.replace(/\.[^.]+$/, '')
+      return { outputName: `${baseName}-compressed.${ext}`, buffer: compressed, originalSize: entry.data.length }
+    })
 
     const zipFilename = `figo-compressed-${Date.now()}.zip`
     setResponseHeaders(event, {

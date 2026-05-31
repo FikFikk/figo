@@ -92,6 +92,29 @@
           <span>Smallest file</span>
           <span>Best quality</span>
         </div>
+
+        <!-- Resize/Downscale opsional -->
+        <div class="mt-5 pt-4 border-t" :class="isDark ? 'border-white/5' : 'border-slate-100'">
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-headline font-bold text-sm" :class="isDark ? 'text-white' : 'text-slate-900'">Resize Dimensi</span>
+            <span class="text-xs font-bold font-mono" :class="isDark ? 'text-gray-400' : 'text-slate-500'">
+              {{ maxDimension === 0 ? 'Asli' : `${maxDimension}px` }}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button v-for="opt in resizeOptions" :key="opt.value"
+              @click="maxDimension = opt.value"
+              class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-all"
+              :class="maxDimension === opt.value
+                ? 'bg-tertiary text-white shadow-md shadow-tertiary/20'
+                : (isDark ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')">
+              {{ opt.label }}
+            </button>
+          </div>
+          <p class="text-[10px] mt-2" :class="isDark ? 'text-gray-600' : 'text-slate-400'">
+            Batasi sisi terpanjang gambar. Gambar lebih kecil tidak diperbesar.
+          </p>
+        </div>
       </div>
 
       <!-- DOCX/PPTX/XLSX Info -->
@@ -275,6 +298,7 @@
  * Smart File Compressor — deteksi tipe file, kompresi optimal per format
  * Image: Sharp (mozjpeg/png9/webp), Office: JSZip+Sharp, PDF: pdf-lib
  */
+import JSZip from 'jszip'
 useSeoMeta({
   title: 'Kompres Gambar, PDF & Dokumen Online Gratis — FiGo Compressor',
   ogTitle: 'Compress Image & PDF Online Free — FiGo',
@@ -309,6 +333,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const files = ref<File[]>([])
 const isDragging = ref(false)
 const quality = ref(75)
+const maxDimension = ref(0) // 0 = tidak resize
 const status = ref<Status>('idle')
 const results = ref<CompressedFile[]>([])
 const errorMessage = ref('')
@@ -327,6 +352,14 @@ const supportedFormats = [
   { ext: 'DOCX', icon: 'description', color: 'text-blue-600' },
   { ext: 'PPTX', icon: 'slideshow', color: 'text-orange-500' },
   { ext: 'XLSX', icon: 'table_chart', color: 'text-green-600' },
+]
+
+// Opsi resize dimensi (sisi terpanjang). 0 = tidak resize.
+const resizeOptions = [
+  { value: 0, label: 'Asli' },
+  { value: 1920, label: '1920px' },
+  { value: 1280, label: '1280px' },
+  { value: 800, label: '800px' },
 ]
 
 // === SECURITY: Whitelist ekstensi dan batas ===
@@ -444,9 +477,9 @@ function estimateSize(size: number): string {
   const ratio = detectedCategory.value.type === 'image' ? (1 - (100 - quality.value) / 120) : 0.85
   return formatSize(Math.floor(size * ratio))
 }
-function clearAll() { files.value = []; quality.value = 75 }
+function clearAll() { files.value = []; quality.value = 75; maxDimension.value = 0 }
 function resetAll() {
-  results.value = []; files.value = []; status.value = 'idle'; errorMessage.value = ''; quality.value = 75
+  results.value = []; files.value = []; status.value = 'idle'; errorMessage.value = ''; quality.value = 75; maxDimension.value = 0
 }
 
 async function triggerDownload(blob: Blob, filename: string) {
@@ -475,6 +508,10 @@ async function startCompression() {
 
       const formData = new FormData()
       formData.append('quality', String(quality.value))
+      // Hanya kirim maxDimension untuk file gambar (server abaikan utk non-image)
+      if (maxDimension.value > 0 && detectedCategory.value.type === 'image') {
+        formData.append('maxDimension', String(maxDimension.value))
+      }
       formData.append('files', file)
 
       const response = await fetch('/api/compress', { method: 'POST', body: formData })
@@ -504,9 +541,17 @@ async function startCompression() {
 
 async function downloadAllZip() {
   if (results.value.length <= 1) return
-  for (const r of results.value) {
-    await triggerDownload(r.blob, r.name)
-    await new Promise(res => setTimeout(res, 300))
+  // Bangun ZIP asli di client dari blob yang sudah ada (tanpa re-upload ke server)
+  try {
+    const zip = new JSZip()
+    for (const r of results.value) {
+      zip.file(r.name, r.blob)
+    }
+    const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' })
+    await triggerDownload(zipBlob, `figo-compressed-${Date.now()}.zip`)
+  } catch (err: any) {
+    errorMessage.value = err?.message || 'Gagal membuat ZIP'
+    status.value = 'error'
   }
 }
 </script>

@@ -258,6 +258,7 @@
  * Smart File Converter — deteksi tipe file otomatis, format output dinamis
  * Mendukung: Image (sharp), Spreadsheet (xlsx), PDF→Image (pdfjs-dist client-side)
  */
+import JSZip from 'jszip'
 useSeoMeta({
   title: 'Convert File Online Gratis — PNG ke JPG, PDF ke Image, XLSX ke CSV — FiGo',
   ogTitle: 'Free Online File Converter — PNG to JPG, PDF to Image — FiGo',
@@ -526,8 +527,15 @@ async function convertPdfToImages(file: File, format: string): Promise<Converted
   const mime = mimeMap[format.toLowerCase()] || 'image/png'
   const quality = format.toLowerCase() === 'png' ? undefined : 0.9
 
-  for (let i = 1; i <= pdf.numPages; i++) {
-    progressText.value = `Rendering halaman ${i} / ${pdf.numPages}...`
+  // Guard: batasi jumlah halaman agar memori browser tidak jebol pada PDF raksasa
+  const MAX_PDF_PAGES = 50
+  const pageCount = Math.min(pdf.numPages, MAX_PDF_PAGES)
+  if (pdf.numPages > MAX_PDF_PAGES) {
+    progressText.value = `PDF ${pdf.numPages} halaman — hanya ${MAX_PDF_PAGES} halaman pertama yang diproses`
+  }
+
+  for (let i = 1; i <= pageCount; i++) {
+    progressText.value = `Rendering halaman ${i} / ${pageCount}...`
     const page = await pdf.getPage(i)
     const scale = 2 // 2x untuk kualitas tinggi
     const viewport = page.getViewport({ scale })
@@ -555,6 +563,9 @@ async function convertPdfToImages(file: File, format: string): Promise<Converted
       url: URL.createObjectURL(blob),
       blob,
     })
+    // Bebaskan memori canvas + page setelah dipakai
+    canvas.width = 0
+    canvas.height = 0
     page.cleanup()
   }
   pdf.destroy()
@@ -717,34 +728,18 @@ async function startConversion() {
 async function downloadAllZip() {
   if (results.value.length <= 1) return
   try {
-    // Jika dari server (image/sheet), kirim ulang sebagai batch
-    if (detectedCategory.value.type !== 'pdf') {
-      const prevStatus = status.value
-      status.value = 'converting'
-      progressText.value = 'Creating ZIP...'
-
-      const formData = new FormData()
-      formData.append('format', selectedFormat.value.toLowerCase())
-      for (const file of files.value) formData.append('files', file)
-
-      const response = await fetch('/api/convert', { method: 'POST', body: formData })
-      if (!response.ok) throw new Error('Failed to create ZIP')
-      const blob = await response.blob()
-      await triggerDownload(blob, `figo-converted-${Date.now()}.zip`)
-      status.value = prevStatus
-      return
-    }
-
-    // Untuk PDF results, buat ZIP di client via JSZip-style manual (download satu per satu fallback)
+    // Bangun ZIP asli di client dari blob yang sudah ada — tanpa re-upload ke server.
+    // Berlaku sama untuk hasil PDF (client-side) maupun image/sheet (server-side).
+    const zip = new JSZip()
     for (const result of results.value) {
-      await triggerDownload(result.blob, result.name)
-      // Delay kecil antar download agar browser tidak block
-      await new Promise(r => setTimeout(r, 300))
+      zip.file(result.name, result.blob)
     }
+    const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' })
+    await triggerDownload(zipBlob, `figo-converted-${Date.now()}.zip`)
   } catch (err: any) {
     console.error(err)
-    alert('Gagal mendownload: ' + err.message)
-    status.value = 'done'
+    errorMessage.value = 'Gagal membuat ZIP: ' + (err?.message || 'Unknown error')
+    status.value = 'error'
   }
 }
 </script>

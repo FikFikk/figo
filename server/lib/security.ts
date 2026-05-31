@@ -17,7 +17,11 @@ const MAGIC_BYTES: Record<string, { bytes: number[]; offset?: number }[]> = {
     { bytes: [0x49, 0x49, 0x2A, 0x00] },        // Little-endian
     { bytes: [0x4D, 0x4D, 0x00, 0x2A] },        // Big-endian
   ],
-  avif: [{ bytes: [0x00, 0x00, 0x00], offset: 0 }], // ftyp box — cek partial saja
+  // AVIF: box 'ftyp' di offset 4 + brand 'avif'/'avis' di offset 8
+  avif: [
+    { bytes: [0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66], offset: 4 }, // ftypavif
+    { bytes: [0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x73], offset: 4 }, // ftypavis (sequence)
+  ],
 
   // Dokumen Office (ZIP-based: PK header)
   docx: [{ bytes: [0x50, 0x4B, 0x03, 0x04] }],
@@ -74,6 +78,15 @@ export function validateMagicBytes(buffer: Buffer, claimedExt: string): boolean 
   const signatures = MAGIC_BYTES[ext]
   // Ekstensi yang tidak punya magic bytes (csv, txt) — izinkan
   if (!signatures || signatures.length === 0) return true
+
+  // WebP butuh verifikasi ganda: 'RIFF' di offset 0 DAN 'WEBP' di offset 8
+  // (RIFF juga dipakai AVI/WAV, jadi cek brand-nya agar tidak false-accept)
+  if (ext === 'webp') {
+    if (buffer.length < 12) return false
+    const isRiff = buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46
+    const isWebp = buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50
+    return isRiff && isWebp
+  }
 
   // Cocokkan minimal 1 signature
   return signatures.some(sig => {
@@ -235,4 +248,21 @@ export function getClientIp(event: any): string {
   
   // Fallback ke remote address
   return event.node?.req?.socket?.remoteAddress || '0.0.0.0'
+}
+
+/**
+ * Guard ukuran request via header Content-Length SEBELUM body dibaca penuh.
+ * Mencegah buffering payload raksasa ke memori (DoS). Lempar 413 bila lewat batas.
+ * Catatan: header bisa dipalsukan, jadi tetap validasi ukuran aktual setelah parse.
+ */
+export function guardContentLength(event: any, maxBytes: number): void {
+  const raw = getRequestHeader(event, 'content-length')
+  if (!raw) return // Tidak ada header — biarkan validasi ukuran aktual yang menangani
+  const len = parseInt(raw, 10)
+  if (Number.isFinite(len) && len > maxBytes) {
+    throw createError({
+      statusCode: 413,
+      message: `Request terlalu besar (max ${Math.round(maxBytes / 1024 / 1024)}MB)`,
+    })
+  }
 }

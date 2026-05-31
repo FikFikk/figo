@@ -10,6 +10,7 @@ import { readdirSync, statSync } from 'fs'
 
 // Core engine
 import { downloadJobs } from '../lib/jobs'
+import { downloadSemaphore } from '../lib/concurrency'
 import { isBlocked, normalizeUrl } from '../lib/constants'
 import { getDownloadDir, cleanupStaleTempFiles, findDownloadedFile } from '../lib/file-utils'
 import { execYtdlp, getBinaryPath } from '../lib/ytdlp'
@@ -170,81 +171,89 @@ export default defineEventHandler(async (event) => {
       
       const finalName = `figo-${safeUploader}${idSuffix} (${resolution})`
 
-      downloadJobs.set(jobId, { status: 'processing', ext, title: finalName })
+      downloadJobs.set(jobId, { status: 'processing', ext, title: finalName, createdAt: Date.now() })
 
-      // Background process (fire-and-forget)
+      // Background process (fire-and-forget) — proses berat dibatasi semaphore
       ;(async () => {
         try {
-          // Auto-cleanup debounced (max 1x per 5 menit)
-          const cleanup = cleanupStaleTempFiles()
-          if (cleanup.cleaned > 0) {
-            console.log(`[Cleanup] Hapus ${cleanup.cleaned} file lama, freed ${cleanup.freedMB}MB`)
+          // Log posisi antrian jika slot penuh (observability saat traffic tinggi)
+          if (downloadSemaphore.running >= 1 && downloadSemaphore.waiting > 0) {
+            console.log(`[Job ${jobId}] Antri — running=${downloadSemaphore.running}, waiting=${downloadSemaphore.waiting}`)
           }
 
-          console.log(`[Job ${jobId}] Starting: format=${formatStr}`)
-          const flags: any = {
-            format: formatStr,
-            output: tmpFile,
-            noWarnings: true,
-            noCheckCertificates: true,
-            ffmpegLocation: ffmpegPath,
-            retries: 5,
-            fragmentRetries: 5,
-            mergeOutputFormat: isAudioOnly ? undefined : ext,
-            postprocessorArgs: ext === 'mp4' ? 'ffmpeg:-c:a aac' : undefined,
-            downloaderArgs: 'ffmpeg_i:-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-          }
-
-          await execYtdlp(url, flags, 600_000, 'download')
-          console.log(`[Job ${jobId}] yt-dlp selesai, verifikasi file...`)
-
-          // Cari file hasil download
-          const downloadDir = getDownloadDir()
-          let result = findDownloadedFile(downloadDir, jobId)
-          let actualFile = result.file
-
-          // Manual merge jika yt-dlp merge gagal tapi fragments ada
-          if (!actualFile && result.fragments.length >= 2) {
-            console.warn(`[Job ${jobId}] Merge yt-dlp gagal, coba manual merge ke ${ext}...`)
-            const mergedPath = join(downloadDir, `figo-${jobId}.${ext}`)
-            try {
-              await manualMerge(result.fragments, mergedPath, ffmpegPath)
-              actualFile = mergedPath
-            } catch (mergeErr: any) {
-              console.error(`[Job ${jobId}] Manual merge gagal:`, mergeErr.message)
-              // Fallback: kirim fragment terbesar
-              result.fragments.sort((a, b) => {
-                try { return statSync(b).size - statSync(a).size } catch { return 0 }
-              })
-              actualFile = result.fragments[0] || null
-              console.warn(`[Job ${jobId}] Fallback ke fragment terbesar: ${actualFile ? basename(actualFile) : 'none'}`)
+          // Seluruh kerja berat (yt-dlp + merge) dijalankan dalam batasan concurrency
+          await downloadSemaphore.run(async () => {
+            // Auto-cleanup debounced (max 1x per 5 menit)
+            const cleanup = cleanupStaleTempFiles()
+            if (cleanup.cleaned > 0) {
+              console.log(`[Cleanup] Hapus ${cleanup.cleaned} file lama, freed ${cleanup.freedMB}MB`)
             }
-          } else if (!actualFile && result.fragments.length === 1) {
-            actualFile = result.fragments[0] || null
-          }
 
-          if (!actualFile) {
-            try {
-              const allFiles = readdirSync(downloadDir)
-              console.error(`[Job ${jobId}] Files di dir: ${allFiles.join(', ')}`)
-            } catch {}
-            throw new Error('File hasil download tidak ditemukan.')
-          }
+            console.log(`[Job ${jobId}] Starting: format=${formatStr}`)
+            const flags: any = {
+              format: formatStr,
+              output: tmpFile,
+              noWarnings: true,
+              noCheckCertificates: true,
+              ffmpegLocation: ffmpegPath,
+              retries: 5,
+              fragmentRetries: 5,
+              mergeOutputFormat: isAudioOnly ? undefined : ext,
+              postprocessorArgs: ext === 'mp4' ? 'ffmpeg:-c:a aac' : undefined,
+              downloaderArgs: 'ffmpeg_i:-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+            }
 
-          // Deteksi ekstensi aktual
-          const actualExt = actualFile.split('.').pop() || ext
-          const actualMime = actualExt === 'm4a' || actualExt === 'mp3' || actualExt === 'opus'
-            ? 'audio/' + (actualExt === 'm4a' ? 'mp4' : actualExt)
-            : 'video/mp4'
+            await execYtdlp(url, flags, 600_000, 'download')
+            console.log(`[Job ${jobId}] yt-dlp selesai, verifikasi file...`)
 
-          console.log(`[Job ${jobId}] Done! File: ${actualFile} (${actualExt})`)
+            // Cari file hasil download
+            const downloadDir = getDownloadDir()
+            let result = findDownloadedFile(downloadDir, jobId)
+            let actualFile = result.file
 
-          downloadJobs.set(jobId, {
-            ...(downloadJobs.get(jobId) as any),
-            status: 'done',
-            filePath: actualFile,
-            ext: actualExt,
-            mimeType: actualMime,
+            // Manual merge jika yt-dlp merge gagal tapi fragments ada
+            if (!actualFile && result.fragments.length >= 2) {
+              console.warn(`[Job ${jobId}] Merge yt-dlp gagal, coba manual merge ke ${ext}...`)
+              const mergedPath = join(downloadDir, `figo-${jobId}.${ext}`)
+              try {
+                await manualMerge(result.fragments, mergedPath, ffmpegPath)
+                actualFile = mergedPath
+              } catch (mergeErr: any) {
+                console.error(`[Job ${jobId}] Manual merge gagal:`, mergeErr.message)
+                // Fallback: kirim fragment terbesar
+                result.fragments.sort((a, b) => {
+                  try { return statSync(b).size - statSync(a).size } catch { return 0 }
+                })
+                actualFile = result.fragments[0] || null
+                console.warn(`[Job ${jobId}] Fallback ke fragment terbesar: ${actualFile ? basename(actualFile) : 'none'}`)
+              }
+            } else if (!actualFile && result.fragments.length === 1) {
+              actualFile = result.fragments[0] || null
+            }
+
+            if (!actualFile) {
+              try {
+                const allFiles = readdirSync(downloadDir)
+                console.error(`[Job ${jobId}] Files di dir: ${allFiles.join(', ')}`)
+              } catch {}
+              throw new Error('File hasil download tidak ditemukan.')
+            }
+
+            // Deteksi ekstensi aktual
+            const actualExt = actualFile.split('.').pop() || ext
+            const actualMime = actualExt === 'm4a' || actualExt === 'mp3' || actualExt === 'opus'
+              ? 'audio/' + (actualExt === 'm4a' ? 'mp4' : actualExt)
+              : 'video/mp4'
+
+            console.log(`[Job ${jobId}] Done! File: ${actualFile} (${actualExt})`)
+
+            downloadJobs.set(jobId, {
+              ...(downloadJobs.get(jobId) as any),
+              status: 'done',
+              filePath: actualFile,
+              ext: actualExt,
+              mimeType: actualMime,
+            })
           })
         } catch (err: any) {
           console.error(`[Job ${jobId}] Error:`, err)

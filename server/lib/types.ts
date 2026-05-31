@@ -51,4 +51,6 @@ export interface DownloadJob {
   mimeType?: string
   error?: string
   title?: string
+  /** Timestamp pembuatan job (ms) — dipakai untuk TTL sweep & cleanup orphan */
+  createdAt?: number
 }

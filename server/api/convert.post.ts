@@ -1,13 +1,15 @@
-import sharp from 'sharp'
 import archiver from 'archiver'
-import { Readable, PassThrough } from 'stream'
+import { PassThrough } from 'stream'
 import * as XLSX from 'xlsx'
+import { createSharp } from '../lib/image'
+import { imageSemaphore, mapWithLimit } from '../lib/concurrency'
 import {
   validateMagicBytes,
   sanitizeFilename,
   checkRateLimit,
   safeContentDisposition,
   getClientIp,
+  guardContentLength,
   UPLOAD_LIMITS,
 } from '../lib/security'
 
@@ -55,14 +57,12 @@ function getOutputMime(fmt: SupportedFormat): string {
 // Convert a single buffer using sharp or xlsx — zero intermediate copies
 async function convertBuffer(
   inputBuffer: Buffer,
-  targetFormat: SupportedFormat
+  targetFormat: SupportedFormat,
+  sourceExt: string,
 ): Promise<Buffer> {
   if (isImageFormat(targetFormat)) {
-    let pipeline = sharp(inputBuffer, {
-      // Disable cache to reduce memory — each file is one-shot
-      limitInputPixels: 268_402_689,  // ~16384x16384
-      sequentialRead: true,           // Lower memory for sequential access
-    })
+    // createSharp menangani limit pixel, single-thread, & deteksi animasi
+    let pipeline = createSharp(inputBuffer, sourceExt, targetFormat)
 
     // Apply format-specific optimizations for speed
     switch (targetFormat) {
@@ -114,6 +114,9 @@ export default defineEventHandler(async (event) => {
     if (!rl.allowed) {
       throw createError({ statusCode: 429, message: 'Terlalu banyak request. Coba lagi dalam 1 menit.' })
     }
+
+    // === SECURITY: Tolak payload raksasa sebelum di-buffer ke memori ===
+    guardContentLength(event, UPLOAD_LIMITS.MAX_TOTAL_SIZE)
 
     const parseStartTime = performance.now()
     const formData = await readMultipartFormData(event)
@@ -170,12 +173,13 @@ export default defineEventHandler(async (event) => {
     if (fileEntries.length === 1) {
       const entry = fileEntries[0]!
       const originalName = sanitizeFilename(entry.filename)
+      const sourceExt = (originalName.split('.').pop() || '').toLowerCase()
       const baseName = originalName.replace(/\.[^.]+$/, '')
       const timestamp = Date.now()
       const outputName = `${baseName}-figo-${timestamp}.${targetFormat === 'jpeg' ? 'jpg' : targetFormat}`
 
       const convertStartTime = performance.now()
-      const converted = await convertBuffer(entry.data, targetFormat)
+      const converted = await imageSemaphore.run(() => convertBuffer(entry.data, targetFormat, sourceExt))
       const convertTime = performance.now() - convertStartTime
 
       setResponseHeaders(event, {
@@ -192,19 +196,19 @@ export default defineEventHandler(async (event) => {
       return converted
     }
 
-    // === MULTIPLE FILES: convert all concurrently, stream as ZIP ===
-    // Convert all files in parallel for maximum throughput
+    // === MULTIPLE FILES: convert all (throttled), stream as ZIP ===
+    // Konkurensi dibatasi semaphore agar tidak oversubscribe CPU/RAM
     const convertStartTime = performance.now()
-    const convertedFiles = await Promise.all(
-      fileEntries.map(async (entry) => {
-        const originalName = sanitizeFilename(entry.filename)
-        const baseName = originalName.replace(/\.[^.]+$/, '')
-        const timestamp = Date.now()
-        const outputName = `${baseName}-figo-${timestamp}.${targetFormat === 'jpeg' ? 'jpg' : targetFormat}`
-        const buffer = await convertBuffer(entry.data, targetFormat)
-        return { outputName, buffer }
-      })
-    )
+    const batchTs = Date.now()
+    const convertedFiles = await mapWithLimit(fileEntries, imageSemaphore, async (entry, idx) => {
+      const originalName = sanitizeFilename(entry.filename)
+      const sourceExt = (originalName.split('.').pop() || '').toLowerCase()
+      const baseName = originalName.replace(/\.[^.]+$/, '')
+      // Pakai index agar nama unik walau diproses dalam batch yang sama
+      const outputName = `${baseName}-figo-${batchTs}-${idx + 1}.${targetFormat === 'jpeg' ? 'jpg' : targetFormat}`
+      const buffer = await convertBuffer(entry.data, targetFormat, sourceExt)
+      return { outputName, buffer }
+    })
 
     // Stream ZIP response directly — no temp files
     const zipFilename = `figo-converted-${Date.now()}.zip`
