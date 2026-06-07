@@ -1,0 +1,83 @@
+# Build & Deploy Nuxt 4 (SSR) ke server lewat self-hosted runner yang berjalan
+# DI server itu sendiri. Runner connect OUTBOUND ke GitHub, jadi server TIDAK
+# perlu IP publik / port-forward (aman di balik NAT/CGNAT).
+#
+# CATATAN PENTING (beda dari project static sebelah):
+# - Project ini SSR (ssr: true) + Nitro server + PM2, BUKAN static generate.
+# - Native deps (sharp, ffmpeg-static, yt-dlp dari youtube-dl-exec) bersifat
+#   per-arch. Build WAJIB di self-hosted runner (server) supaya binary cocok
+#   dengan arsitektur server (mis. ARM). Tidak boleh build di runner x64 GitHub
+#   lalu salin .output ke server ARM -> sharp/ffmpeg akan crash saat runtime.
+name: Build & Deploy to Server
+
+on:
+  push:
+    branches: ["main"] # otomatis jalan kalau push ke branch main
+  workflow_dispatch: # bisa dijalankan manual dari tab Actions
+
+# Hanya butuh read repo; deploy lewat self-hosted runner.
+permissions:
+  contents: read
+
+# Cegah dua deploy jalan bersamaan ke server yang sama.
+concurrency:
+  group: "deploy-figo"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Label runner self-hosted di server. Sesuaikan jika kamu memberi label lain
+    # saat registrasi runner (mis. menambahkan label "porto").
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        # frozen-lockfile: gagal kalau lockfile tidak sinkron (deterministik).
+        # Native binaries (sharp/ffmpeg/yt-dlp) ter-install untuk arch server.
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Nuxt (SSR / Nitro node-server)
+        run: pnpm run build
+
+      - name: Publish .output ke direktori app
+        # APP_PATH diisi via repo Variables (Settings > Variables), bukan Secret,
+        # karena bukan rahasia. Hanya .output yang disalin: file lama yang tak ada
+        # di build baru ikut terhapus (--delete). Trailing slash = salin ISI folder.
+        env:
+          APP_PATH: ${{ vars.APP_PATH }}
+        run: |
+          set -e
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: variable APP_PATH belum diset di repo Settings > Variables." >&2
+            exit 1
+          fi
+          mkdir -p "$APP_PATH"
+          rsync -a --delete ./.output/ "$APP_PATH/.output/"
+          cp ./ecosystem.config.cjs "$APP_PATH/ecosystem.config.cjs"
+          echo "Publish selesai ke $APP_PATH"
+
+      - name: Reload PM2
+        # startOrReload: start kalau belum jalan, reload (zero-downtime) kalau sudah.
+        # --update-env supaya perubahan .env / env ter-apply.
+        # .env (berisi RAPIDAPI_KEY) HARUS sudah ada manual di $APP_PATH (lihat README).
+        env:
+          APP_PATH: ${{ vars.APP_PATH }}
+        run: |
+          set -e
+          cd "$APP_PATH"
+          pm2 startOrReload ecosystem.config.cjs --update-env
+          pm2 save
+          echo "Deploy & reload selesai."

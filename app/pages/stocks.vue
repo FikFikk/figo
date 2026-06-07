@@ -15,7 +15,7 @@
               :class="isDark ? 'text-white' : 'text-slate-900'"
             >Global Stock Analysis</h1>
             <p class="text-xs" :class="isDark ? 'text-gray-500' : 'text-slate-400'">
-              Real-time market data, technical signals & institutional flows
+              Real-time market data, technical signals & institutional flows.
             </p>
           </div>
         </div>
