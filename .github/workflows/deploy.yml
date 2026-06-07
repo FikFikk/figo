@@ -11,8 +11,8 @@
 name: Build & Deploy to Server
 
 on:
-  push:
-    branches: ["main"] # otomatis jalan kalau push ke branch main
+  #   push:
+  #     branches: ["main"] # otomatis jalan kalau push ke branch main
   workflow_dispatch: # bisa dijalankan manual dari tab Actions
 
 # Hanya butuh read repo; deploy lewat self-hosted runner.
