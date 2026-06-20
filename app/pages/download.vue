@@ -91,7 +91,7 @@
               </span>
               <span class="flex items-center gap-1">
                 <span class="material-symbols-outlined text-sm">tune</span>
-                {{ videoInfo.qualities.length }} format{{ videoInfo.qualities.length > 1 ? 's' : '' }} available
+                {{ `${videoInfo.qualities?.length || 0} format${(videoInfo.qualities?.length || 0) > 1 ? 's' : ''} available` }}
               </span>
             </div>
           </div>
@@ -627,6 +627,30 @@ function formatSize(bytes: number): string {
   return (bytes / 1073741824).toFixed(2) + ' GB'
 }
 
+function normalizeQualities(response: any) {
+  return (response.qualities || []).filter((q: any) => {
+    if (q.resolution === 'Audio') return true
+    const res = parseInt(q.resolution)
+    return !isNaN(res) && res >= 360
+  })
+}
+
+function applyQualityResponse(response: any) {
+  const qualities = normalizeQualities(response)
+  videoInfo.value = {
+    ...(videoInfo.value || {}),
+    ...response,
+    qualities,
+  }
+
+  const audioFormat = qualities.find((q: any) => q.resolution === 'Audio')
+  if (audioFormat) {
+    selectedFormat.value = audioFormat.formatId
+  } else if (qualities.length > 0) {
+    selectedFormat.value = qualities[0].formatId
+  }
+}
+
 // STEP 1: Fetch video info & available qualities
 async function fetchInfo() {
   if (!url.value.trim()) return
@@ -663,23 +687,7 @@ async function fetchInfo() {
     }
 
     if (response.qualities && response.qualities.length > 0) {
-      // Filter: Only 360p+ and Audio
-      response.qualities = response.qualities.filter((q: any) => {
-        if (q.resolution === 'Audio') return true
-        const res = parseInt(q.resolution)
-        return !isNaN(res) && res >= 360
-      })
-
-      videoInfo.value = response
-
-      // Default to "Audio" if available, else first quality
-      const audioFormat = response.qualities.find((q: any) => q.resolution === 'Audio')
-      if (audioFormat) {
-        selectedFormat.value = audioFormat.formatId
-      } else if (response.qualities.length > 0) {
-        selectedFormat.value = response.qualities[0].formatId
-      }
-
+      applyQualityResponse(response)
       console.log(`[Figo] Fetch Info Success in ${response.fetchDuration}ms`)
     } else {
       error.value = 'Tidak ada format yang tersedia untuk URL ini.'

@@ -20,7 +20,7 @@ import { manualMerge } from '../lib/ffmpeg'
 import { isTwitterUrl, fetchTwitterMedia } from '../lib/platforms/twitter'
 import { isTikTokUrl, fetchTikTokMedia } from '../lib/platforms/tiktok'
 import { isInstagramUrl, fetchInstagramMedia } from '../lib/platforms/instagram'
-import { isYouTubeUrl, fetchYouTubeInfo } from '../lib/platforms/youtube'
+import { isYouTubeUrl, fetchYouTubeFastInfo, fetchYouTubeInfo } from '../lib/platforms/youtube'
 
 const GO_DOWNLOAD_API_URL = process.env.GO_DOWNLOAD_API_URL || 'http://127.0.0.1:5001'
 
@@ -130,7 +130,28 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      // ---------- DEFAULT: yt-dlp (YouTube + semua platform lain) ----------
+      // ---------- YOUTUBE FAST PREVIEW ----------
+      // Preview instan via oEmbed + daftar kualitas statis (tanpa probing yt-dlp)
+      if (isYouTubeUrl(url)) {
+        const result = await fetchYouTubeFastInfo(url)
+        const fetchDuration = Date.now() - startTime
+        console.log(`[FetchInfo] YouTube fast preview in ${fetchDuration}ms for: ${url}`)
+
+        return {
+          success: true, mode: 'info',
+          source: result.source,
+          id: result.id,
+          title: result.title,
+          thumb: result.thumb,
+          duration: (result as any).duration || null,
+          uploader: result.uploader,
+          statistics: result.statistics,
+          qualities: (result as any).qualities || [],
+          fetchDuration,
+        }
+      }
+
+      // ---------- DEFAULT: yt-dlp untuk platform generic ----------
       const result = await fetchYouTubeInfo(url)
       const fetchDuration = Date.now() - startTime
       console.log(`[FetchInfo] Success in ${fetchDuration}ms for: ${url}`)

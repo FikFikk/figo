@@ -2,7 +2,7 @@
 // YouTube — info fetch dengan LRU cache + parallel race strategy
 // ============================================================
 
-import type { PlatformResult, MediaItem, Quality } from '../types'
+import type { PlatformResult } from '../types'
 import { execYtdlp, parseYtdlpOutput } from '../ytdlp'
 
 // ===================== LRU CACHE =====================
@@ -10,6 +10,12 @@ import { execYtdlp, parseYtdlpOutput } from '../ytdlp'
 interface CacheEntry {
   data: PlatformResult
   timestamp: number
+}
+
+interface OEmbedResponse {
+  title?: string
+  author_name?: string
+  thumbnail_url?: string
 }
 
 const CACHE_TTL = 10 * 60 * 1000 // 10 menit
@@ -32,7 +38,7 @@ function evictCache(): void {
 }
 
 /** Extract video ID dari URL YouTube untuk cache key */
-function extractVideoId(url: string): string | null {
+export function extractYouTubeVideoId(url: string): string | null {
   try {
     const u = new URL(url)
     // youtube.com/watch?v=xxx
@@ -46,9 +52,103 @@ function extractVideoId(url: string): string | null {
   return null
 }
 
+function buildCacheKey(url: string): string {
+  return extractYouTubeVideoId(url) || Buffer.from(url).toString('base64url')
+}
+
+function getCachedInfo(key: string): PlatformResult | null {
+  const cached = infoCache.get(key)
+  if (!cached || Date.now() - cached.timestamp >= CACHE_TTL) return null
+  return cached.data
+}
+
+function normalizeYouTubeWatchUrl(url: string, videoId: string | null): string {
+  return videoId ? `https://www.youtube.com/watch?v=${videoId}` : url
+}
+
+async function fetchWithTimeout<T>(url: string, timeoutMs: number): Promise<T> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(url, { signal: controller.signal })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    return await response.json() as T
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 /** Deteksi apakah URL dari YouTube */
 export function isYouTubeUrl(url: string): boolean {
   return /(?:youtube\.com|youtu\.be)/i.test(url)
+}
+
+// Preset kualitas statis — tidak perlu probing yt-dlp untuk tahu format selector.
+// Selector bersifat deterministik dengan fallback ke best available jika resolusi tak ada.
+const PRESET_TIERS = [
+  { height: 1080, note: 'Full HD' },
+  { height: 720, note: 'HD' },
+  { height: 480, note: 'SD' },
+  { height: 360, note: '' },
+]
+
+/** Bangun daftar kualitas statis tanpa memanggil yt-dlp */
+function buildPresetQualities(): any[] {
+  const qualities = PRESET_TIERS.map(({ height: h, note }) => ({
+    // Fallback berlapis: video mp4 < h + audio m4a, lalu best < h, lalu best apa saja
+    formatId: `bestvideo[height<=${h}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${h}]+bestaudio/best[height<=${h}]/best`,
+    label: `${h}p`,
+    resolution: `${h}p`,
+    ext: 'mp4',
+    hasAudio: true,
+    hasVideo: true,
+    filesize: null,
+    note,
+  }))
+
+  // Opsi audio-only
+  qualities.push({
+    formatId: 'bestaudio[ext=m4a]/bestaudio',
+    label: 'Audio Only',
+    resolution: 'Audio',
+    ext: 'm4a',
+    hasAudio: true,
+    hasVideo: false,
+    filesize: null,
+    note: 'Best quality',
+  })
+
+  return qualities
+}
+
+/**
+ * Fast info untuk YouTube: preview (oEmbed) + daftar kualitas statis.
+ * Tidak ada extraction yt-dlp di flow ini — quality langsung tampil instan.
+ * yt-dlp baru dijalankan saat user benar-benar menekan tombol download.
+ */
+export async function fetchYouTubeFastInfo(url: string): Promise<PlatformResult & { qualities: any[] }> {
+  const videoId = extractYouTubeVideoId(url)
+  const watchUrl = normalizeYouTubeWatchUrl(url, videoId)
+  let meta: OEmbedResponse | null = null
+
+  try {
+    meta = await fetchWithTimeout<OEmbedResponse>(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(watchUrl)}`, 2_500)
+  } catch (err: any) {
+    console.warn(`[YouTube Fast] oEmbed gagal untuk ${videoId || url}: ${err.message || String(err)}`)
+  }
+
+  return {
+    source: 'youtube',
+    id: videoId || undefined,
+    title: meta?.title || 'YouTube Video',
+    uploader: meta?.author_name || 'YouTube',
+    thumb: meta?.thumbnail_url || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null),
+    avatar: null,
+    duration: null,
+    mediaItems: [],
+    statistics: {},
+    qualities: buildPresetQualities(),
+  }
 }
 
 /**
@@ -58,13 +158,12 @@ export function isYouTubeUrl(url: string): boolean {
  */
 export async function fetchYouTubeInfo(url: string): Promise<PlatformResult> {
   // Cek cache — jika hit, return langsung (0ms)
-  const videoId = extractVideoId(url)
-  if (videoId) {
-    const cached = infoCache.get(videoId)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      console.log(`[YouTube] Cache HIT untuk ${videoId} — skip yt-dlp`)
-      return cached.data
-    }
+  const videoId = extractYouTubeVideoId(url)
+  const cacheKey = buildCacheKey(url)
+  const cached = getCachedInfo(cacheKey)
+  if (cached) {
+    console.log(`[YouTube] Cache HIT untuk ${cacheKey} — skip yt-dlp`)
+    return cached
   }
 
   const t0 = Date.now()
@@ -179,10 +278,10 @@ export async function fetchYouTubeInfo(url: string): Promise<PlatformResult> {
   }
 
   // Simpan ke cache
-  if (videoId) {
-    infoCache.set(videoId, { data: result, timestamp: Date.now() })
+  if (cacheKey) {
+    infoCache.set(cacheKey, { data: result, timestamp: Date.now() })
     evictCache()
-    console.log(`[YouTube] Cached info untuk ${videoId}`)
+    console.log(`[YouTube] Cached info untuk ${cacheKey}`)
   }
 
   return result
