@@ -43,7 +43,10 @@
     </div>
 
     <!-- Content -->
-    <div v-else-if="plan" class="space-y-4">
+    <div v-else-if="plan" class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+
+      <!-- KOLOM KIRI: ringkasan AI + sinyal -->
+      <div class="space-y-4">
 
       <!-- Confidence Score -->
       <div class="p-3.5 rounded-2xl border" :class="isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'">
@@ -189,15 +192,152 @@
         </span>
       </div>
 
+      </div>
+      <!-- /KOLOM KIRI -->
+
+      <!-- KOLOM KANAN: kalkulator posisi + risk note -->
+      <div class="space-y-4">
+
+      <!-- ============================================== -->
+      <!-- Kalkulator Posisi & Averaging (DCA)            -->
+      <!-- ============================================== -->
+      <div class="p-3.5 rounded-2xl border" :class="isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="material-symbols-outlined text-sm text-primary">calculate</span>
+          <p class="text-[11px] font-black uppercase tracking-wider" :class="isDark ? 'text-white' : 'text-slate-900'">Kalkulator Posisi & Averaging</p>
+        </div>
+
+        <!-- Input -->
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div>
+            <label class="text-[8px] font-bold opacity-50 uppercase tracking-wider block mb-1">Harga Average Anda</label>
+            <input v-model.number="posAvgPrice" type="number" inputmode="decimal" placeholder="cth: 400"
+              class="w-full px-2.5 py-2 rounded-2xl text-xs font-mono font-bold outline-none border transition-all focus:border-primary"
+              :class="isDark ? 'bg-white/5 border-white/10 text-white placeholder:opacity-30' : 'bg-white border-slate-200 text-slate-900'" />
+          </div>
+          <div>
+            <label class="text-[8px] font-bold opacity-50 uppercase tracking-wider block mb-1">Jumlah Lot (opsional)</label>
+            <input v-model.number="posLots" type="number" inputmode="numeric" placeholder="cth: 10"
+              class="w-full px-2.5 py-2 rounded-2xl text-xs font-mono font-bold outline-none border transition-all focus:border-primary"
+              :class="isDark ? 'bg-white/5 border-white/10 text-white placeholder:opacity-30' : 'bg-white border-slate-200 text-slate-900'" />
+          </div>
+        </div>
+
+        <!-- Hasil -->
+        <div v-if="posCalc" class="space-y-3">
+          <!-- Status P/L -->
+          <div class="p-3 rounded-2xl border flex items-center justify-between"
+            :class="posCalc.isProfit
+              ? (isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200')
+              : (isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200')">
+            <div>
+              <p class="text-[8px] font-bold uppercase tracking-wider opacity-60">Status Posisi</p>
+              <p class="text-sm font-black" :class="posCalc.isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
+                {{ posCalc.isProfit ? 'PROFIT' : 'FLOATING LOSS' }} {{ posCalc.plPct >= 0 ? '+' : '' }}{{ posCalc.plPct.toFixed(2) }}%
+              </p>
+            </div>
+            <div class="text-right">
+              <p class="text-[8px] font-bold uppercase tracking-wider opacity-60">Harga Sekarang</p>
+              <p class="text-sm font-black font-mono" :class="isDark ? 'text-white' : 'text-slate-900'">{{ formatPrice(posCalc.currentPrice) }}</p>
+            </div>
+          </div>
+
+          <!-- P/L Rupiah (jika lot diisi) -->
+          <div v-if="posCalc.plRupiah !== null" class="grid grid-cols-3 gap-2 text-center">
+            <div class="p-2 rounded-2xl border" :class="isDark ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'">
+              <p class="text-[7px] font-bold uppercase opacity-50">Modal</p>
+              <p class="text-[10px] font-bold font-mono">{{ formatPrice(posCalc.modal!) }}</p>
+            </div>
+            <div class="p-2 rounded-2xl border" :class="isDark ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'">
+              <p class="text-[7px] font-bold uppercase opacity-50">Nilai Kini</p>
+              <p class="text-[10px] font-bold font-mono">{{ formatPrice(posCalc.nilaiSekarang!) }}</p>
+            </div>
+            <div class="p-2 rounded-2xl border" :class="posCalc.plRupiah! >= 0 ? (isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200') : (isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200')">
+              <p class="text-[7px] font-bold uppercase opacity-50">P/L</p>
+              <p class="text-[10px] font-bold font-mono" :class="posCalc.plRupiah! >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
+                {{ posCalc.plRupiah! >= 0 ? '+' : '' }}{{ formatPrice(posCalc.plRupiah!) }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Target Jual -->
+          <div>
+            <p class="text-[8px] font-bold uppercase tracking-wider opacity-50 mb-1.5 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[11px] text-blue-500">sell</span> Target Jual
+            </p>
+            <div class="space-y-1.5">
+              <div v-for="t in posCalc.sellTargets" :key="t.label"
+                class="flex items-center justify-between p-2 rounded-2xl border"
+                :class="isDark ? 'bg-blue-500/5 border-blue-500/15' : 'bg-blue-50/60 border-blue-100'">
+                <div class="min-w-0">
+                  <p class="text-[10px] font-bold text-blue-700 dark:text-blue-300">{{ t.label }}</p>
+                  <p class="text-[7.5px] opacity-50 truncate">{{ t.basis }}</p>
+                </div>
+                <div class="text-right shrink-0 ml-2">
+                  <p class="text-[11px] font-black font-mono" :class="isDark ? 'text-white' : 'text-slate-900'">{{ formatPrice(t.price) }}</p>
+                  <p class="text-[8px] font-bold" :class="t.gainPct >= 0 ? 'text-emerald-500' : 'text-red-500'">{{ t.gainPct >= 0 ? '+' : '' }}{{ t.gainPct.toFixed(1) }}%</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Saran Averaging-Down -->
+          <div>
+            <p class="text-[8px] font-bold uppercase tracking-wider opacity-50 mb-1.5 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[11px]" :class="posCalc.safeToAverage ? 'text-emerald-500' : 'text-amber-500'">trending_down</span>
+              Skenario Averaging-Down (DCA)
+            </p>
+            <div class="space-y-1.5">
+              <div v-for="d in posCalc.dcaLevels" :key="d.label"
+                class="flex items-center justify-between p-2 rounded-2xl border"
+                :class="isDark ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'">
+                <div class="min-w-0">
+                  <p class="text-[10px] font-bold" :class="isDark ? 'text-white' : 'text-slate-900'">{{ d.label }} <span class="opacity-50 font-normal">· beli {{ d.addLot }} lot</span></p>
+                  <p class="text-[7.5px] opacity-50 truncate">{{ d.note }}</p>
+                </div>
+                <div class="text-right shrink-0 ml-2">
+                  <p class="text-[10px] font-bold font-mono">@ {{ formatPrice(d.addPrice) }}</p>
+                  <p class="text-[8px] opacity-60">Avg baru: <span class="font-bold font-mono text-primary">{{ formatPrice(d.newAvg) }}</span> <span class="text-emerald-500">(-{{ d.avgDropPct.toFixed(1) }}%)</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cut Loss -->
+          <div class="flex items-center justify-between p-2.5 rounded-2xl border"
+            :class="isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200'">
+            <p class="text-[10px] font-bold text-red-600 dark:text-red-400 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[12px]">block</span> Batas Cut Loss
+            </p>
+            <p class="text-[11px] font-black font-mono text-red-700 dark:text-red-300">
+              {{ formatPrice(posCalc.cutLoss) }} <span class="text-[8px]">({{ posCalc.cutLossPct.toFixed(1) }}%)</span>
+            </p>
+          </div>
+
+          <!-- Advice -->
+          <div class="flex items-start gap-2 p-2.5 rounded-2xl border"
+            :class="posCalc.safeToAverage ? (isDark ? 'bg-emerald-500/8 border-emerald-500/15' : 'bg-emerald-50/60 border-emerald-100') : (isDark ? 'bg-amber-500/8 border-amber-500/15' : 'bg-amber-50 border-amber-100')">
+            <span class="material-symbols-outlined text-[13px] mt-0.5" :class="posCalc.safeToAverage ? 'text-emerald-500' : 'text-amber-500'">lightbulb</span>
+            <p class="text-[9.5px] leading-relaxed" :class="isDark ? 'text-gray-300' : 'text-slate-600'">{{ posCalc.advice }}</p>
+          </div>
+        </div>
+
+        <!-- Hint kosong -->
+        <p v-else class="text-[9px] opacity-40 text-center py-2">Masukkan harga average untuk melihat target jual, skenario averaging, dan batas cut loss.</p>
+      </div>
+
       <!-- Warning Bottom Note -->
       <div class="flex items-start gap-3 p-3 rounded-2xl border"
         :class="isDark ? 'bg-orange-500/10 border-orange-500/20' : 'bg-orange-50 gap-2 border-orange-200'"
       >
         <span class="material-symbols-outlined text-orange-500 text-lg mt-0.5">gavel</span>
         <p class="text-[9.5px] leading-relaxed text-orange-700 dark:text-orange-300">
-          <strong>RISK MANAGEMENT:</strong> If the price breaks below the Stop Loss, be DISCIPLINED and sell. Do not add to a losing position in an asset that is in a Mark-Down phase. Use a maximum of 5% of your total portfolio per position.
+          <strong>MANAJEMEN RISIKO:</strong> Jika harga menembus ke bawah Stop Loss, DISIPLIN untuk jual. Jangan menambah posisi yang rugi pada saham yang sedang fase Mark-Down. Maksimal gunakan 5% dari total portofolio per posisi.
         </p>
       </div>
+
+      </div>
+      <!-- /KOLOM KANAN -->
     </div>
 
     <!-- Methodology Detail Modal -->
@@ -305,7 +445,7 @@
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+                  <div class="w-8 h-8 rounded-2xl flex items-center justify-center"
                     :class="activeSignal.bias === 'BULLISH' ? 'bg-emerald-500/20 text-emerald-500' : activeSignal.bias === 'BEARISH' ? 'bg-red-500/20 text-red-500' : 'bg-white/10 opacity-60'"
                   >
                     <span class="material-symbols-outlined text-sm">{{ activeSignal.bias === 'BULLISH' ? 'trending_up' : activeSignal.bias === 'BEARISH' ? 'trending_down' : 'drag_handle' }}</span>
@@ -415,6 +555,22 @@ const showSignalModal = ref(false)
 const activeSignal = ref<any>(null)
 const indicatorCanvas = ref<HTMLCanvasElement | null>(null)
 
+// === State Kalkulator Posisi / Averaging (DCA) ===
+const posAvgPrice = ref<number | null>(null) // harga rata-rata pemegangan user
+const posLots = ref<number | null>(null)      // jumlah lot dipegang (1 lot = 100 lembar)
+
+// Sumber kebenaran tunggal: data candle selalu newest-first (index 0 = candle terbaru).
+// Data mentah dari API datang oldest-first (timestamp ascending), jadi WAJIB di-sort
+// agar closePrices[0] benar-benar harga sekarang, bukan candle terlama.
+const seriesDesc = computed<any[]>(() => {
+  if (!props.data || props.data.length === 0) return []
+  return [...props.data].sort((a: any, b: any) => {
+    const tA = a.timestamp ?? new Date(a.date || a.Date || 0).getTime()
+    const tB = b.timestamp ?? new Date(b.date || b.Date || 0).getTime()
+    return tB - tA // descending → newest dulu
+  })
+})
+
 // Detail data untuk tiap indikator
 interface SignalDetail {
   fullName: string
@@ -425,12 +581,13 @@ interface SignalDetail {
 
 // Buka modal detail indicator
 function openSignalDetail(signal: any) {
-  if (!props.data || props.data.length < 20) return
+  const series = seriesDesc.value
+  if (series.length < 20) return
 
-  const closePrices = props.data.map((d: any) => Number(d.close || d.Close || d.c || 0))
-  const highPrices = props.data.map((d: any) => Number(d.high || d.High || d.h || 0))
-  const lowPrices = props.data.map((d: any) => Number(d.low || d.Low || d.l || 0))
-  const volumes = props.data.map((d: any) => Number(d.volume || d.Volume || d.vol || 0))
+  const closePrices = series.map((d: any) => Number(d.close || d.Close || d.c || 0))
+  const highPrices = series.map((d: any) => Number(d.high || d.High || d.h || 0))
+  const lowPrices = series.map((d: any) => Number(d.low || d.Low || d.l || 0))
+  const volumes = series.map((d: any) => Number(d.volume || d.Volume || d.vol || 0))
   const cp = closePrices[0] || 0
 
   let detail: SignalDetail
@@ -974,16 +1131,22 @@ function analyzeData() {
   setTimeout(() => {
     isAnalyzing.value = false
     isAnalyzed.value = true
-  }, 1500)
+  }, 800)
 }
 
-// Reset state jika asset berganti (data kosong)
+// Reset state jika asset berganti (data kosong); auto-analisa saat data tersedia
 watch(() => props.data, (newData) => {
   if (!newData || newData.length === 0) {
     isAnalyzed.value = false
+    isAnalyzing.value = false
     showMethodModal.value = false
+    return
   }
-})
+  // Auto-jalankan kalkulasi begitu data chart cukup (min 20 candle)
+  if (newData.length >= 20 && !isAnalyzed.value && !isAnalyzing.value) {
+    analyzeData()
+  }
+}, { immediate: true })
 
 // --- Helper Kalkulasi ---
 
@@ -1028,12 +1191,54 @@ function calcRSI(prices: number[], period = 14): number {
   return 100 - (100 / (1 + rs))
 }
 
-// MACD (12, 26, 9)
+// EMA series — input oldest-first, output array EMA oldest-first.
+// Index sebelum seed diisi NaN agar posisi waktu tetap selaras.
+function emaSeries(values: number[], period: number): number[] {
+  const out: number[] = []
+  if (values.length === 0) return out
+  const k = 2 / (period + 1)
+  // Data kurang dari period → pakai running average sederhana sebagai fallback
+  if (values.length < period) {
+    let sum = 0
+    for (let i = 0; i < values.length; i++) {
+      sum += values[i]
+      out.push(sum / (i + 1))
+    }
+    return out
+  }
+  // Seed = SMA dari `period` nilai pertama (metode standar)
+  let seed = 0
+  for (let i = 0; i < period; i++) seed += values[i]
+  let ema = seed / period
+  for (let i = 0; i < period - 1; i++) out.push(NaN) // posisi belum punya EMA
+  out.push(ema)
+  for (let i = period; i < values.length; i++) {
+    ema = values[i] * k + ema * (1 - k)
+    out.push(ema)
+  }
+  return out
+}
+
+// MACD (12, 26, 9) — Signal Line = EMA(9) dari deret MACD Line (rumus resmi).
+// prices masuk dalam urutan newest-first.
 function calcMACD(prices: number[]): { macdLine: number; signalLine: number; histogram: number } {
-  const ema12 = calcEMA(prices, 12)
-  const ema26 = calcEMA(prices, 26)
-  const macdLine = ema12 - ema26
-  const signalLine = macdLine * 0.85 // Simplified proxy
+  // Ubah ke oldest-first agar EMA terhitung maju mengikuti waktu
+  const oldestFirst = [...prices].reverse()
+  const ema12 = emaSeries(oldestFirst, 12)
+  const ema26 = emaSeries(oldestFirst, 26)
+  // Bangun deret MACD Line hanya saat kedua EMA sudah valid
+  const macdArr: number[] = []
+  for (let i = 0; i < oldestFirst.length; i++) {
+    if (Number.isNaN(ema12[i]) || Number.isNaN(ema26[i])) continue
+    macdArr.push(ema12[i] - ema26[i])
+  }
+  const macdLine = macdArr.length ? macdArr[macdArr.length - 1] : 0
+  // Signal Line = EMA(9) dari deret MACD Line
+  const signalArr = emaSeries(macdArr, 9)
+  let signalLine = macdLine // fallback jika data belum cukup
+  for (let i = signalArr.length - 1; i >= 0; i--) {
+    if (!Number.isNaN(signalArr[i])) { signalLine = signalArr[i]; break }
+  }
   return { macdLine, signalLine, histogram: macdLine - signalLine }
 }
 
@@ -1071,19 +1276,37 @@ function calcFibonacci(high: number, low: number) {
   }
 }
 
-// ATR (Average True Range) — volatilitas
+// ATR (Average True Range) — volatilitas, metode Wilder resmi.
+// Input newest-first. TR = max(H-L, |H-prevClose|, |L-prevClose|).
 function calcATR(highs: number[], lows: number[], closes: number[], period = 14): number {
-  if (highs.length < 2) return 0
+  const n = highs.length
+  if (n < 2) return 0
+  // Bangun deret TR oldest-first agar smoothing maju mengikuti waktu.
+  // prevClose untuk bar oldest-first index j adalah close bar sebelumnya.
+  const H = [...highs].reverse()
+  const L = [...lows].reverse()
+  const C = [...closes].reverse()
   const trs: number[] = []
-  for (let i = 0; i < Math.min(period + 1, highs.length - 1); i++) {
+  for (let i = 1; i < n; i++) {
     const tr = Math.max(
-      highs[i] - lows[i],
-      Math.abs(highs[i] - closes[i + 1]),
-      Math.abs(lows[i] - closes[i + 1])
+      H[i] - L[i],
+      Math.abs(H[i] - C[i - 1]),
+      Math.abs(L[i] - C[i - 1])
     )
     trs.push(tr)
   }
-  return trs.length > 0 ? trs.reduce((a, b) => a + b, 0) / trs.length : 0
+  if (trs.length === 0) return 0
+  // Data kurang dari period → rata-rata sederhana sebagai fallback
+  if (trs.length < period) {
+    return trs.reduce((a, b) => a + b, 0) / trs.length
+  }
+  // ATR pertama = rata-rata `period` TR pertama
+  let atr = trs.slice(0, period).reduce((a, b) => a + b, 0) / period
+  // Wilder smoothing: ATR = (priorATR*(period-1) + TR) / period
+  for (let i = period; i < trs.length; i++) {
+    atr = (atr * (period - 1) + trs[i]) / period
+  }
+  return atr
 }
 
 // --- Multi-Methodology Engine ---
@@ -1099,12 +1322,13 @@ interface MethodResult {
 }
 
 const allMethods = computed<MethodResult[]>(() => {
-  if (!isAnalyzed.value || !props.data || props.data.length < 20) return []
+  const series = seriesDesc.value
+  if (!isAnalyzed.value || series.length < 20) return []
 
-  const closePrices = props.data.map((d: any) => Number(d.close || d.Close || d.c || 0))
-  const lowPrices = props.data.map((d: any) => Number(d.low || d.Low || d.l || 0))
-  const highPrices = props.data.map((d: any) => Number(d.high || d.High || d.h || 0))
-  const volumes = props.data.map((d: any) => Number(d.volume || d.Volume || d.vol || 0))
+  const closePrices = series.map((d: any) => Number(d.close || d.Close || d.c || 0))
+  const lowPrices = series.map((d: any) => Number(d.low || d.Low || d.l || 0))
+  const highPrices = series.map((d: any) => Number(d.high || d.High || d.h || 0))
+  const volumes = series.map((d: any) => Number(d.volume || d.Volume || d.vol || 0))
 
   const cp = closePrices[0] || 0
   const sma20 = calcSMA(closePrices, 20)
@@ -1336,12 +1560,13 @@ const allMethods = computed<MethodResult[]>(() => {
 
 // --- Engine Utama ---
 const plan = computed(() => {
-  if (!isAnalyzed.value || !props.data || props.data.length < 20) return null
+  const series = seriesDesc.value
+  if (!isAnalyzed.value || series.length < 20) return null
 
-  const closePrices = props.data.map(d => Number(d.close || d.Close || d.c || 0))
-  const lowPrices = props.data.map(d => Number(d.low || d.Low || d.l || 0))
-  const highPrices = props.data.map(d => Number(d.high || d.High || d.h || 0))
-  const volumes = props.data.map(d => Number(d.volume || d.Volume || d.vol || 0))
+  const closePrices = series.map(d => Number(d.close || d.Close || d.c || 0))
+  const lowPrices = series.map(d => Number(d.low || d.Low || d.l || 0))
+  const highPrices = series.map(d => Number(d.high || d.High || d.h || 0))
+  const volumes = series.map(d => Number(d.volume || d.Volume || d.vol || 0))
 
   const currentPrice = closePrices[0]
   const len = closePrices.length
@@ -1461,4 +1686,146 @@ watch(plan, (newPlan) => {
   }
 }, { immediate: true })
 
+// === Kalkulator Posisi & Averaging (DCA) ===
+// Input: harga rata-rata user (posAvgPrice) + lot (posLots, opsional).
+// Output: status P/L, target jual berbasis resistance/Fibonacci/ATR,
+// serta saran averaging-down bertingkat + harga rata-rata baru tiap tingkat.
+const posCalc = computed(() => {
+  const series = seriesDesc.value
+  if (!isAnalyzed.value || series.length < 20) return null
+  const avg = posAvgPrice.value
+  if (!avg || avg <= 0) return null
+
+  const closePrices = series.map(d => Number(d.close || d.Close || d.c || 0))
+  const lowPrices = series.map(d => Number(d.low || d.Low || d.l || 0))
+  const highPrices = series.map(d => Number(d.high || d.High || d.h || 0))
+
+  const currentPrice = closePrices[0]
+  const len = closePrices.length
+
+  // ATR untuk jarak target/stop yang adaptif terhadap volatilitas
+  const atr = calcATR(highPrices, lowPrices, closePrices)
+
+  // Level support/resistance & Fibonacci dari swing terkini
+  const support1 = Math.min(...lowPrices.slice(0, Math.min(20, len)))
+  const support2 = Math.min(...lowPrices.slice(0, Math.min(60, len)))
+  const resistance1 = Math.max(...highPrices.slice(0, Math.min(60, len)))
+  const fib = calcFibonacci(resistance1, support2)
+
+  // Tick size IDX (fraksi harga) — untuk pembulatan harga yang realistis
+  function tickSize(p: number): number {
+    if (p < 200) return 1
+    if (p < 500) return 2
+    if (p < 2000) return 5
+    if (p < 5000) return 10
+    return 25
+  }
+  function roundTick(p: number): number {
+    const t = tickSize(p)
+    return Math.round(p / t) * t
+  }
+
+  // === Status P/L posisi sekarang ===
+  const plPct = ((currentPrice - avg) / avg) * 100
+  const isProfit = currentPrice >= avg
+  const lots = posLots.value && posLots.value > 0 ? posLots.value : null
+  const shares = lots ? lots * 100 : null // 1 lot = 100 lembar (IDX)
+  const modal = shares ? shares * avg : null
+  const nilaiSekarang = shares ? shares * currentPrice : null
+  const plRupiah = modal !== null && nilaiSekarang !== null ? nilaiSekarang - modal : null
+
+  // === Target jual (hanya relevan jika harga di atas/dekat average) ===
+  // TP1 konservatif: resistance terdekat ATAU avg + 1.5×ATR (ambil yang masuk akal di atas current)
+  const tpAtr1 = currentPrice + 1.5 * atr
+  const tpAtr2 = currentPrice + 3 * atr
+  const sellTargets = [
+    {
+      label: 'TP1 — Konservatif',
+      price: roundTick(Math.max(tpAtr1, avg * 1.03)),
+      basis: 'Current + 1.5×ATR / minimal +3% dari average',
+    },
+    {
+      label: 'TP2 — Resistance',
+      price: roundTick(Math.max(resistance1, tpAtr2)),
+      basis: 'Resistance swing 60-candle (atau Current + 3×ATR)',
+    },
+    {
+      label: 'TP3 — Extension',
+      price: roundTick(resistance1 + (fib.level100 - fib.level618)),
+      basis: 'Fibonacci extension di atas resistance',
+    },
+  ].map(t => ({
+    ...t,
+    gainPct: ((t.price - avg) / avg) * 100,
+  }))
+
+  // === Cut loss / batas risiko ===
+  // Stop di bawah support1 dikurangi buffer 1×ATR (metode volatilitas Wilder)
+  const cutLoss = roundTick(support1 - atr)
+  const cutLossPct = ((cutLoss - avg) / avg) * 100
+
+  // === Saran Averaging-Down (DCA) bertingkat ===
+  // Strategi: tambah posisi di level diskon bertahap dari current price.
+  // Level berbasis kelipatan ATR & support, dengan bobot lot menaik (piramida terbalik)
+  // agar harga rata-rata turun lebih efektif (martingale ringan: 1×, 1.5×, 2×).
+  const baseLot = lots ? lots : 1 // jika user isi lot, pakai sebagai basis; jika tidak, asumsi 1 lot
+  const dcaWeights = [1, 1.5, 2] // bobot lot tiap tingkat
+  const dcaDrops = [
+    { label: 'DCA 1', drop: Math.max(atr, currentPrice * 0.03), note: 'Diskon ~1×ATR / -3%' },
+    { label: 'DCA 2', drop: Math.max(2 * atr, currentPrice * 0.06), note: 'Diskon ~2×ATR / -6%' },
+    { label: 'DCA 3', drop: 0, priceOverride: roundTick(support1), note: 'Di area support kuat (20-candle)' },
+  ]
+
+  let cumShares = shares ?? baseLot * 100
+  let cumCost = (shares ?? baseLot * 100) * avg
+  const dcaLevels = dcaDrops.map((d, idx) => {
+    const addPrice = d.priceOverride ?? roundTick(currentPrice - d.drop)
+    const addLot = Math.max(1, Math.round(baseLot * dcaWeights[idx]))
+    const addShares = addLot * 100
+    cumShares += addShares
+    cumCost += addShares * addPrice
+    const newAvg = cumCost / cumShares
+    return {
+      label: d.label,
+      note: d.note,
+      addPrice,
+      addLot,
+      newAvg: Math.round(newAvg * 100) / 100,
+      avgDropPct: ((avg - newAvg) / avg) * 100, // seberapa turun average vs awal
+    }
+  })
+
+  // Rekomendasi naratif berbasis konfluensi plan + posisi
+  const conf = plan.value?.confidence ?? 0
+  const bullishBias = (plan.value?.signals || []).filter((s: any) => s.bias === 'BULLISH').length
+  const bearishBias = (plan.value?.signals || []).filter((s: any) => s.bias === 'BEARISH').length
+  let advice = ''
+  if (isProfit) {
+    advice = `Posisi PROFIT ${plPct.toFixed(1)}%. Pertimbangkan jual bertahap di TP1/TP2 dan geser stop ke harga average (${formatPrice(avg)}) untuk mengunci modal.`
+  } else if (bearishBias > bullishBias) {
+    advice = `Posisi FLOATING LOSS ${plPct.toFixed(1)}% dan sinyal masih dominan BEARISH (${bearishBias} vs ${bullishBias}). HINDARI averaging dulu — tunggu harga stabil di atas support (${formatPrice(support1)}) atau sinyal berbalik. Averaging di tren turun memperbesar risiko.`
+  } else {
+    advice = `Posisi FLOATING LOSS ${plPct.toFixed(1)}% namun konfluensi mulai netral/bullish (skor ${conf}%). Averaging-down bertahap di level di bawah ini bisa menurunkan harga rata-rata, asalkan total posisi tetap dalam batas manajemen risiko (maks 5% portofolio).`
+  }
+
+  return {
+    avg,
+    lots,
+    currentPrice,
+    atr,
+    plPct,
+    isProfit,
+    modal,
+    nilaiSekarang,
+    plRupiah,
+    sellTargets,
+    cutLoss,
+    cutLossPct,
+    dcaLevels,
+    advice,
+    safeToAverage: bearishBias <= bullishBias,
+  }
+})
+
 </script>
+

@@ -12,7 +12,7 @@
       </div>
 
       <!-- Timeframe selector -->
-      <div class="flex w-full sm:w-auto flex-wrap items-center gap-0.5 sm:gap-1 rounded-xl p-1"
+      <div class="flex w-full sm:w-auto flex-wrap items-center gap-0.5 sm:gap-1 rounded-2xl p-1"
         :class="isDark ? 'bg-white/5' : 'bg-slate-100'"
       >
         <button v-for="p in periods" :key="p.interval" @click="changePeriod(p.interval)"
@@ -29,7 +29,7 @@
     </div>
 
     <!-- Unlocked State -->
-    <div v-if="!data?.length && !loading" class="flex flex-col items-center justify-center py-10 text-center" style="height: 320px;">
+    <div v-if="!data?.length && !loading" class="flex flex-col items-center justify-center py-10 text-center" style="height: 440px;">
       <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" :class="isDark ? 'bg-white/5' : 'bg-slate-50'">
         <span class="material-symbols-outlined text-xl opacity-50">show_chart</span>
       </div>
@@ -41,7 +41,7 @@
     </div>
 
     <!-- Chart Canvas -->
-    <div v-else class="relative px-2 pb-4" style="height: 320px;">
+    <div v-else class="relative px-2 pb-4" style="height: 440px;">
       <!-- Loading (Hanya untuk initial load, bukan loadMore) -->
       <div v-if="loading && !isLoadingMore" class="absolute inset-0 flex items-center justify-center">
         <span class="material-symbols-outlined text-primary animate-spin text-2xl">progress_activity</span>
@@ -51,7 +51,7 @@
       <canvas ref="canvasRef" class="w-full h-full touch-none" :class="{ 'opacity-0': loading && !isLoadingMore, 'opacity-50 blur-[1px] cursor-wait': loading && isLoadingMore }"></canvas>
 
       <!-- Loading indicator saat auto-load more -->
-      <div v-if="atLeftEdge && loading" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-bold backdrop-blur-md"
+      <div v-if="atLeftEdge && loading" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1 px-3 py-2 rounded-2xl text-[10px] font-bold backdrop-blur-md"
         :class="isDark ? 'bg-white/5 text-primary border border-white/10' : 'bg-slate-100 text-slate-600 border border-slate-200'"
       >
         <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
@@ -59,7 +59,7 @@
       </div>
 
       <!-- Type Toggle & Pattern Analyzer -->
-      <div v-if="data?.length" class="absolute bottom-[30px] right-2 flex items-center bg-white/50 dark:bg-black/50 backdrop-blur-md rounded-xl p-0.5 z-20 border border-slate-200 dark:border-white/10 shadow-sm">
+      <div v-if="data?.length" class="absolute bottom-[30px] right-2 flex items-center bg-white/50 dark:bg-black/50 backdrop-blur-md rounded-2xl p-0.5 z-20 border border-slate-200 dark:border-white/10 shadow-sm">
         
         <button @click="analyzeChartPatterns" class="h-7 px-2 flex items-center justify-center gap-1 rounded-lg transition-all" 
            :class="isAnalyzingPattern ? 'animate-pulse text-purple-500' : detectedPatterns.length ? 'bg-purple-500 text-white shadow' : 'text-slate-500 dark:text-gray-400 hover:text-purple-500 dark:hover:text-purple-400'"
@@ -316,7 +316,7 @@ function drawChart() {
   const dpr = window.devicePixelRatio || 1
   const rect = parent.getBoundingClientRect()
   const width = rect.width - 16
-  const height = 300
+  const height = 420
 
   canvas.width = width * dpr
   canvas.height = height * dpr
@@ -429,17 +429,39 @@ function drawChart() {
       ctx.fillRect(x - barWidth / 2, bodyTop, barWidth, bodyH)
     }
   } else {
-    // Line chart
-    ctx.strokeStyle = '#3b82f6'
-    ctx.lineWidth = 2
-    ctx.lineJoin = 'round'
-    ctx.beginPath()
+    // Line chart dengan gradient fill di bawah garis
+    const linePoints: { x: number; y: number }[] = []
     for (let i = 0; i < items.length; i++) {
       const close = items[i].close || items[i].Close || items[i].c || 0
       const x = padding.left + barGap * i + barGap / 2
       const yClose = padding.top + ((maxPrice - close) / totalRange) * chartH
-      if (i === 0) ctx.moveTo(x, yClose)
-      else ctx.lineTo(x, yClose)
+      linePoints.push({ x, y: yClose })
+    }
+
+    // Gradient area di bawah garis untuk efek visual modern
+    if (linePoints.length > 1) {
+      const grad = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom)
+      grad.addColorStop(0, isDark.value ? 'rgba(59,130,246,0.28)' : 'rgba(59,130,246,0.22)')
+      grad.addColorStop(1, 'rgba(59,130,246,0)')
+      ctx.fillStyle = grad
+      ctx.beginPath()
+      ctx.moveTo(linePoints[0]!.x, height - padding.bottom)
+      for (const p of linePoints) ctx.lineTo(p.x, p.y)
+      ctx.lineTo(linePoints[linePoints.length - 1]!.x, height - padding.bottom)
+      ctx.closePath()
+      ctx.fill()
+    }
+
+    // Garis utama
+    ctx.strokeStyle = '#3b82f6'
+    ctx.lineWidth = 2
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    for (let i = 0; i < linePoints.length; i++) {
+      const p = linePoints[i]!
+      if (i === 0) ctx.moveTo(p.x, p.y)
+      else ctx.lineTo(p.x, p.y)
     }
     ctx.stroke()
   }

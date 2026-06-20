@@ -124,12 +124,14 @@
     <!-- Konten Utama: Saat saham sudah dipilih (PIN required) -->
     <div v-if="isPinVerified && selectedSymbol" class="space-y-6">
       <StockOverview :symbol="selectedSymbol" :info="stockInfo" :loading="loadingInfo" />
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div class="lg:col-span-3">
-          <StockChart :data="chartData" :loading="loadingChart" :plan="tradingPlan" @fetch="loadChart(selectedSymbol, $event)" @period-change="onPeriodChange" @load-more="onChartLoadMore" />
-        </div>
-        <div class="lg:col-span-2 flex flex-col gap-6">
+      <!-- Chart full-width agar tampilan candle besar dan lega -->
+      <StockChart :data="chartData" :loading="loadingChart" :plan="tradingPlan" @fetch="loadChart(selectedSymbol, $event)" @period-change="onPeriodChange" @load-more="onChartLoadMore" />
+      <!-- Analisa di bawah chart: Smart Trading Plan melebar (2/3), Technical (1/3) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div class="lg:col-span-2">
           <StockTradingPlan :data="chartData" :loading="loadingChart" @update:plan="tradingPlan = $event" />
+        </div>
+        <div class="lg:col-span-1">
           <StockTechnical :data="technicalData" :loading="loadingTechnical" @fetch="loadTechnical(selectedSymbol)" />
         </div>
       </div>
