@@ -22,6 +22,8 @@ import { isTikTokUrl, fetchTikTokMedia } from '../lib/platforms/tiktok'
 import { isInstagramUrl, fetchInstagramMedia } from '../lib/platforms/instagram'
 import { isYouTubeUrl, fetchYouTubeInfo } from '../lib/platforms/youtube'
 
+const GO_DOWNLOAD_API_URL = process.env.GO_DOWNLOAD_API_URL || 'http://127.0.0.1:5001'
+
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const targetUrl = body?.url as string
@@ -149,6 +151,20 @@ export default defineEventHandler(async (event) => {
 
     // ===================== MODE: DOWNLOAD =====================
     if (mode === 'download') {
+      try {
+        return await $fetch(`${GO_DOWNLOAD_API_URL}/download`, {
+          method: 'POST',
+          body: { ...body, url, mode },
+          timeout: 10_000,
+        })
+      } catch (err: any) {
+        console.error('[Go Download API Error]', err.data?.message || err.message || String(err))
+        throw createError({
+          statusCode: err.statusCode || 502,
+          message: err.data?.message || 'Go download API tidak tersedia.',
+        })
+      }
+
       const jobId = randomUUID()
       const formatStr = formatId || 'best'
       const isAudioOnly = formatStr.includes('bestaudio') && !formatStr.includes('bestvideo')

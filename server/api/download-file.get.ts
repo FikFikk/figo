@@ -1,7 +1,10 @@
 import { defineEventHandler, getQuery, createError, sendStream, setResponseHeaders } from 'h3'
 import { createReadStream, unlinkSync, existsSync } from 'fs'
 import { stat } from 'fs/promises'
+import { Readable } from 'stream'
 import { downloadJobs } from '../lib/jobs'
+
+const GO_DOWNLOAD_API_URL = process.env.GO_DOWNLOAD_API_URL || 'http://127.0.0.1:5001'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -9,6 +12,31 @@ export default defineEventHandler(async (event) => {
   
   if (!id) {
     throw createError({ statusCode: 400, message: 'Valid Job ID parameter is required.' })
+  }
+
+  try {
+    const response = await fetch(`${GO_DOWNLOAD_API_URL}/download-file?id=${encodeURIComponent(id)}`)
+    if (response.ok && response.body) {
+      const contentType = response.headers.get('content-type')
+      const contentDisposition = response.headers.get('content-disposition')
+      const contentLength = response.headers.get('content-length')
+
+      setResponseHeaders(event, {
+        ...(contentType ? { 'Content-Type': contentType } : {}),
+        ...(contentDisposition ? { 'Content-Disposition': contentDisposition } : {}),
+        ...(contentLength ? { 'Content-Length': contentLength } : {}),
+      })
+
+      return sendStream(event, Readable.fromWeb(response.body as any))
+    }
+
+    if (response.status !== 404) {
+      const errorText = await response.text().catch(() => '')
+      throw createError({ statusCode: response.status, message: errorText || 'Gagal mengambil file dari Go download API.' })
+    }
+  } catch (err: any) {
+    if (err.statusCode) throw err
+    console.error('[Go Download File Error]', err.message || String(err))
   }
 
   const job = downloadJobs.get(id)

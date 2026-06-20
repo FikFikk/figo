@@ -12,15 +12,35 @@
 | Respons | HTTP 200 + File Stream (Content-Disposition: inline atau attachment) / Mengembalikan gambar SVG Fallback jika inline=true dan gagal memuat |
 | Catatan | Digunakan sebagai proxy media untuk menghindari masalah CORS. Jika tautan kedaluwarsa atau diblokir platform (misal: thumbnail Instagram 403), endpoint secara otomatis mengembalikan gambar SVG fallback kustom minimalis bertema gelap dengan ikon default di tengah demi estetika frontend, dan mencatat log sebagai peringatan biasa (bukan error fatal unhandled). |
 
-| Field | Detail |
+| Bidang | Rincian |
 |---|---|
-| Method + Endpoint | GET /api/download-file |
-| Auth Required | No |
-| Headers | None specific |
-| Query Params | id (string, required) |
-| Request Body | N/A |
-| Response | HTTP 200 + File Stream |
-| Notes | Used to download completed yt-dlp jobs |
+| Metode + Endpoint | POST /api/download |
+| Membutuhkan Autentikasi | Tidak |
+| Header | Content-Type: application/json |
+| Parameter Query | N/A |
+| Body Permintaan | url (string, wajib), mode (string, wajib: `info` atau `download`), formatId (string, wajib untuk mode download), uploader (string, opsional), resolutionLabel (string, opsional), mediaId (string, opsional) |
+| Respons | Mode `info`: HTTP 200 + metadata media. Mode `download`: HTTP 200 + JSON `{ success: true, mode: "download", jobId: string }` |
+| Catatan | Mode `info` tetap diproses oleh Nuxt/Nitro. Mode `download` diproxy ke Go Download API internal di `127.0.0.1:5001` agar proses yt-dlp/ffmpeg terpisah dari SSR. |
+
+| Bidang | Rincian |
+|---|---|
+| Metode + Endpoint | GET /api/job-status |
+| Membutuhkan Autentikasi | Tidak |
+| Header | Tidak ada yang khusus |
+| Parameter Query | id (string, wajib) |
+| Body Permintaan | N/A |
+| Respons | HTTP 200 + JSON `{ status: "processing"\|"done"\|"error"\|"not_found", error?: string }` |
+| Catatan | Status job download dibaca dari Go Download API. Fallback ke job store lama di Nuxt tersedia untuk kompatibilitas sementara. |
+
+| Bidang | Rincian |
+|---|---|
+| Metode + Endpoint | GET /api/download-file |
+| Membutuhkan Autentikasi | Tidak |
+| Header | Tidak ada yang khusus |
+| Parameter Query | id (string, wajib) |
+| Body Permintaan | N/A |
+| Respons | HTTP 200 + File Stream |
+| Catatan | Stream file hasil job dari Go Download API. File temporer dihapus setelah stream selesai. Fallback ke handler Nuxt lama tersedia untuk kompatibilitas sementara. |
 
 | Field | Detail |
 |---|---|
