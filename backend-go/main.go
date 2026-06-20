@@ -265,6 +265,9 @@ func (s *serverState) runDownloadJob(jobID, targetURL, formatID, ext string) {
 			"--no-check-certificates",
 			"--retries", "5",
 			"--fragment-retries", "5",
+			// Download fragment DASH paralel (4 sekaligus) — pangkas waktu unduh signifikan
+			// untuk video panjang karena stream video+audio tidak lagi serial.
+			"--concurrent-fragments", "4",
 			"--ffmpeg-location", ffmpegBin,
 			"--downloader-args", "ffmpeg_i:-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
 			"--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -275,8 +278,10 @@ func (s *serverState) runDownloadJob(jobID, targetURL, formatID, ext string) {
 		if !isAudioOnly {
 			a = append(a, "--merge-output-format", ext)
 		}
+		// Selektor kita selalu ambil audio m4a (AAC), jadi merge cukup remux (copy)
+		// tanpa re-encode. Re-encode AAC->AAC di CPU ARM adalah bottleneck terbesar.
 		if ext == "mp4" {
-			a = append(a, "--postprocessor-args", "ffmpeg:-c:a aac")
+			a = append(a, "--postprocessor-args", "Merger+ffmpeg:-c copy")
 		}
 		a = append(a, targetURL)
 		return a
