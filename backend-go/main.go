@@ -242,29 +242,65 @@ func (s *serverState) runDownloadJob(jobID, targetURL, formatID, ext string) {
 	ffmpegBin := envString("FFMPEG_BIN", "ffmpeg")
 
 	isAudioOnly := strings.Contains(formatID, "bestaudio") && !strings.Contains(formatID, "bestvideo")
-	args := []string{
-		"--format", formatID,
-		"--output", outputTemplate,
-		"--no-warnings",
-		"--no-check-certificates",
-		"--retries", "5",
-		"--fragment-retries", "5",
-		"--ffmpeg-location", ffmpegBin,
-		"--downloader-args", "ffmpeg_i:-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-		"--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+	isYouTube := strings.Contains(targetURL, "youtube.com") || strings.Contains(targetURL, "youtu.be")
+
+	// Strategi player-client untuk YouTube. Default web client sering kena HTTP 403
+	// di CDN googlevideo (URL di-throttle), jadi fallback ke android/ios/tv yang URL-nya valid.
+	clientStrategies := []string{""}
+	if isYouTube {
+		clientStrategies = []string{
+			"youtube:player-client=android",
+			"youtube:player-client=ios",
+			"youtube:player-client=tv",
+			"youtube:player-client=web",
+		}
 	}
 
-	if !isAudioOnly {
-		args = append(args, "--merge-output-format", ext)
+	// Bangun args yt-dlp per strategi (extractorArg kosong = pakai default web client)
+	buildArgs := func(extractorArg string) []string {
+		a := []string{
+			"--format", formatID,
+			"--output", outputTemplate,
+			"--no-warnings",
+			"--no-check-certificates",
+			"--retries", "5",
+			"--fragment-retries", "5",
+			"--ffmpeg-location", ffmpegBin,
+			"--downloader-args", "ffmpeg_i:-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+			"--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+		}
+		if extractorArg != "" {
+			a = append(a, "--extractor-args", extractorArg)
+		}
+		if !isAudioOnly {
+			a = append(a, "--merge-output-format", ext)
+		}
+		if ext == "mp4" {
+			a = append(a, "--postprocessor-args", "ffmpeg:-c:a aac")
+		}
+		a = append(a, targetURL)
+		return a
 	}
-	if ext == "mp4" {
-		args = append(args, "--postprocessor-args", "ffmpeg:-c:a aac")
-	}
-	args = append(args, targetURL)
 
-	log.Printf("[Job %s] mulai download format=%s", jobID, formatID)
-	if err := runCommand(ctx, ytdlpBin, args); err != nil {
-		s.setJobError(jobID, err)
+	// Coba tiap strategi sampai ada yang sukses. Bersihkan file parsial sebelum retry
+	// agar tidak tercampur dengan attempt sebelumnya.
+	var lastErr error
+	for i, strategy := range clientStrategies {
+		log.Printf("[Job %s] download attempt %d/%d format=%s client=%s", jobID, i+1, len(clientStrategies), formatID, clientLabel(strategy))
+		if err := runCommand(ctx, ytdlpBin, buildArgs(strategy)); err != nil {
+			lastErr = err
+			log.Printf("[Job %s] attempt %d gagal: %v", jobID, i+1, err)
+			if ctx.Err() != nil {
+				break // timeout/cancel — hentikan retry
+			}
+			cleanupJobArtifacts(s.downloadDir, jobID)
+			continue
+		}
+		lastErr = nil
+		break
+	}
+	if lastErr != nil {
+		s.setJobError(jobID, lastErr)
 		return
 	}
 
@@ -310,6 +346,38 @@ func (s *serverState) setJobError(jobID string, err error) {
 		job.Error = err.Error()
 	}
 	s.jobsMu.Unlock()
+}
+
+// clientLabel mengubah extractor-arg menjadi label singkat untuk logging.
+func clientLabel(extractorArg string) string {
+	if extractorArg == "" {
+		return "default-web"
+	}
+	if idx := strings.Index(extractorArg, "player-client="); idx >= 0 {
+		val := extractorArg[idx+len("player-client="):]
+		if semi := strings.Index(val, ";"); semi >= 0 {
+			val = val[:semi]
+		}
+		return val
+	}
+	return extractorArg
+}
+
+// cleanupJobArtifacts menghapus file/fragment parsial milik job tertentu
+// sebelum retry agar attempt berikutnya tidak tercampur sisa attempt gagal.
+func cleanupJobArtifacts(dir, jobID string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.Contains(entry.Name(), jobID) {
+			continue
+		}
+		if removeErr := os.Remove(filepath.Join(dir, entry.Name())); removeErr != nil {
+			log.Printf("[Job %s] gagal hapus artifact %s: %v", jobID, entry.Name(), removeErr)
+		}
+	}
 }
 
 func runCommand(ctx context.Context, bin string, args []string) error {

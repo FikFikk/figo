@@ -63,7 +63,12 @@ export default defineNuxtConfig({
       'Playfair Display': [400, 700, 800, 900],
     },
     display: 'swap',
-    prefetch: true,
+    // Download font saat build & serve dari domain sendiri — hindari round-trip ke
+    // Google CDN tiap hard reload (penyebab utama loading lama saat Shift+R).
+    download: true,
+    // Matikan prefetch/preconnect ke fonts.googleapis.com karena font sudah lokal.
+    prefetch: false,
+    preconnect: false,
     preload: true,
   },
 
