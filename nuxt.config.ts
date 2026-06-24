@@ -8,6 +8,15 @@ export default defineNuxtConfig({
     port: 5000
   },
 
+  // Konfigurasi server-only (tidak pernah dikirim ke client).
+  // Set lewat env: NUXT_STREAM_PIN dan NUXT_STREAM_SECRET
+  runtimeConfig: {
+    // PIN untuk membuka tool streaming
+    streamPin: process.env.NUXT_STREAM_PIN || '112233',
+    // Secret untuk menandatangani token unlock (HMAC). Wajib diisi di production.
+    streamSecret: process.env.NUXT_STREAM_SECRET || 'fikfikk-figo-stream-secret',
+  },
+
   nitro: {
     rollupConfig: {
       output: {

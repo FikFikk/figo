@@ -89,6 +89,10 @@ func main() {
 	mux.HandleFunc("/job-status", state.jobStatusHandler)
 	mux.HandleFunc("/download-file", state.downloadFileHandler)
 
+	// Katalog film/series (TVMaze) — trending, search, detail, episodes
+	catalog := newCatalogState()
+	catalog.registerCatalogRoutes(mux)
+
 	port := envString("PORT", defaultPort)
 	server := &http.Server{
 		Addr:              "127.0.0.1:" + port,

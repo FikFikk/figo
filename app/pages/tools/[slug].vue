@@ -99,6 +99,9 @@
             <div v-else-if="activeTool === 'qr'">
               <ToolsQrEngine />
             </div>
+            <div v-else-if="activeTool === 'stream'">
+              <ToolsStreamPlayer />
+            </div>
             
             <!-- Default Welcome (unlikely but safe) -->
             <div v-else class="glass-panel rounded-3xl p-12 text-center" :class="isDark ? 'border border-white/5' : 'border border-slate-100'">
@@ -151,6 +154,10 @@ const toolSeoMap: Record<string, { title: string; description: string }> = {
     title: 'QR Code Generator Online Gratis — Buat QR Code Instan — FiGo Tools',
     description: 'Buat QR code dari teks, URL, nomor telepon, atau data apapun secara gratis. Download QR code sebagai gambar PNG. Instan, tanpa login, tanpa batas.'
   },
+  'stream': {
+    title: 'FiGo Bioskop — Katalog Film & Series — FiGo Tools',
+    description: 'Jelajahi katalog film dan series, lihat detail episode per season, dan putar lewat proxy aman. Akses dilindungi PIN.'
+  },
 }
 
 const route = useRoute()
@@ -177,6 +184,7 @@ const slugToId: Record<string, string> = {
   'file-metadata': 'metadata',
   'secure-generator': 'generator',
   'qr-engine': 'qr',
+  'stream': 'stream',
 }
 
 // Configuration for active tools (with URL slug)
@@ -190,6 +198,7 @@ const availableTools = [
   { id: 'metadata', slug: 'file-metadata', name: 'File Metadata', icon: 'analytics' },
   { id: 'generator', slug: 'secure-generator', name: 'Secure Generator', icon: 'vpn_key' },
   { id: 'qr', slug: 'qr-engine', name: 'QR Engine', icon: 'qr_code_2' },
+  { id: 'stream', slug: 'stream', name: 'Bioskop', icon: 'movie' },
 ]
 
 // Resolve active tool dari slug di URL
