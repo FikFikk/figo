@@ -1,0 +1,11 @@
+# Go binary output
+figo-download-api
+*.exe
+
+# Test cache
+*.test
+*.out
+
+# Environment
+.env
+.env.local

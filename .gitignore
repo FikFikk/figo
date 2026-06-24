@@ -25,6 +25,9 @@ logs
 # Binaries
 *.exe
 server/api/*.exe
+server/api/ffmpeg
+server/api/yt-dlp
+backend-go/figo-download-api
 
 # Download temp files
 .downloads

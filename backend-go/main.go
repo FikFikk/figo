@@ -93,6 +93,10 @@ func main() {
 	catalog := newCatalogState()
 	catalog.registerCatalogRoutes(mux)
 
+	// TMDB — film trending, Netflix series, search via TMDB_API_KEY
+	netflix := newNetflixState()
+	netflix.registerNetflixRoutes(mux)
+
 	port := envString("PORT", defaultPort)
 	server := &http.Server{
 		Addr:              "127.0.0.1:" + port,
