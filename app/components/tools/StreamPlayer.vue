@@ -423,6 +423,9 @@ async function openDetail(item: CatalogItem) {
   activeSeason.value = 1
   episodes.value = []
   activeEp.value = null
+  // Tutup search saat modal buka
+  searchQuery.value = ''
+  searchResults.value = []
 
   const isSeries = item.type !== 'movie'
   const endpointBase = isSeries ? '/api/netflix/detail' : '/api/movies/detail'
