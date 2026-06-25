@@ -527,6 +527,14 @@ detail.episodes.forEach(ep => {
 
 ## 📝 Changelog
 
+### v1.4.0 (2026-06-25)
+- ✅ **Fix trending popup bug** — Change /api/trending from TVMaze to TMDB
+- ✅ **Frontend pakai FiGo Proxy** — Default source dengan ad-blocking + auto-fallback
+- ✅ **Fix sandbox error** — Backend /video/direct dengan proper iframe attributes
+- ✅ **Fix incognito mode** — Cookie sameSite=none untuk cross-origin support
+- ✅ Episode thumbnails dari TMDB (bukan poster series)
+- ✅ Fallback ke poster jika thumbnail tidak ada
+
 ### v1.3.0 (2026-06-25)
 - ✅ Episode thumbnails dari TMDB (bukan poster series)
 - ✅ Fallback ke poster jika thumbnail tidak ada
@@ -549,6 +557,6 @@ detail.episodes.forEach(ep => {
 
 ---
 
-**Last Updated:** 2026-06-25 11:01 WIB  
-**API Version:** 1.3.0  
+**Last Updated:** 2026-06-25 11:43 WIB  
+**API Version:** 1.4.0  
 **Maintained by:** FiGo Team
