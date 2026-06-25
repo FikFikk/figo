@@ -101,6 +101,10 @@ func main() {
 	streaming := newStreamingState()
 	streaming.registerStreamingRoutes(mux)
 
+	// Video Proxy — Clean player tanpa iklan, multi-source fallback
+	videoProxy := newVideoProxyState()
+	videoProxy.registerRoutes(mux)
+
 	port := envString("PORT", defaultPort)
 	server := &http.Server{
 		Addr:              "127.0.0.1:" + port,
