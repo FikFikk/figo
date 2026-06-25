@@ -6,7 +6,7 @@
 
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import type { H3Event } from 'h3'
-import { getCookie, setCookie, deleteCookie } from 'h3'
+import { getCookie, setCookie, deleteCookie, getHeader } from 'h3'
 
 /** Nama cookie unlock yang dipakai gate stream */
 export const STREAM_COOKIE = 'stream_unlock'
@@ -67,10 +67,14 @@ export function verifyPin(event: H3Event, input: string): boolean {
 /** Set cookie unlock httpOnly selama TTL */
 export function setUnlockCookie(event: H3Event): void {
   const token = createUnlockToken(event)
+  // Deteksi apakah request lewat HTTPS atau localhost
+  const proto = getHeader(event, 'x-forwarded-proto') || getHeader(event, 'x-forwarded-scheme') || 'http'
+  const isSecure = proto === 'https'
   setCookie(event, STREAM_COOKIE, token, {
     httpOnly: true,
-    sameSite: 'none', // Allow incognito + iframe cross-origin
-    secure: true,     // Required when sameSite=none
+    // sameSite 'lax' untuk HTTP (localhost dev), 'none' butuh secure=true (HTTPS prod)
+    sameSite: isSecure ? 'none' : 'lax',
+    secure: isSecure,
     path: '/',
     maxAge: STREAM_TTL_SECONDS,
   })
@@ -78,7 +82,7 @@ export function setUnlockCookie(event: H3Event): void {
 
 /** Hapus cookie unlock (logout/lock kembali) */
 export function clearUnlockCookie(event: H3Event): void {
-  deleteCookie(event, STREAM_COOKIE, { path: '/' })
+  deleteCookie(event, STREAM_COOKIE, { path: '/', sameSite: 'lax' })
 }
 
 /** Guard utama: pastikan request sudah unlock, kalau tidak lempar 401 */

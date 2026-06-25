@@ -1,5 +1,35 @@
 <template>
   <div class="stream-root">
+
+    <!-- ═══ PIN GATE ═══ -->
+    <div v-if="!unlocked" class="pin-gate">
+      <div class="pin-card">
+        <div class="pin-icon">🎬</div>
+        <h2 class="pin-title">FiGo Bioskop</h2>
+        <p class="pin-subtitle">Masukkan PIN untuk mengakses</p>
+        <div class="pin-input-wrap">
+          <input
+            v-model="pinInput"
+            type="password"
+            inputmode="numeric"
+            maxlength="10"
+            placeholder="Masukkan PIN..."
+            class="pin-input"
+            autofocus
+            @keyup.enter="submitPin"
+          />
+        </div>
+        <p v-if="pinError" class="pin-error">{{ pinError }}</p>
+        <button class="pin-submit" :disabled="pinLoading" @click="submitPin">
+          <span v-if="pinLoading">Memverifikasi...</span>
+          <span v-else>Masuk →</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ MAIN APP (hanya tampil setelah unlock) ═══ -->
+    <template v-else>
+
     <!-- ═══ SEARCH BAR ═══ -->
     <div class="search-bar">
       <div class="search-inner">
@@ -184,9 +214,8 @@
               :src="playerUrl"
               class="player-frame"
               allowfullscreen
-              referrerpolicy="origin"
-              allow="autoplay; fullscreen; picture-in-picture"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              referrerpolicy="no-referrer-when-downgrade"
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
             />
           </div>
           <!-- Fallback sources -->
@@ -202,6 +231,8 @@
         </div>
       </div>
     </Transition>
+
+    </template><!-- end v-else unlocked -->
   </div>
 </template>
 
@@ -270,11 +301,11 @@ function buildSources(item: CatalogItem, season = 1, ep = 1) {
   const t = item.type === 'movie' ? 'movie' : 'tv'
   const id = item.id
   
-  // Primary: Backend video proxy dengan ad-blocking & auto-fallback
-  const backendProxy = t === 'movie' 
-    ? `http://127.0.0.1:5001/video/direct?id=${id}&type=movie`
-    : `http://127.0.0.1:5001/video/direct?id=${id}&type=tv&s=${season}&e=${ep}`
-  
+  // Primary: Bridge ke Go backend melalui Nuxt API (browser-accessible)
+  const backendProxy = t === 'movie'
+    ? `/api/video/direct?id=${id}&type=movie`
+    : `/api/video/direct?id=${id}&type=tv&s=${season}&e=${ep}`
+
   return [
     { name: 'FiGo Proxy',      url: backendProxy }, // Recommended
     { name: 'vidsrc.to',       url: t === 'movie' ? `https://vidsrc.to/embed/movie/${id}` : `https://vidsrc.to/embed/tv/${id}/${season}/${ep}` },
@@ -320,8 +351,48 @@ async function loadRow(key: string) {
   }
 }
 
+// ─── PIN Gate ─────────────────────────────────────────────────────────────────
+const unlocked = ref(false)
+const pinInput = ref('')
+const pinError = ref('')
+const pinLoading = ref(false)
+
+async function checkStatus() {
+  try {
+    const data: any = await $fetch('/api/stream/status')
+    unlocked.value = data.unlocked === true
+  } catch {
+    unlocked.value = false
+  }
+}
+
+async function submitPin() {
+  if (!pinInput.value.trim()) return
+  pinLoading.value = true
+  pinError.value = ''
+  try {
+    await $fetch('/api/stream/verify', {
+      method: 'POST',
+      body: { pin: pinInput.value.trim() },
+    })
+    unlocked.value = true
+    pinInput.value = ''
+    // Load rows setelah unlock
+    rows.value.forEach(r => { r.loading = true; r.items = [] })
+    rows.value.forEach(r => loadRow(r.key))
+  } catch {
+    pinError.value = 'PIN salah. Coba lagi.'
+  } finally {
+    pinLoading.value = false
+  }
+}
+
 onMounted(() => {
-  rows.value.forEach(r => loadRow(r.key))
+  checkStatus().then(() => {
+    if (unlocked.value) {
+      rows.value.forEach(r => loadRow(r.key))
+    }
+  })
 })
 
 // ─── Search ──────────────────────────────────────────────────────────────────
@@ -331,7 +402,7 @@ function onSearch() {
   searchLoading.value = true
   searchTimer = setTimeout(async () => {
     try {
-      const data: any = await $fetch(`/api/trending?q=${encodeURIComponent(searchQuery.value)}`)
+      const data: any = await $fetch(`/api/search?q=${encodeURIComponent(searchQuery.value)}`)
       searchResults.value = (data.results || []) as CatalogItem[]
     } catch {
       searchResults.value = []
@@ -455,6 +526,60 @@ function closePlayer() {
   font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   overflow-x: hidden;
 }
+
+/* ─── PIN Gate ─────────────────────────────────────────────── */
+.pin-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #141414;
+  padding: 24px;
+}
+.pin-card {
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 36px 28px;
+  text-align: center;
+  max-width: 320px;
+  width: 100%;
+}
+.pin-icon { font-size: 48px; margin-bottom: 12px; }
+.pin-title { font-size: 22px; font-weight: 700; color: #fff; margin: 0 0 6px; }
+.pin-subtitle { font-size: 13px; color: #888; margin: 0 0 20px; }
+.pin-input-wrap { margin-bottom: 12px; }
+.pin-input {
+  width: 100%;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 18px;
+  letter-spacing: 4px;
+  padding: 14px 16px;
+  text-align: center;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color .15s;
+}
+.pin-input:focus { border-color: #e50914; }
+.pin-input::placeholder { letter-spacing: 0; color: #555; font-size: 14px; }
+.pin-error { color: #e50914; font-size: 13px; margin: 0 0 12px; }
+.pin-submit {
+  width: 100%;
+  background: #e50914;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+}
+.pin-submit:hover { background: #f40612; }
+.pin-submit:disabled { background: #555; cursor: not-allowed; }
 
 /* ─── Search Bar ────────────────────────────────────────────────── */
 .search-bar {
@@ -685,7 +810,7 @@ function closePlayer() {
   position: fixed;
   inset: 0;
   background: #000000cc;
-  z-index: 200;
+  z-index: 400; /* Di atas search-bar (100), di bawah player (600) */
   display: flex;
   align-items: flex-end;
   overflow: hidden;
@@ -707,7 +832,7 @@ function closePlayer() {
   min-height: 200px;
   max-height: 300px;
   background-size: cover;
-  background-position: center;
+  background-position: center top;
   background-color: #222;
   border-radius: 16px 16px 0 0;
   overflow: hidden;
@@ -880,7 +1005,7 @@ function closePlayer() {
   position: fixed;
   inset: 0;
   background: #000;
-  z-index: 300;
+  z-index: 600; /* Tertinggi — player penuh layar */
   display: flex;
   flex-direction: column;
 }
