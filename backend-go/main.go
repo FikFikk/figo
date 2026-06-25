@@ -97,6 +97,10 @@ func main() {
 	netflix := newNetflixState()
 	netflix.registerNetflixRoutes(mux)
 
+	// Streaming — LK21 scraper untuk direct video playback
+	streaming := newStreamingState()
+	streaming.registerStreamingRoutes(mux)
+
 	port := envString("PORT", defaultPort)
 	server := &http.Server{
 		Addr:              "127.0.0.1:" + port,
