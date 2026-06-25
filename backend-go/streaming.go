@@ -1,29 +1,32 @@
 package main
 
 // ================================================================
-// STREAMING — LK21 scraper untuk direct video streaming
-// Menyediakan endpoint untuk search film Indonesia dan extract video URL
+// STREAMING — Auto-play streaming dengan vidsrc.xyz embed
+// Menggunakan TMDB API untuk metadata + vidsrc.xyz untuk video player
 //
 // Endpoints:
-//   /stream/search       — cari film/series via ?q=
-//   /stream/detail       — detail + video sources via ?id=
-//   /stream/trending     — film trending Indonesia
+//   /stream/search       — cari film/series via ?q= (TMDB search)
+//   /stream/detail       — detail + auto embed URL via ?id=&type=
+//   /stream/trending     — film trending (TMDB)
 //
+// Vidsrc.xyz embed format:
+//   - Movie: https://vidsrc.xyz/embed/movie/{tmdb_id}
+//   - Series: https://vidsrc.xyz/embed/tv/{tmdb_id}/{season}/{episode}
 // ================================================================
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
-	"regexp"
+	"strconv"
 	"strings"
-
-	"github.com/PuerkitoBio/goquery"
 )
 
 const (
-	lk21Base = "https://lk21official.mom"
+	vidsrcBase = "https://vidsrc.xyz/embed"
 )
 
 // --- Response structs ---
@@ -31,12 +34,15 @@ const (
 type streamSearchResult struct {
 	ID        string   `json:"id"`
 	Title     string   `json:"title"`
-	Type      string   `json:"type"`      // "movie" or "series"
+	Type      string   `json:"type"` // "movie" or "tv"
 	Year      string   `json:"year"`
 	Poster    string   `json:"poster"`
-	Rating    string   `json:"rating"`
+	Backdrop  string   `json:"backdrop"`
+	Rating    float64  `json:"rating"`
+	Overview  string   `json:"overview"`
 	Genres    []string `json:"genres"`
-	StreamURL string   `json:"stream_url"` // internal endpoint /stream/detail?id=
+	StreamURL string   `json:"stream_url"` // /stream/detail?id=X&type=movie
+	EmbedURL  string   `json:"embed_url"`  // direct vidsrc.xyz URL
 }
 
 type streamDetail struct {
@@ -46,33 +52,36 @@ type streamDetail struct {
 	Year        string         `json:"year"`
 	Poster      string         `json:"poster"`
 	Backdrop    string         `json:"backdrop"`
-	Rating      string         `json:"rating"`
-	Duration    string         `json:"duration"`
-	Synopsis    string         `json:"synopsis"`
+	Rating      float64        `json:"rating"`
+	Overview    string         `json:"overview"`
 	Genres      []string       `json:"genres"`
-	Directors   []string       `json:"directors"`
-	Casts       []string       `json:"casts"`
-	VideoSources []videoSource `json:"video_sources"`
+	Runtime     int            `json:"runtime,omitempty"`
+	Seasons     int            `json:"seasons,omitempty"`
+	EmbedURL    string         `json:"embed_url"`    // vidsrc URL untuk movie
+	Episodes    []episodeInfo  `json:"episodes,omitempty"` // untuk series
 }
 
-type videoSource struct {
-	Provider    string   `json:"provider"`
-	Quality     string   `json:"quality"`
-	URL         string   `json:"url"`
-	Resolutions []string `json:"resolutions,omitempty"`
+type episodeInfo struct {
+	Season   int    `json:"season"`
+	Episode  int    `json:"episode"`
+	Name     string `json:"name"`
+	Overview string `json:"overview"`
+	EmbedURL string `json:"embed_url"` // vidsrc URL untuk episode
 }
 
 // --- State ---
 
 type streamingState struct {
-	cache  *catalogCache
-	client *http.Client
+	cache     *catalogCache
+	client    *http.Client
+	tmdbToken string
 }
 
 func newStreamingState() *streamingState {
 	return &streamingState{
-		cache:  newCatalogCache(),
-		client: &http.Client{Timeout: httpGetTimout},
+		cache:     newCatalogCache(),
+		client:    &http.Client{Timeout: httpGetTimout},
+		tmdbToken: envString("TMDB_API_KEY", ""),
 	}
 }
 
@@ -95,50 +104,67 @@ func (ss *streamingState) searchHandler(w http.ResponseWriter, r *http.Request) 
 	ctx, cancel := context.WithTimeout(r.Context(), httpGetTimout)
 	defer cancel()
 
-	// Search LK21
-	searchURL := fmt.Sprintf("%s/?s=%s", lk21Base, url.QueryEscape(q))
-	
-	doc, err := ss.fetchHTML(ctx, searchURL)
+	// Search via TMDB
+	tmdbURL := fmt.Sprintf("%s/search/multi?api_key=%s&query=%s&language=id-ID&page=1",
+		tmdbBase, ss.tmdbToken, url.QueryEscape(q))
+
+	body, err := ss.fetchTMDB(ctx, tmdbURL)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "Scraping failed", "error": err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "TMDB search failed", "error": err.Error()})
+		return
+	}
+
+	var resp struct {
+		Results []struct {
+			ID           int     `json:"id"`
+			Title        string  `json:"title"`
+			Name         string  `json:"name"`
+			MediaType    string  `json:"media_type"`
+			ReleaseDate  string  `json:"release_date"`
+			FirstAirDate string  `json:"first_air_date"`
+			PosterPath   string  `json:"poster_path"`
+			BackdropPath string  `json:"backdrop_path"`
+			VoteAverage  float64 `json:"vote_average"`
+			Overview     string  `json:"overview"`
+		} `json:"results"`
+	}
+
+	if err := json.Unmarshal(body, &resp); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "Failed to parse TMDB response"})
 		return
 	}
 
 	results := []streamSearchResult{}
-	
-	doc.Find("article.item").Each(func(i int, s *goquery.Selection) {
-		result := streamSearchResult{}
-		
-		// Extract ID from URL
-		href, exists := s.Find("a").Attr("href")
-		if !exists {
-			return
+	for _, item := range resp.Results {
+		if item.MediaType != "movie" && item.MediaType != "tv" {
+			continue
 		}
-		parts := strings.Split(strings.Trim(href, "/"), "/")
-		if len(parts) > 0 {
-			result.ID = parts[len(parts)-1]
+
+		title := item.Title
+		if title == "" {
+			title = item.Name
 		}
-		
-		result.Title = s.Find("h2.entry-title").Text()
-		result.Poster, _ = s.Find("img").Attr("src")
-		result.Rating = s.Find("span.rating").Text()
-		result.Year = extractYear(s.Find("span.year").Text())
-		result.Type = "movie" // default
-		
-		// Detect series
-		if strings.Contains(strings.ToLower(href), "series") {
-			result.Type = "series"
+
+		year := extractYear(item.ReleaseDate)
+		if year == "" {
+			year = extractYear(item.FirstAirDate)
 		}
-		
-		// Extract genres
-		s.Find("a[rel=category tag]").Each(func(j int, genre *goquery.Selection) {
-			result.Genres = append(result.Genres, genre.Text())
-		})
-		
-		result.StreamURL = fmt.Sprintf("/stream/detail?id=%s", result.ID)
-		
+
+		result := streamSearchResult{
+			ID:        strconv.Itoa(item.ID),
+			Title:     title,
+			Type:      item.MediaType,
+			Year:      year,
+			Poster:    ss.tmdbImageURL(item.PosterPath, "w500"),
+			Backdrop:  ss.tmdbImageURL(item.BackdropPath, "w1280"),
+			Rating:    item.VoteAverage,
+			Overview:  item.Overview,
+			StreamURL: fmt.Sprintf("/stream/detail?id=%d&type=%s", item.ID, item.MediaType),
+			EmbedURL:  ss.buildVidsrcURL(item.ID, item.MediaType, 1, 1),
+		}
+
 		results = append(results, result)
-	})
+	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"query":   q,
@@ -149,84 +175,119 @@ func (ss *streamingState) searchHandler(w http.ResponseWriter, r *http.Request) 
 
 func (ss *streamingState) detailHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	if id == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]any{"message": "Missing parameter 'id'"})
+	mediaType := r.URL.Query().Get("type")
+
+	if id == "" || mediaType == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"message": "Missing 'id' or 'type' parameter"})
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), httpGetTimout)
 	defer cancel()
 
-	// Fetch detail page
-	detailURL := fmt.Sprintf("%s/%s", lk21Base, id)
-	
-	doc, err := ss.fetchHTML(ctx, detailURL)
+	// Fetch detail dari TMDB
+	tmdbURL := fmt.Sprintf("%s/%s/%s?api_key=%s&language=id-ID",
+		tmdbBase, mediaType, id, ss.tmdbToken)
+
+	body, err := ss.fetchTMDB(ctx, tmdbURL)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "Scraping failed", "error": err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "TMDB detail failed", "error": err.Error()})
 		return
 	}
 
-	detail := streamDetail{ID: id}
-	
-	// Extract metadata
-	detail.Title = doc.Find("h1.entry-title").Text()
-	detail.Poster, _ = doc.Find("div.poster img").Attr("src")
-	detail.Backdrop, _ = doc.Find("div.backdrop img").Attr("src")
-	detail.Rating = doc.Find("span.rating strong").Text()
-	detail.Synopsis = strings.TrimSpace(doc.Find("div[itemprop=description]").Text())
-	
-	// Extract additional info
-	doc.Find("div.info").Each(func(i int, s *goquery.Selection) {
-		label := strings.TrimSpace(s.Find("strong").Text())
-		s.Find("strong").Remove()
-		value := strings.TrimSpace(s.Text())
-		
-		switch strings.ToLower(label) {
-		case "tahun:":
-			detail.Year = value
-		case "durasi:":
-			detail.Duration = value
-		case "genre:":
-			detail.Genres = strings.Split(value, ", ")
-		case "direksi:":
-			detail.Directors = strings.Split(value, ", ")
-		case "aktor:":
-			detail.Casts = strings.Split(value, ", ")
+	if mediaType == "movie" {
+		var movie struct {
+			ID           int     `json:"id"`
+			Title        string  `json:"title"`
+			ReleaseDate  string  `json:"release_date"`
+			PosterPath   string  `json:"poster_path"`
+			BackdropPath string  `json:"backdrop_path"`
+			VoteAverage  float64 `json:"vote_average"`
+			Overview     string  `json:"overview"`
+			Runtime      int     `json:"runtime"`
+			Genres       []struct {
+				Name string `json:"name"`
+			} `json:"genres"`
 		}
-	})
-	
-	// Extract video sources (iframe embeds)
-	doc.Find("div#player-option-1").Find("iframe").Each(func(i int, s *goquery.Selection) {
-		src, exists := s.Attr("src")
-		if !exists {
+
+		if err := json.Unmarshal(body, &movie); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "Failed to parse movie"})
 			return
 		}
-		
-		detail.VideoSources = append(detail.VideoSources, videoSource{
-			Provider: fmt.Sprintf("Server %d", i+1),
-			Quality:  "HD",
-			URL:      src,
+
+		genres := []string{}
+		for _, g := range movie.Genres {
+			genres = append(genres, g.Name)
+		}
+
+		detail := streamDetail{
+			ID:       id,
+			Title:    movie.Title,
+			Type:     "movie",
+			Year:     extractYear(movie.ReleaseDate),
+			Poster:   ss.tmdbImageURL(movie.PosterPath, "w500"),
+			Backdrop: ss.tmdbImageURL(movie.BackdropPath, "w1280"),
+			Rating:   movie.VoteAverage,
+			Overview: movie.Overview,
+			Runtime:  movie.Runtime,
+			Genres:   genres,
+			EmbedURL: ss.buildVidsrcURL(movie.ID, "movie", 0, 0),
+		}
+
+		writeJSON(w, http.StatusOK, detail)
+		return
+	}
+
+	// TV Series
+	var series struct {
+		ID               int     `json:"id"`
+		Name             string  `json:"name"`
+		FirstAirDate     string  `json:"first_air_date"`
+		PosterPath       string  `json:"poster_path"`
+		BackdropPath     string  `json:"backdrop_path"`
+		VoteAverage      float64 `json:"vote_average"`
+		Overview         string  `json:"overview"`
+		NumberOfSeasons  int     `json:"number_of_seasons"`
+		NumberOfEpisodes int     `json:"number_of_episodes"`
+		Genres           []struct {
+			Name string `json:"name"`
+		} `json:"genres"`
+	}
+
+	if err := json.Unmarshal(body, &series); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "Failed to parse series"})
+		return
+	}
+
+	genres := []string{}
+	for _, g := range series.Genres {
+		genres = append(genres, g.Name)
+	}
+
+	// Generate sample episodes (season 1, first 10 episodes)
+	episodes := []episodeInfo{}
+	for ep := 1; ep <= 10; ep++ {
+		episodes = append(episodes, episodeInfo{
+			Season:   1,
+			Episode:  ep,
+			Name:     fmt.Sprintf("Episode %d", ep),
+			Overview: "",
+			EmbedURL: ss.buildVidsrcURL(series.ID, "tv", 1, ep),
 		})
-	})
-	
-	// If no iframe, try to find direct video links
-	if len(detail.VideoSources) == 0 {
-		doc.Find("div.player-wrapper").Find("source").Each(func(i int, s *goquery.Selection) {
-			src, exists := s.Attr("src")
-			if !exists {
-				return
-			}
-			quality, _ := s.Attr("label")
-			if quality == "" {
-				quality = "HD"
-			}
-			
-			detail.VideoSources = append(detail.VideoSources, videoSource{
-				Provider: "Direct",
-				Quality:  quality,
-				URL:      src,
-			})
-		})
+	}
+
+	detail := streamDetail{
+		ID:       id,
+		Title:    series.Name,
+		Type:     "tv",
+		Year:     extractYear(series.FirstAirDate),
+		Poster:   ss.tmdbImageURL(series.PosterPath, "w500"),
+		Backdrop: ss.tmdbImageURL(series.BackdropPath, "w1280"),
+		Rating:   series.VoteAverage,
+		Overview: series.Overview,
+		Genres:   genres,
+		Seasons:  series.NumberOfSeasons,
+		Episodes: episodes,
 	}
 
 	writeJSON(w, http.StatusOK, detail)
@@ -236,45 +297,67 @@ func (ss *streamingState) trendingHandler(w http.ResponseWriter, r *http.Request
 	ctx, cancel := context.WithTimeout(r.Context(), httpGetTimout)
 	defer cancel()
 
-	// Fetch trending page (homepage)
-	doc, err := ss.fetchHTML(ctx, lk21Base)
+	// Trending dari TMDB (all — movie + tv)
+	tmdbURL := fmt.Sprintf("%s/trending/all/week?api_key=%s&language=id-ID",
+		tmdbBase, ss.tmdbToken)
+
+	body, err := ss.fetchTMDB(ctx, tmdbURL)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "Scraping failed", "error": err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "TMDB trending failed", "error": err.Error()})
+		return
+	}
+
+	var resp struct {
+		Results []struct {
+			ID           int     `json:"id"`
+			Title        string  `json:"title"`
+			Name         string  `json:"name"`
+			MediaType    string  `json:"media_type"`
+			ReleaseDate  string  `json:"release_date"`
+			FirstAirDate string  `json:"first_air_date"`
+			PosterPath   string  `json:"poster_path"`
+			BackdropPath string  `json:"backdrop_path"`
+			VoteAverage  float64 `json:"vote_average"`
+			Overview     string  `json:"overview"`
+		} `json:"results"`
+	}
+
+	if err := json.Unmarshal(body, &resp); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "Failed to parse TMDB response"})
 		return
 	}
 
 	results := []streamSearchResult{}
-	
-	doc.Find("article.item").Each(func(i int, s *goquery.Selection) {
-		result := streamSearchResult{}
-		
-		href, exists := s.Find("a").Attr("href")
-		if !exists {
-			return
+	for _, item := range resp.Results {
+		if item.MediaType != "movie" && item.MediaType != "tv" {
+			continue
 		}
-		parts := strings.Split(strings.Trim(href, "/"), "/")
-		if len(parts) > 0 {
-			result.ID = parts[len(parts)-1]
+
+		title := item.Title
+		if title == "" {
+			title = item.Name
 		}
-		
-		result.Title = s.Find("h2.entry-title").Text()
-		result.Poster, _ = s.Find("img").Attr("src")
-		result.Rating = s.Find("span.rating").Text()
-		result.Year = extractYear(s.Find("span.year").Text())
-		result.Type = "movie"
-		
-		if strings.Contains(strings.ToLower(href), "series") {
-			result.Type = "series"
+
+		year := extractYear(item.ReleaseDate)
+		if year == "" {
+			year = extractYear(item.FirstAirDate)
 		}
-		
-		s.Find("a[rel=category tag]").Each(func(j int, genre *goquery.Selection) {
-			result.Genres = append(result.Genres, genre.Text())
-		})
-		
-		result.StreamURL = fmt.Sprintf("/stream/detail?id=%s", result.ID)
-		
+
+		result := streamSearchResult{
+			ID:        strconv.Itoa(item.ID),
+			Title:     title,
+			Type:      item.MediaType,
+			Year:      year,
+			Poster:    ss.tmdbImageURL(item.PosterPath, "w500"),
+			Backdrop:  ss.tmdbImageURL(item.BackdropPath, "w1280"),
+			Rating:    item.VoteAverage,
+			Overview:  item.Overview,
+			StreamURL: fmt.Sprintf("/stream/detail?id=%d&type=%s", item.ID, item.MediaType),
+			EmbedURL:  ss.buildVidsrcURL(item.ID, item.MediaType, 1, 1),
+		}
+
 		results = append(results, result)
-	})
+	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"count":   len(results),
@@ -282,35 +365,45 @@ func (ss *streamingState) trendingHandler(w http.ResponseWriter, r *http.Request
 	})
 }
 
-// --- Helper ---
+// --- Helpers ---
 
-func (ss *streamingState) fetchHTML(ctx context.Context, url string) (*goquery.Document, error) {
+func (ss *streamingState) fetchTMDB(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-	
+
 	resp, err := ss.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, &httpStatusError{code: resp.StatusCode}
 	}
-	
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	
-	return doc, nil
+
+	return io.ReadAll(resp.Body)
 }
 
-func extractYear(s string) string {
-	re := regexp.MustCompile(`\d{4}`)
-	match := re.FindString(s)
-	return match
+func (ss *streamingState) tmdbImageURL(path string, size string) string {
+	if path == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s/%s%s", tmdbImageBase, size, path)
+}
+
+func (ss *streamingState) buildVidsrcURL(id int, mediaType string, season int, episode int) string {
+	if mediaType == "movie" {
+		return fmt.Sprintf("%s/movie/%d", vidsrcBase, id)
+	}
+	return fmt.Sprintf("%s/tv/%d/%d/%d", vidsrcBase, id, season, episode)
+}
+
+func extractYear(dateStr string) string {
+	parts := strings.Split(dateStr, "-")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return ""
 }
