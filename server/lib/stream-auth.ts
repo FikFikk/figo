@@ -69,8 +69,8 @@ export function setUnlockCookie(event: H3Event): void {
   const token = createUnlockToken(event)
   setCookie(event, STREAM_COOKIE, token, {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: !import.meta.dev,
+    sameSite: 'none', // Allow incognito + iframe cross-origin
+    secure: true,     // Required when sameSite=none
     path: '/',
     maxAge: STREAM_TTL_SECONDS,
   })
