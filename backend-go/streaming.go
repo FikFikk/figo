@@ -62,11 +62,12 @@ type streamDetail struct {
 }
 
 type episodeInfo struct {
-	Season   int    `json:"season"`
-	Episode  int    `json:"episode"`
-	Name     string `json:"name"`
-	Overview string `json:"overview"`
-	EmbedURL string `json:"embed_url"` // vidsrc URL untuk episode
+	Season    int    `json:"season"`
+	Episode   int    `json:"episode"`
+	Name      string `json:"name"`
+	Overview  string `json:"overview"`
+	Thumbnail string `json:"thumbnail"` // episode still image
+	EmbedURL  string `json:"embed_url"` // vidsrc URL untuk episode
 }
 
 // --- State ---
@@ -264,16 +265,55 @@ func (ss *streamingState) detailHandler(w http.ResponseWriter, r *http.Request) 
 		genres = append(genres, g.Name)
 	}
 
-	// Generate sample episodes (season 1, first 10 episodes)
+	// Fetch season 1 episodes dengan thumbnail dari TMDB
+	seasonURL := fmt.Sprintf("%s/tv/%s/season/1?api_key=%s&language=id-ID",
+		tmdbBase, id, ss.tmdbToken)
+	
+	seasonBody, err := ss.fetchTMDB(ctx, seasonURL)
 	episodes := []episodeInfo{}
-	for ep := 1; ep <= 10; ep++ {
-		episodes = append(episodes, episodeInfo{
-			Season:   1,
-			Episode:  ep,
-			Name:     fmt.Sprintf("Episode %d", ep),
-			Overview: "",
-			EmbedURL: ss.buildVidsrcURL(series.ID, "tv", 1, ep),
-		})
+	
+	if err == nil {
+		var seasonData struct {
+			Episodes []struct {
+				EpisodeNumber int    `json:"episode_number"`
+				Name          string `json:"name"`
+				Overview      string `json:"overview"`
+				StillPath     string `json:"still_path"`
+			} `json:"episodes"`
+		}
+		
+		if json.Unmarshal(seasonBody, &seasonData) == nil {
+			for _, ep := range seasonData.Episodes {
+				thumbnail := ss.tmdbImageURL(ep.StillPath, "w300")
+				if thumbnail == "" {
+					// Fallback ke poster series jika thumbnail tidak ada
+					thumbnail = ss.tmdbImageURL(series.PosterPath, "w300")
+				}
+				
+				episodes = append(episodes, episodeInfo{
+					Season:    1,
+					Episode:   ep.EpisodeNumber,
+					Name:      ep.Name,
+					Overview:  ep.Overview,
+					Thumbnail: thumbnail,
+					EmbedURL:  ss.buildVidsrcURL(series.ID, "tv", 1, ep.EpisodeNumber),
+				})
+			}
+		}
+	}
+	
+	// Fallback jika fetch season gagal
+	if len(episodes) == 0 {
+		for ep := 1; ep <= 10; ep++ {
+			episodes = append(episodes, episodeInfo{
+				Season:    1,
+				Episode:   ep,
+				Name:      fmt.Sprintf("Episode %d", ep),
+				Overview:  "",
+				Thumbnail: ss.tmdbImageURL(series.PosterPath, "w300"),
+				EmbedURL:  ss.buildVidsrcURL(series.ID, "tv", 1, ep),
+			})
+		}
 	}
 
 	detail := streamDetail{
