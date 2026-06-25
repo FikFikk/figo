@@ -258,7 +258,7 @@ const activeEp = ref<Episode | null>(null)
 
 const playerUrl = ref<string | null>(null)
 const playerLabel = ref('')
-const activeSrc = ref('vidsrc.to')
+const activeSrc = ref('FiGo Proxy')
 
 const searchQuery = ref('')
 const searchResults = ref<CatalogItem[]>([])
@@ -269,7 +269,14 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 function buildSources(item: CatalogItem, season = 1, ep = 1) {
   const t = item.type === 'movie' ? 'movie' : 'tv'
   const id = item.id
+  
+  // Primary: Backend video proxy dengan ad-blocking & auto-fallback
+  const backendProxy = t === 'movie' 
+    ? `http://127.0.0.1:5001/video/direct?id=${id}&type=movie`
+    : `http://127.0.0.1:5001/video/direct?id=${id}&type=tv&s=${season}&e=${ep}`
+  
   return [
+    { name: 'FiGo Proxy',      url: backendProxy }, // Recommended
     { name: 'vidsrc.to',       url: t === 'movie' ? `https://vidsrc.to/embed/movie/${id}` : `https://vidsrc.to/embed/tv/${id}/${season}/${ep}` },
     { name: 'vidsrc.me',       url: t === 'movie' ? `https://vidsrc.me/embed/movie?tmdb=${id}` : `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${ep}` },
     { name: 'multiembed',      url: t === 'movie' ? `https://multiembed.mov/?video_id=${id}&tmdb=1` : `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${ep}` },
@@ -421,7 +428,7 @@ function openPlayer(item: CatalogItem, season: number, ep: number) {
   currentItem.value = item
   currentSeason.value = season
   currentEp.value = ep
-  activeSrc.value = 'vidsrc.to'
+  activeSrc.value = 'FiGo Proxy'
   const srcs = buildSources(item, season, ep)
   playerUrl.value = srcs[0].url
   playerLabel.value = item.type === 'movie'
