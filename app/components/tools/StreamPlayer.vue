@@ -188,7 +188,11 @@
                 :class="['ep-row', { 'ep-active': activeEp?.ep === ep.ep }]"
                 @click="playEp(ep)"
               >
-                <div class="ep-num">E{{ ep.ep }}</div>
+                <div v-if="ep.still" class="ep-thumb">
+                  <img :src="ep.still" :alt="ep.title" loading="lazy" />
+                  <svg class="ep-thumb-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                </div>
+                <div v-else class="ep-num">E{{ ep.ep }}</div>
                 <div class="ep-info">
                   <div class="ep-title">{{ ep.title || `Episode ${ep.ep}` }}</div>
                   <div class="ep-desc">{{ ep.overview }}</div>
@@ -216,6 +220,7 @@
               allowfullscreen
               referrerpolicy="no-referrer-when-downgrade"
               allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups"
             />
           </div>
           <!-- Fallback sources -->
@@ -262,6 +267,9 @@ interface Episode {
   title: string
   overview: string
   season: number
+  still?: string
+  air_date?: string
+  rating?: number
 }
 
 interface Row {
@@ -289,7 +297,7 @@ const activeEp = ref<Episode | null>(null)
 
 const playerUrl = ref<string | null>(null)
 const playerLabel = ref('')
-const activeSrc = ref('FiGo Proxy')
+const activeSrc = ref('vidsrc.me')
 
 const searchQuery = ref('')
 const searchResults = ref<CatalogItem[]>([])
@@ -301,18 +309,12 @@ function buildSources(item: CatalogItem, season = 1, ep = 1) {
   const t = item.type === 'movie' ? 'movie' : 'tv'
   const id = item.id
   
-  // Primary: Bridge ke Go backend melalui Nuxt API (browser-accessible)
-  const backendProxy = t === 'movie'
-    ? `/api/video/direct?id=${id}&type=movie`
-    : `/api/video/direct?id=${id}&type=tv&s=${season}&e=${ep}`
-
   return [
-    { name: 'FiGo Proxy',      url: backendProxy }, // Recommended
-    { name: 'vidsrc.to',       url: t === 'movie' ? `https://vidsrc.to/embed/movie/${id}` : `https://vidsrc.to/embed/tv/${id}/${season}/${ep}` },
     { name: 'vidsrc.me',       url: t === 'movie' ? `https://vidsrc.me/embed/movie?tmdb=${id}` : `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${ep}` },
+    { name: 'vidsrc.to',       url: t === 'movie' ? `https://vidsrc.to/embed/movie/${id}` : `https://vidsrc.to/embed/tv/${id}/${season}/${ep}` },
+    { name: 'embedsu',         url: t === 'movie' ? `https://embed.su/embed/movie/${id}` : `https://embed.su/embed/tv/${id}/${season}/${ep}` },
     { name: 'multiembed',      url: t === 'movie' ? `https://multiembed.mov/?video_id=${id}&tmdb=1` : `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${ep}` },
     { name: '2embed',          url: t === 'movie' ? `https://www.2embed.cc/embed/${id}` : `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${ep}` },
-    { name: 'embedsu',         url: t === 'movie' ? `https://embed.su/embed/movie/${id}` : `https://embed.su/embed/tv/${id}/${season}/${ep}` },
   ]
 }
 
@@ -502,7 +504,7 @@ function openPlayer(item: CatalogItem, season: number, ep: number) {
   currentItem.value = item
   currentSeason.value = season
   currentEp.value = ep
-  activeSrc.value = 'FiGo Proxy'
+  activeSrc.value = 'vidsrc.me'
   const srcs = buildSources(item, season, ep)
   playerUrl.value = srcs[0].url
   playerLabel.value = item.type === 'movie'
@@ -997,6 +999,34 @@ function closePlayer() {
   color: #777;
   font-weight: 600;
 }
+.ep-thumb {
+  flex-shrink: 0;
+  width: 120px;
+  height: 68px;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  background: #1a1a1a;
+}
+.ep-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ep-thumb-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 24px;
+  height: 24px;
+  color: #fff;
+  opacity: 0;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.6));
+  transition: opacity .15s;
+}
+.ep-row:hover .ep-thumb-play,
+.ep-row.ep-active .ep-thumb-play { opacity: 1; }
 .ep-info { flex: 1; min-width: 0; }
 .ep-title { font-size: 13px; font-weight: 600; color: #e5e5e5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ep-desc { font-size: 11px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
