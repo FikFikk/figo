@@ -102,6 +102,9 @@
             <div v-else-if="activeTool === 'stream'">
               <ToolsStreamPlayer />
             </div>
+            <div v-else-if="activeTool === 'hls-player'">
+              <ToolsStreamingPlayer />
+            </div>
             
             <!-- Default Welcome (unlikely but safe) -->
             <div v-else class="glass-panel rounded-3xl p-12 text-center" :class="isDark ? 'border border-white/5' : 'border border-slate-100'">
@@ -158,6 +161,10 @@ const toolSeoMap: Record<string, { title: string; description: string }> = {
     title: 'FiGo Bioskop — Katalog Film & Series — FiGo Tools',
     description: 'Jelajahi katalog film dan series, lihat detail episode per season, dan putar lewat proxy aman. Akses dilindungi PIN.'
   },
+  'hls-player': {
+    title: 'HLS Stream Player Online — Nonton & Ekstrak M3U8 — FiGo Tools',
+    description: 'Ekstrak link HLS .m3u8 streaming secara otomatis berdasarkan TMDB Movie/TV show ID. Putar video langsung di browser secara gratis.'
+  },
 }
 
 const route = useRoute()
@@ -185,6 +192,7 @@ const slugToId: Record<string, string> = {
   'secure-generator': 'generator',
   'qr-engine': 'qr',
   'stream': 'stream',
+  'hls-player': 'hls-player',
 }
 
 // Configuration for active tools (with URL slug)
@@ -199,6 +207,7 @@ const availableTools = [
   { id: 'generator', slug: 'secure-generator', name: 'Secure Generator', icon: 'vpn_key' },
   { id: 'qr', slug: 'qr-engine', name: 'QR Engine', icon: 'qr_code_2' },
   { id: 'stream', slug: 'stream', name: 'Bioskop', icon: 'movie' },
+  { id: 'hls-player', slug: 'hls-player', name: 'HLS Player', icon: 'live_tv' },
 ]
 
 // Resolve active tool dari slug di URL
