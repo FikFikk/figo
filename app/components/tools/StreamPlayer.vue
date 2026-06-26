@@ -39,11 +39,28 @@
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Cari film, series, anime..."
+          :placeholder="searchSource === 'lk21' ? 'Cari film Indonesia di LK21...' : 'Cari film, series, anime...'"
           class="search-input"
           @input="onSearch"
         />
         <button v-if="searchQuery" class="search-clear" @click="clearSearch">✕</button>
+        <!-- Source Toggle -->
+        <div class="search-source-toggle">
+          <button 
+            :class="['source-btn', { active: searchSource === 'tmdb' }]" 
+            @click="switchSearchSource('tmdb')"
+            title="Global (TMDB)"
+          >
+            🌍
+          </button>
+          <button 
+            :class="['source-btn', { active: searchSource === 'lk21' }]" 
+            @click="switchSearchSource('lk21')"
+            title="Indonesia (LK21)"
+          >
+            🇮🇩
+          </button>
+        </div>
       </div>
     </div>
 
@@ -301,6 +318,7 @@ const activeSrc = ref('vidsrc.me')
 
 const searchQuery = ref('')
 const searchResults = ref<CatalogItem[]>([])
+const searchSource = ref<'tmdb' | 'lk21'>('tmdb') // Default: TMDB global
 const searchLoading = ref(false)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -404,14 +422,48 @@ function onSearch() {
   searchLoading.value = true
   searchTimer = setTimeout(async () => {
     try {
-      const data: any = await $fetch(`/api/search?q=${encodeURIComponent(searchQuery.value)}`)
-      searchResults.value = (data.results || []) as CatalogItem[]
+      // Route berdasarkan searchSource
+      const endpoint = searchSource.value === 'lk21' 
+        ? `/api/lk21/search?q=${encodeURIComponent(searchQuery.value)}`
+        : `/api/search?q=${encodeURIComponent(searchQuery.value)}`
+      
+      const data: any = await $fetch(endpoint)
+      
+      // LK21 return format berbeda, perlu normalisasi
+      if (searchSource.value === 'lk21') {
+        searchResults.value = (data.results || []).map((item: any) => ({
+          id: item.url.replace(/^\//, ''), // "/toy-story-5-2026" → "toy-story-5-2026"
+          title: item.title,
+          poster: item.poster || '/placeholder.jpg',
+          year: extractYear(item.title),
+          rating: 0, // LK21 tidak return rating
+          type: 'movie', // LK21 mayoritas film
+          source: 'lk21',
+          lk21Url: `https://tv11.lk21official.cc${item.url}` // Full URL untuk streaming
+        }))
+      } else {
+        searchResults.value = (data.results || []) as CatalogItem[]
+      }
     } catch {
       searchResults.value = []
     } finally {
       searchLoading.value = false
     }
   }, 500)
+}
+
+function switchSearchSource(source: 'tmdb' | 'lk21') {
+  searchSource.value = source
+  // Re-trigger search kalau ada query
+  if (searchQuery.value.length >= 2) {
+    onSearch()
+  }
+}
+
+// Helper: extract tahun dari title (e.g. "Toy Story 5 (2026)" → "2026")
+function extractYear(title: string): string {
+  const match = title.match(/\((\d{4})\)/)
+  return match ? match[1] : ''
 }
 
 function clearSearch() {
@@ -429,6 +481,34 @@ async function openDetail(item: CatalogItem) {
   searchQuery.value = ''
   searchResults.value = []
 
+  // ═══ LK21 SOURCE ═══
+  if ((item as any).source === 'lk21') {
+    try {
+      // Fetch embed URLs dari backend
+      const lk21Url = (item as any).lk21Url
+      const streamData: any = await $fetch(`/api/lk21/stream?url=${encodeURIComponent(lk21Url)}`)
+      
+      // Set detail dengan embed URLs
+      detail.value = {
+        movie: {
+          ...item,
+          embedUrls: streamData.embed_urls || [],
+          source: 'lk21'
+        } as any,
+        cast: []
+      }
+      // Auto-play first embed
+      if (streamData.embed_urls?.length > 0) {
+        playVideo({ embedUrl: streamData.embed_urls[0] })
+      }
+    } catch (err) {
+      console.error('LK21 stream fetch error:', err)
+      detail.value = { movie: item as any, cast: [] }
+    }
+    return
+  }
+
+  // ═══ TMDB SOURCE (existing logic) ═══
   const isSeries = item.type !== 'movie'
   const endpointBase = isSeries ? '/api/netflix/detail' : '/api/movies/detail'
 
@@ -498,6 +578,13 @@ function playEp(ep: Episode) {
   if (!detail.value?.movie) return
   activeEp.value = ep
   openPlayer(detail.value.movie as CatalogItem, activeSeason.value, ep.ep)
+}
+
+function playVideo(opts: { embedUrl: string }) {
+  // Direct embed URL dari LK21
+  playerUrl.value = opts.embedUrl
+  playerLabel.value = detail.value?.movie?.title || 'Streaming'
+  activeSrc.value = 'LK21'
 }
 
 function openPlayer(item: CatalogItem, season: number, ep: number) {
@@ -621,6 +708,33 @@ function closePlayer() {
   font-size: 16px;
   cursor: pointer;
   padding: 4px;
+}
+
+/* ─── Source Toggle ───────────────────────────────────────────────── */
+.search-source-toggle {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+.source-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #999;
+}
+.source-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.source-btn.active {
+  background: rgba(229, 9, 20, 0.2);
+  border-color: rgba(229, 9, 20, 0.5);
+  color: #fff;
+  transform: scale(1.05);
 }
 
 /* ─── Search Results ────────────────────────────────────────────── */

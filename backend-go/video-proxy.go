@@ -271,7 +271,7 @@ func (vp *videoProxyState) generateCleanPlayer(primaryURL, id, mediaType, season
 	</style>
 </head>
 <body>
-	<iframe id="player" src="` + primaryURL + `" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-presentation" referrerpolicy="origin"></iframe>
+	<iframe id="player" src="` + primaryURL + `" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="no-referrer-when-downgrade"></iframe>
 	<div id="error">
 		<h2>Video tidak tersedia</h2>
 		<p>Coba sumber lain:</p>
@@ -279,20 +279,45 @@ func (vp *videoProxyState) generateCleanPlayer(primaryURL, id, mediaType, season
 		<button class="source-btn" onclick="switchSource('` + source3 + `')">2Embed</button>
 	</div>
 	<script>
+		// ── Anti-ads: block popups, new tabs, redirects ──
+		window.open = function() { return null; };
+		window.__open = window.open;
+		Object.defineProperty(window, 'open', { get: function() { return function() { return null; }; }, set: function() {} });
+
+		// Block click hijacking (ads that intercept first click)
+		document.addEventListener('click', function(e) {
+			var t = e.target;
+			while (t && t !== document.body) {
+				var tag = (t.tagName || '').toLowerCase();
+				if (tag === 'a') {
+					var href = t.getAttribute('href') || '';
+					var tgt = t.getAttribute('target') || '';
+					if (tgt === '_blank' || href.match(/doubleclick|ads|track|popads|popup|redirect/i)) {
+						e.preventDefault();
+						e.stopPropagation();
+						return false;
+					}
+				}
+				t = t.parentElement;
+			}
+		}, true);
+
+		// Block beforeunload hijacking (ad redirects)
+		window.addEventListener('beforeunload', function(e) { e.stopImmediatePropagation(); }, true);
+
 		const iframe = document.getElementById('player');
 		const error = document.getElementById('error');
 		let errorTimeout;
-		iframe.addEventListener('error', () => { error.classList.add('show'); });
-		errorTimeout = setTimeout(() => {
+		iframe.addEventListener('error', function() { error.classList.add('show'); });
+		errorTimeout = setTimeout(function() {
 			try { if (!iframe.contentWindow) { error.classList.add('show'); } } catch(e) {}
 		}, 5000);
 		function switchSource(url) {
 			error.classList.remove('show');
 			iframe.src = url;
 			clearTimeout(errorTimeout);
-			errorTimeout = setTimeout(() => { error.classList.add('show'); }, 5000);
+			errorTimeout = setTimeout(function() { error.classList.add('show'); }, 5000);
 		}
-		window.open = function() { return null; };
 	</script>
 </body>
 </html>`

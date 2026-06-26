@@ -105,6 +105,11 @@ func main() {
 	videoProxy := newVideoProxyState()
 	videoProxy.registerRoutes(mux)
 
+	// LK21 Scraper — Bypass Cloudflare, scrape film catalog & embed URLs
+	mux.HandleFunc("/lk21/domain", handleLK21Domain)
+	mux.HandleFunc("/lk21/search", handleLK21Search)
+	mux.HandleFunc("/lk21/stream", handleLK21Stream)
+
 	port := envString("PORT", defaultPort)
 	server := &http.Server{
 		Addr:              "127.0.0.1:" + port,
