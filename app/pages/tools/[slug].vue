@@ -207,7 +207,6 @@ const availableTools = [
   { id: 'generator', slug: 'secure-generator', name: 'Secure Generator', icon: 'vpn_key' },
   { id: 'qr', slug: 'qr-engine', name: 'QR Engine', icon: 'qr_code_2' },
   { id: 'stream', slug: 'stream', name: 'Bioskop', icon: 'movie' },
-  { id: 'hls-player', slug: 'hls-player', name: 'HLS Player', icon: 'live_tv' },
 ]
 
 // Resolve active tool dari slug di URL

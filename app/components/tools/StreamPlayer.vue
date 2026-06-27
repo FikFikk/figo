@@ -237,7 +237,7 @@
               allowfullscreen
               referrerpolicy="no-referrer-when-downgrade"
               allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
             />
           </div>
           <!-- Fallback sources -->

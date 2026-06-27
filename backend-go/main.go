@@ -105,6 +105,10 @@ func main() {
 	videoProxy := newVideoProxyState()
 	videoProxy.registerRoutes(mux)
 
+	// HLS Proxy — AES decrypt Rebahin payload & proxy stream
+	hlsProxy := newHLSProxyState()
+	hlsProxy.registerRoutes(mux)
+
 	// LK21 Scraper — Bypass Cloudflare, scrape film catalog & embed URLs
 	mux.HandleFunc("/lk21/domain", handleLK21Domain)
 	mux.HandleFunc("/lk21/search", handleLK21Search)
