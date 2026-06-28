@@ -216,16 +216,21 @@
 
     <!-- ═══ PLAYER MODAL ═══ -->
     <Transition name="modal-fade">
-      <div v-if="playerUrl" class="player-backdrop" @click.self="closePlayer">
+      <div v-if="playerUrl || streamLoading" class="player-backdrop" @click.self="closePlayer">
         <div class="player-box">
           <button class="player-close" @click="closePlayer">✕</button>
           <div class="player-title">
             {{ playerLabel }}
           </div>
           <div class="player-wrap">
+            <!-- Loading Overlay -->
+            <div v-if="streamLoading" class="player-loading-overlay">
+              <span class="loader-spin large" />
+              <p class="loading-text">Menyiapkan stream FiGo Proxy...</p>
+            </div>
             <!-- HLS Native Video Player -->
             <video
-              v-if="playerUrl.includes('.m3u8')"
+              v-else-if="playerUrl && playerUrl.includes('.m3u8')"
               :src="playerUrl"
               class="player-frame"
               controls
@@ -234,7 +239,7 @@
             />
             <!-- Iframe Embed Player -->
             <iframe
-              v-else
+              v-else-if="playerUrl"
               :src="playerUrl"
               class="player-frame"
               allowfullscreen
@@ -243,7 +248,7 @@
             />
           </div>
           <!-- Fallback sources -->
-          <div class="player-sources">
+          <div v-if="!streamLoading" class="player-sources">
             <span class="sources-label">Sumber lain:</span>
             <button
               v-for="src in altSources"
@@ -317,6 +322,7 @@ const activeEp = ref<Episode | null>(null)
 const playerUrl = ref<string | null>(null)
 const playerLabel = ref('')
 const activeSrc = ref('vidsrc.me')
+const streamLoading = ref(false)
 
 const searchQuery = ref('')
 const searchResults = ref<CatalogItem[]>([])
@@ -346,8 +352,26 @@ const currentSeason = ref(1)
 const currentEp = ref(1)
 
 const altSources = computed(() => {
+  if (detail.value?.movie) {
+    const m = detail.value.movie as any
+    if (m.source === 'rebahin' && m.hlsServers) {
+      return Object.entries(m.hlsServers).map(([name, url]) => ({
+        name: `FiGo Proxy (${name})`,
+        url: url as string,
+        isHls: true
+      }))
+    }
+    if (m.source === 'lk21' && m.embedUrls) {
+      return m.embedUrls.map((url: string, idx: number) => ({
+        name: `LK21 Server ${idx + 1}`,
+        url: url,
+        isHls: false
+      }))
+    }
+  }
+
   if (!currentItem.value) return []
-  return buildSources(currentItem.value, currentSeason.value, currentEp.value)
+  return buildSources(currentItem.value, currentSeason.value, currentEp.value).map(s => ({ ...s, isHls: false }))
 })
 
 // ─── Load rows ────────────────────────────────────────────────────────────────
@@ -436,6 +460,8 @@ function normalizeLK21(item: any): CatalogItem {
 
 async function fetchSearch(query: string, page = 1, append = false) {
   try {
+    const qLower = query.toLowerCase().trim()
+
     const [tmdbData, lk21Data]: [any, any] = await Promise.allSettled([
       $fetch(`/api/search?q=${encodeURIComponent(query)}&page=${page}`),
       $fetch(`/api/lk21/search?q=${encodeURIComponent(query)}&page=${page}`)
@@ -444,10 +470,14 @@ async function fetchSearch(query: string, page = 1, append = false) {
       l.status === 'fulfilled' ? l.value : { results: [] }
     ])
 
-    const tmdbResults: CatalogItem[] = (tmdbData.results || []) as CatalogItem[]
-    const lk21Results: CatalogItem[] = (lk21Data.results || []).map(normalizeLK21)
+    const tmdbResults: CatalogItem[] = ((tmdbData.results || []) as CatalogItem[]).filter(item => 
+      item.title && item.title.toLowerCase().includes(qLower)
+    )
+    const lk21Results: CatalogItem[] = ((lk21Data.results || []).map(normalizeLK21)).filter((item: any) => 
+      item.title && item.title.toLowerCase().includes(qLower)
+    )
 
-    // Interleave TMDB + LK21: TMDB first, LK21 append setelah
+    // Combined filtered results
     const merged = [...tmdbResults, ...lk21Results]
 
     if (append) {
@@ -456,8 +486,8 @@ async function fetchSearch(query: string, page = 1, append = false) {
       searchResults.value = merged
     }
 
-    // Has more jika TMDB masih ada halaman berikutnya
-    searchHasMore.value = (tmdbData.total_pages || 1) > page
+    // Has more jika TMDB/LK21 return halaman berikutnya
+    searchHasMore.value = (tmdbData.total_pages || 1) > page || lk21Results.length > 0
     searchPage.value = page
   } catch {
     if (!append) searchResults.value = []
@@ -514,17 +544,15 @@ async function openDetail(item: CatalogItem) {
 
   // ═══ LK21 SOURCE ═══
   if ((item as any).source === 'lk21') {
+    playerLabel.value = item.title || 'Streaming'
+    streamLoading.value = true
     try {
       const lk21Url = (item as any).lk21Url
-      
-      // Detect Rebahin vs LK21 dari URL
       const isRebahin = lk21Url.includes('rebahin')
       
       if (isRebahin) {
-        // Fetch HLS proxy URLs dari endpoint baru
         const streamData: any = await $fetch(`/api/stream/rebahin-proxy?url=${encodeURIComponent(lk21Url)}`)
         
-        // Set detail dengan HLS proxy URLs
         detail.value = {
           movie: {
             ...item,
@@ -534,7 +562,6 @@ async function openDetail(item: CatalogItem) {
           cast: []
         }
         
-        // Auto-play first HLS server
         const serverNames = Object.keys(streamData.servers || {})
         if (serverNames.length > 0) {
           const firstServer = serverNames[0]
@@ -544,7 +571,6 @@ async function openDetail(item: CatalogItem) {
           })
         }
       } else {
-        // LK21 legacy: fetch embed URLs
         const streamData: any = await $fetch(`/api/lk21/stream?url=${encodeURIComponent(lk21Url)}`)
         
         detail.value = {
@@ -563,6 +589,8 @@ async function openDetail(item: CatalogItem) {
     } catch (err) {
       console.error('LK21/Rebahin stream fetch error:', err)
       detail.value = { movie: item as any, cast: [] }
+    } finally {
+      streamLoading.value = false
     }
     return
   }
@@ -665,24 +693,30 @@ function openPlayer(item: CatalogItem, season: number, ep: number) {
     : `${item.title} — S${String(season).padStart(2,'0')}E${String(ep).padStart(2,'0')}`
 }
 
-function switchSource(src: { name: string; url: string }) {
+function switchSource(src: { name: string; url: string; isHls?: boolean }) {
   activeSrc.value = src.name
   playerUrl.value = src.url
 }
 
 function closePlayer() {
   playerUrl.value = null
+  streamLoading.value = false
 }
 </script>
 
 <style scoped>
 /* ─── Root ─────────────────────────────────────────────────────── */
 .stream-root {
-  background: #141414;
+  background: var(--bg-main, #141414);
   min-height: 100vh;
-  color: #fff;
+  color: var(--text-main, #fff);
   font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   overflow-x: hidden;
+}
+
+:global(html.light) .stream-root {
+  --bg-main: #f8fafc;
+  --text-main: #0f172a;
 }
 
 /* ─── PIN Gate ─────────────────────────────────────────────── */
@@ -744,17 +778,26 @@ function closePlayer() {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: linear-gradient(#141414ee, #14141400);
+  background: var(--search-bg-fade, linear-gradient(rgba(20,20,20,0.95), rgba(20,20,20,0)));
   padding: 12px 16px 8px;
+  backdrop-filter: blur(8px);
+}
+:global(html.light) .search-bar {
+  --search-bg-fade: linear-gradient(rgba(248,250,252,0.95), rgba(248,250,252,0));
 }
 .search-inner {
   display: flex;
   align-items: center;
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
-  border-radius: 8px;
+  background: var(--search-box-bg, #2a2a2a);
+  border: 1px solid var(--search-box-border, #3a3a3a);
+  border-radius: 12px;
   padding: 0 12px;
   gap: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+:global(html.light) .search-inner {
+  --search-box-bg: #ffffff;
+  --search-box-border: #e2e8f0;
 }
 .search-icon { width: 18px; height: 18px; color: #999; flex-shrink: 0; }
 .search-input {
@@ -762,11 +805,11 @@ function closePlayer() {
   background: none;
   border: none;
   outline: none;
-  color: #fff;
+  color: inherit;
   font-size: 15px;
   padding: 11px 0;
 }
-.search-input::placeholder { color: #666; }
+.search-input::placeholder { color: #888; }
 .search-clear {
   background: none;
   border: none;
@@ -995,28 +1038,37 @@ function closePlayer() {
 }
 .search-results-grid .poster-card { 
   width: 100%; 
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 .poster-wrap {
   position: relative;
   width: 100%;
   aspect-ratio: 2/3;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   background: #222;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-.poster-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.poster-img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
+  display: block; 
+}
 .poster-type-badge {
   position: absolute;
   top: 5px;
   right: 5px;
   font-size: 14px;
-  filter: drop-shadow(0 1px 3px #000);
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8));
 }
 .poster-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, #000b 30%, transparent 70%);
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 30%, transparent 70%);
   opacity: 0;
   transition: opacity .2s;
   display: flex;
@@ -1027,14 +1079,14 @@ function closePlayer() {
 .poster-card:active .poster-overlay { opacity: 1; }
 .poster-rating { font-size: 11px; color: #f5c518; font-weight: 600; }
 .poster-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  color: #e5e5e5;
+  color: inherit;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.poster-year { font-size: 10px; color: #888; }
+.poster-year { font-size: 11px; opacity: 0.7; }
 
 /* ─── Modal ─────────────────────────────────────────────────────── */
 .modal-backdrop {
@@ -1304,6 +1356,28 @@ function closePlayer() {
   flex: 1;
   position: relative;
   background: #000;
+}
+.player-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #0d0e12;
+  color: #888;
+  z-index: 10;
+}
+.loading-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #aaa;
+}
+.loader-spin.large {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
 }
 .player-frame {
   position: absolute;
