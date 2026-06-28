@@ -44,23 +44,6 @@
           @input="onSearch"
         />
         <button v-if="searchQuery" class="search-clear" @click="clearSearch">✕</button>
-        <!-- Source Toggle -->
-        <div class="search-source-toggle">
-          <button 
-            :class="['source-btn', { active: searchSource === 'tmdb' }]" 
-            @click="switchSearchSource('tmdb')"
-            title="Global (TMDB)"
-          >
-            🌍
-          </button>
-          <button 
-            :class="['source-btn', { active: searchSource === 'lk21' }]" 
-            @click="switchSearchSource('lk21')"
-            title="Indonesia (LK21)"
-          >
-            🇮🇩
-          </button>
-        </div>
       </div>
     </div>
 
@@ -77,15 +60,24 @@
           <div class="poster-wrap">
             <img :src="item.poster" :alt="item.title" class="poster-img" loading="lazy" />
             <div class="poster-type-badge">{{ item.type === 'movie' ? '🎬' : item.type === 'series' ? '📺' : '🎌' }}</div>
+            <!-- Badge sumber: LK21 vs TMDB -->
+            <div v-if="(item as any).source === 'lk21'" class="poster-source-badge">🇮🇩</div>
             <div class="poster-overlay">
-              <div class="poster-rating">★ {{ item.rating }}</div>
+              <div class="poster-rating">★ {{ item.rating || 'N/A' }}</div>
             </div>
           </div>
           <div class="poster-title">{{ item.title }}</div>
           <div class="poster-year">{{ item.year }}</div>
         </div>
       </div>
-      <div v-else class="empty-state">Tidak ada hasil untuk "{{ searchQuery }}"</div>
+      <!-- Load More -->
+      <div v-if="searchResults.length && searchHasMore" class="load-more-wrap">
+        <button class="load-more-btn" :disabled="searchLoadingMore" @click="loadMoreResults">
+          <span v-if="searchLoadingMore" class="loader-spin small" />
+          <span v-else>Muat Lebih Banyak</span>
+        </button>
+      </div>
+      <div v-else-if="!searchLoading && !searchResults.length" class="empty-state">Tidak ada hasil untuk "{{ searchQuery }}"</div>
     </template>
 
     <!-- ═══ MAIN CONTENT (home) ═══ -->
@@ -231,13 +223,23 @@
             {{ playerLabel }}
           </div>
           <div class="player-wrap">
+            <!-- HLS Native Video Player -->
+            <video
+              v-if="playerUrl.includes('.m3u8')"
+              :src="playerUrl"
+              class="player-frame"
+              controls
+              autoplay
+              playsinline
+            />
+            <!-- Iframe Embed Player -->
             <iframe
+              v-else
               :src="playerUrl"
               class="player-frame"
               allowfullscreen
               referrerpolicy="no-referrer-when-downgrade"
               allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
             />
           </div>
           <!-- Fallback sources -->
@@ -320,6 +322,9 @@ const searchQuery = ref('')
 const searchResults = ref<CatalogItem[]>([])
 const searchSource = ref<'tmdb' | 'lk21'>('tmdb') // Default: TMDB global
 const searchLoading = ref(false)
+const searchPage = ref(1)
+const searchHasMore = ref(false)
+const searchLoadingMore = ref(false)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 // ─── Sources (embed providers) ────────────────────────────────────────────────
@@ -416,48 +421,74 @@ onMounted(() => {
 })
 
 // ─── Search ──────────────────────────────────────────────────────────────────
+function normalizeLK21(item: any): CatalogItem {
+  return {
+    id: item.url.replace(/^\//, ''),
+    title: item.title,
+    poster: item.poster || '/placeholder.jpg',
+    year: extractYear(item.title),
+    rating: 0,
+    type: 'movie',
+    source: 'lk21',
+    lk21Url: `https://tv11.lk21official.cc${item.url}`
+  } as any
+}
+
+async function fetchSearch(query: string, page = 1, append = false) {
+  try {
+    const [tmdbData, lk21Data]: [any, any] = await Promise.allSettled([
+      $fetch(`/api/search?q=${encodeURIComponent(query)}&page=${page}`),
+      $fetch(`/api/lk21/search?q=${encodeURIComponent(query)}&page=${page}`)
+    ]).then(([t, l]) => [
+      t.status === 'fulfilled' ? t.value : { results: [], total_pages: 1 },
+      l.status === 'fulfilled' ? l.value : { results: [] }
+    ])
+
+    const tmdbResults: CatalogItem[] = (tmdbData.results || []) as CatalogItem[]
+    const lk21Results: CatalogItem[] = (lk21Data.results || []).map(normalizeLK21)
+
+    // Interleave TMDB + LK21: TMDB first, LK21 append setelah
+    const merged = [...tmdbResults, ...lk21Results]
+
+    if (append) {
+      searchResults.value = [...searchResults.value, ...merged]
+    } else {
+      searchResults.value = merged
+    }
+
+    // Has more jika TMDB masih ada halaman berikutnya
+    searchHasMore.value = (tmdbData.total_pages || 1) > page
+    searchPage.value = page
+  } catch {
+    if (!append) searchResults.value = []
+  }
+}
+
 function onSearch() {
   if (searchTimer) clearTimeout(searchTimer)
-  if (searchQuery.value.length < 2) { searchResults.value = []; return }
+  if (searchQuery.value.length < 2) {
+    searchResults.value = []
+    searchHasMore.value = false
+    return
+  }
   searchLoading.value = true
+  searchPage.value = 1
   searchTimer = setTimeout(async () => {
-    try {
-      // Route berdasarkan searchSource
-      const endpoint = searchSource.value === 'lk21' 
-        ? `/api/lk21/search?q=${encodeURIComponent(searchQuery.value)}`
-        : `/api/search?q=${encodeURIComponent(searchQuery.value)}`
-      
-      const data: any = await $fetch(endpoint)
-      
-      // LK21 return format berbeda, perlu normalisasi
-      if (searchSource.value === 'lk21') {
-        searchResults.value = (data.results || []).map((item: any) => ({
-          id: item.url.replace(/^\//, ''), // "/toy-story-5-2026" → "toy-story-5-2026"
-          title: item.title,
-          poster: item.poster || '/placeholder.jpg',
-          year: extractYear(item.title),
-          rating: 0, // LK21 tidak return rating
-          type: 'movie', // LK21 mayoritas film
-          source: 'lk21',
-          lk21Url: `https://tv11.lk21official.cc${item.url}` // Full URL untuk streaming
-        }))
-      } else {
-        searchResults.value = (data.results || []) as CatalogItem[]
-      }
-    } catch {
-      searchResults.value = []
-    } finally {
-      searchLoading.value = false
-    }
+    await fetchSearch(searchQuery.value, 1, false)
+    searchLoading.value = false
   }, 500)
+}
+
+async function loadMoreResults() {
+  if (searchLoadingMore.value || !searchHasMore.value) return
+  searchLoadingMore.value = true
+  await fetchSearch(searchQuery.value, searchPage.value + 1, true)
+  searchLoadingMore.value = false
 }
 
 function switchSearchSource(source: 'tmdb' | 'lk21') {
   searchSource.value = source
-  // Re-trigger search kalau ada query
-  if (searchQuery.value.length >= 2) {
-    onSearch()
-  }
+  if (searchQuery.value.length >= 2) onSearch()
 }
 
 // Helper: extract tahun dari title (e.g. "Toy Story 5 (2026)" → "2026")
@@ -484,25 +515,53 @@ async function openDetail(item: CatalogItem) {
   // ═══ LK21 SOURCE ═══
   if ((item as any).source === 'lk21') {
     try {
-      // Fetch embed URLs dari backend
       const lk21Url = (item as any).lk21Url
-      const streamData: any = await $fetch(`/api/lk21/stream?url=${encodeURIComponent(lk21Url)}`)
       
-      // Set detail dengan embed URLs
-      detail.value = {
-        movie: {
-          ...item,
-          embedUrls: streamData.embed_urls || [],
-          source: 'lk21'
-        } as any,
-        cast: []
-      }
-      // Auto-play first embed
-      if (streamData.embed_urls?.length > 0) {
-        playVideo({ embedUrl: streamData.embed_urls[0] })
+      // Detect Rebahin vs LK21 dari URL
+      const isRebahin = lk21Url.includes('rebahin')
+      
+      if (isRebahin) {
+        // Fetch HLS proxy URLs dari endpoint baru
+        const streamData: any = await $fetch(`/api/stream/rebahin-proxy?url=${encodeURIComponent(lk21Url)}`)
+        
+        // Set detail dengan HLS proxy URLs
+        detail.value = {
+          movie: {
+            ...item,
+            hlsServers: streamData.servers || {},
+            source: 'rebahin'
+          } as any,
+          cast: []
+        }
+        
+        // Auto-play first HLS server
+        const serverNames = Object.keys(streamData.servers || {})
+        if (serverNames.length > 0) {
+          const firstServer = serverNames[0]
+          playHLS({ 
+            url: streamData.servers[firstServer], 
+            label: firstServer 
+          })
+        }
+      } else {
+        // LK21 legacy: fetch embed URLs
+        const streamData: any = await $fetch(`/api/lk21/stream?url=${encodeURIComponent(lk21Url)}`)
+        
+        detail.value = {
+          movie: {
+            ...item,
+            embedUrls: streamData.embed_urls || [],
+            source: 'lk21'
+          } as any,
+          cast: []
+        }
+        
+        if (streamData.embed_urls?.length > 0) {
+          playVideo({ embedUrl: streamData.embed_urls[0] })
+        }
       }
     } catch (err) {
-      console.error('LK21 stream fetch error:', err)
+      console.error('LK21/Rebahin stream fetch error:', err)
       detail.value = { movie: item as any, cast: [] }
     }
     return
@@ -585,6 +644,13 @@ function playVideo(opts: { embedUrl: string }) {
   playerUrl.value = opts.embedUrl
   playerLabel.value = detail.value?.movie?.title || 'Streaming'
   activeSrc.value = 'LK21'
+}
+
+function playHLS(opts: { url: string; label: string }) {
+  // HLS m3u8 URL dari proxy - pass ke player sebagai HLS stream
+  playerUrl.value = opts.url
+  playerLabel.value = detail.value?.movie?.title || 'Streaming'
+  activeSrc.value = opts.label
 }
 
 function openPlayer(item: CatalogItem, season: number, ep: number) {
@@ -741,14 +807,58 @@ function closePlayer() {
 .search-results-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 12px;
   padding: 12px 16px 24px;
+}
+@media (min-width: 640px) {
+  .search-results-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .search-results-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
 }
 .empty-state {
   text-align: center;
   color: #666;
   padding: 48px 16px;
   font-size: 15px;
+}
+
+/* ─── Load More ──────────────────────────────────────────────────── */
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.load-more-btn {
+  background: #222;
+  border: 1px solid #444;
+  color: #ccc;
+  border-radius: 10px;
+  padding: 12px 32px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.load-more-btn:hover:not(:disabled) { background: #333; color: #fff; }
+.load-more-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ─── Poster Source Badge ─────────────────────────────────────────── */
+.poster-source-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 14px;
+  background: rgba(0,0,0,.6);
+  border-radius: 6px;
+  padding: 2px 4px;
+  line-height: 1;
 }
 
 /* ─── Hero Banner ───────────────────────────────────────────────── */
@@ -883,7 +993,9 @@ function closePlayer() {
   width: 100px;
   cursor: pointer;
 }
-.search-results-grid .poster-card { width: 100%; }
+.search-results-grid .poster-card { 
+  width: 100%; 
+}
 .poster-wrap {
   position: relative;
   width: 100%;
