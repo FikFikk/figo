@@ -7,15 +7,16 @@ const GO_API = process.env.GO_DOWNLOAD_API_URL || 'http://127.0.0.1:5001'
  * Cari film di LK21 (Indonesian content) via Cloudflare bypass
  */
 export default defineEventHandler(async (event) => {
-  const { q } = getQuery(event)
+  const { q, page } = getQuery(event)
   const query = String(q || '').trim()
+  const pageNum = String(page || '1')
 
   if (!query || query.length < 2) {
     return { results: [], count: 0, query }
   }
 
   try {
-    const data = await $fetch(`${GO_API}/lk21/search?q=${encodeURIComponent(query)}`)
+    const data = await $fetch(`${GO_API}/lk21/search?q=${encodeURIComponent(query)}&page=${pageNum}`)
     return data
   } catch (error: any) {
     console.error('LK21 search error:', error.message)
