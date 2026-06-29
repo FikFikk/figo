@@ -4,7 +4,7 @@
     <!-- ═══ PIN GATE ═══ -->
     <div v-if="!unlocked" class="pin-gate">
       <div class="pin-card">
-        <div class="pin-icon">🎬</div>
+        <div class="pin-icon">🔒</div>
         <h2 class="pin-title">FiGo Bioskop</h2>
         <p class="pin-subtitle">Masukkan PIN untuk mengakses</p>
         <div class="pin-input-wrap">
@@ -47,10 +47,69 @@
       </div>
     </div>
 
+    <!-- ═══ SEARCH FILTER SIDEBAR ═══ -->
+    <Transition name="slide-right">
+      <div v-if="isSearchActive" class="filter-sidebar">
+        <h3 class="filter-title">Filter</h3>
+        
+        <div class="filter-group">
+          <label class="filter-label">Kategori</label>
+          <div class="category-tabs">
+            <button 
+              :class="['cat-tab', { active: searchFilters.category === 'all' }]" 
+              @click="searchFilters.category = 'all'; applyFilters()"
+            >Semua</button>
+            <button 
+              :class="['cat-tab', { active: searchFilters.category === 'movie' }]" 
+              @click="searchFilters.category = 'movie'; applyFilters()"
+            >Film</button>
+            <button 
+              :class="['cat-tab', { active: searchFilters.category === 'series' }]" 
+              @click="searchFilters.category = 'series'; applyFilters()"
+            >Series</button>
+            <button 
+              :class="['cat-tab', { active: searchFilters.category === 'anime' }]" 
+              @click="searchFilters.category = 'anime'; applyFilters()"
+            >Anime</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Genre</label>
+          <select v-model="searchFilters.genre" class="filter-select" @change="applyFilters">
+            <option value="">Semua Genre</option>
+            <option value="action">Action</option>
+            <option value="comedy">Comedy</option>
+            <option value="drama">Drama</option>
+            <option value="horror">Horror</option>
+            <option value="romance">Romance</option>
+            <option value="sci-fi">Sci-Fi</option>
+            <option value="thriller">Thriller</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Tahun</label>
+          <select v-model="searchFilters.year" class="filter-select" @change="applyFilters">
+            <option value="">Semua Tahun</option>
+            <option value="2026">2026</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+            <option value="2021">2021</option>
+            <option value="2020">2020</option>
+          </select>
+        </div>
+
+        <button class="filter-reset" @click="resetFilters">Reset Filter</button>
+      </div>
+    </Transition>
+
     <!-- ═══ SEARCH RESULTS ═══ -->
     <template v-if="searchQuery.length > 1">
       <div v-if="searchLoading" class="center-loader"><span class="loader-spin"/></div>
-      <div v-else-if="searchResults.length" class="search-results-grid">
+      <div v-else-if="searchResults.length" class="search-results-grid" :class="{ 'with-sidebar': isSearchActive }">
         <div
           v-for="item in searchResults"
           :key="item.id + item.type"
@@ -59,9 +118,9 @@
         >
           <div class="poster-wrap">
             <img :src="item.poster" :alt="item.title" class="poster-img" loading="lazy" />
-            <div class="poster-type-badge">{{ item.type === 'movie' ? '🎬' : item.type === 'series' ? '📺' : '🎌' }}</div>
+            <div class="poster-type-badge">{{ item.type === 'movie' ? 'FILM' : item.type === 'series' ? 'SERIES' : 'ANIME' }}</div>
             <!-- Badge sumber: LK21 vs TMDB -->
-            <div v-if="(item as any).source === 'lk21'" class="poster-source-badge">🇮🇩</div>
+            <div v-if="(item as any).source === 'lk21'" class="poster-source-badge">ID</div>
             <div class="poster-overlay">
               <div class="poster-rating">★ {{ item.rating || 'N/A' }}</div>
             </div>
@@ -257,6 +316,13 @@
               @click="switchSource(src)"
             >{{ src.name }}</button>
           </div>
+          <!-- Scraper logs -->
+          <div v-if="scrapingLogs.length" class="scraper-logs">
+            <div class="logs-header">📋 Log Proses Ekstraksi Scraper:</div>
+            <div class="logs-body">
+              <div v-for="(log, idx) in scrapingLogs" :key="idx" class="log-line">{{ log }}</div>
+            </div>
+          </div>
         </div>
       </div>
     </Transition>
@@ -266,7 +332,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface CatalogItem {
@@ -305,14 +371,17 @@ interface Row {
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const rows = ref<Row[]>([
-  { key: 'trending',  label: '🔥 Trending Minggu Ini',   loading: true, items: [] },
-  { key: 'new',       label: '🆕 Baru Ditambahkan',       loading: true, items: [] },
-  { key: 'netflix',   label: '🎬 Netflix Originals',      loading: true, items: [] },
-  { key: 'movies',    label: '🍿 Film Populer',            loading: true, items: [] },
-  { key: 'anime',     label: '🎌 Anime',                  loading: true, items: [] },
+  { key: 'trending',  label: 'Trending Minggu Ini',   loading: true, items: [] },
+  { key: 'new',       label: 'Baru Ditambahkan',       loading: true, items: [] },
+  { key: 'netflix',   label: 'Netflix Originals',      loading: true, items: [] },
+  { key: 'movies',    label: 'Film Populer',            loading: true, items: [] },
+  { key: 'anime',     label: 'Anime',                  loading: true, items: [] },
 ])
 
-const hero = ref<CatalogItem | null>(null)
+const heroes = ref<CatalogItem[]>([]) // Array for carousel
+const heroIndex = ref(0)
+const hero = computed(() => heroes.value[heroIndex.value] || null)
+let heroCarouselTimer: ReturnType<typeof setInterval> | null = null
 const detail = ref<Detail | null>(null)
 const activeSeason = ref(1)
 const episodes = ref<Episode[]>([])
@@ -333,45 +402,114 @@ const searchHasMore = ref(false)
 const searchLoadingMore = ref(false)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
+// Search filters
+const searchFilters = ref({
+  category: 'all', // all | movie | series | anime
+  genre: '',
+  year: ''
+})
+
+const isSearchActive = computed(() => searchQuery.value.length > 1)
+
 // ─── Sources (embed providers) ────────────────────────────────────────────────
 function buildSources(item: CatalogItem, season = 1, ep = 1) {
-  const t = item.type === 'movie' ? 'movie' : 'tv'
-  const id = item.id
+  const { id, type: t } = item
   
+  // Anime type: pattern-based embed generator (no scraping)
+  if (t === 'anime') {
+    return buildAnimeEmbedSources(item.title, ep)
+  }
+  
+  // Movie/Series: TMDB-based embeds
   return [
     { name: 'vidsrc.me',       url: t === 'movie' ? `https://vidsrc.me/embed/movie?tmdb=${id}` : `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${ep}` },
     { name: 'vidsrc.to',       url: t === 'movie' ? `https://vidsrc.to/embed/movie/${id}` : `https://vidsrc.to/embed/tv/${id}/${season}/${ep}` },
-    { name: 'embedsu',         url: t === 'movie' ? `https://embed.su/embed/movie/${id}` : `https://embed.su/embed/tv/${id}/${season}/${ep}` },
-    { name: 'multiembed',      url: t === 'movie' ? `https://multiembed.mov/?video_id=${id}&tmdb=1` : `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${ep}` },
+    { name: 'vidsrc.xyz',      url: t === 'movie' ? `https://vidsrc.xyz/embed/movie/${id}` : `https://vidsrc.xyz/embed/tv/${id}/${season}/${ep}` },
+    { name: 'embed.su',        url: t === 'movie' ? `https://embed.su/embed/movie/${id}` : `https://embed.su/embed/tv/${id}/${season}/${ep}` },
     { name: '2embed',          url: t === 'movie' ? `https://www.2embed.cc/embed/${id}` : `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${ep}` },
+    { name: 'vidplayer.live',  url: t === 'movie' ? `https://vidplayer.live/movie/${id}` : `https://vidplayer.live/tv/${id}/${season}/${ep}` },
+    { name: 'abyssplayer.com', url: t === 'movie' ? `https://abyssplayer.com/movie/${id}` : `https://abyssplayer.com/tv/${id}/${season}/${ep}` },
+    { name: 'nontonaja.live',  url: t === 'movie' ? `https://nontonaja.live/embed/movie/${id}` : `https://nontonaja.live/embed/tv/${id}/${season}/${ep}` },
+    { name: 'autoembed.cc',    url: t === 'movie' ? `https://autoembed.cc/movie/tmdb/${id}` : `https://autoembed.cc/tv/tmdb/${id}-${season}-${ep}` },
   ]
 }
+
+function buildAnimeEmbedSources(title: string, episode: number) {
+  // Slugify: lowercase, replace non-alphanumeric with hyphen, trim edges
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  
+  return [
+    { name: '2Anime', url: `https://2anime.xyz/watch/${slug}-episode-${episode}` },
+    { name: 'GogoAnime', url: `https://gogoanime3.co/${slug}-episode-${episode}` },
+    { name: 'AnimeSuge', url: `https://animesuge.to/watch/${slug}-${episode}` },
+    { name: '9Anime', url: `https://9animetv.to/watch/${slug}-episode-${episode}` },
+    { name: 'Zoro', url: `https://hianime.to/watch/${slug}-${episode}` },
+  ]
+}
+
 
 const currentItem = ref<CatalogItem | null>(null)
 const currentSeason = ref(1)
 const currentEp = ref(1)
 
+// Multi-scraper proxy URLs
+const lk21ProxyUrl = ref<string | null>(null)
+const indoxxiProxyUrl = ref<string | null>(null)
+const scrapingLogs = ref<string[]>([])
+
 const altSources = computed(() => {
+  const allSources: { name: string; url: string; isHls?: boolean }[] = []
+  
+  // 1. FiGo Proxy scrapers (LK21, INDOXXI) — PRIORITAS PALING KIRI
+  if (lk21ProxyUrl.value) {
+    allSources.push({
+      name: 'FiGo Proxy (LK21)',
+      url: lk21ProxyUrl.value,
+      isHls: true
+    })
+  }
+  
+  if (indoxxiProxyUrl.value) {
+    allSources.push({
+      name: 'FiGo Proxy (INDOXXI)',
+      url: indoxxiProxyUrl.value,
+      isHls: true
+    })
+  }
+  
+  // 2. Embed universal sources (vidsrc, 2embed, dll)
+  if (currentItem.value) {
+    const embedSources = buildSources(currentItem.value, currentSeason.value, currentEp.value).map(s => ({ ...s, isHls: false }))
+    allSources.push(...embedSources)
+  }
+  
+  // 3. Fallback legacy sources (rebahin, lk21 old)
   if (detail.value?.movie) {
     const m = detail.value.movie as any
     if (m.source === 'rebahin' && m.hlsServers) {
-      return Object.entries(m.hlsServers).map(([name, url]) => ({
-        name: `FiGo Proxy (${name})`,
-        url: url as string,
-        isHls: true
-      }))
+      Object.entries(m.hlsServers).forEach(([name, url]) => {
+        allSources.push({
+          name: `FiGo Proxy (${name})`,
+          url: url as string,
+          isHls: true
+        })
+      })
     }
     if (m.source === 'lk21' && m.embedUrls) {
-      return m.embedUrls.map((url: string, idx: number) => ({
-        name: `LK21 Server ${idx + 1}`,
-        url: url,
-        isHls: false
-      }))
+      m.embedUrls.forEach((url: string, idx: number) => {
+        allSources.push({
+          name: `LK21 Server ${idx + 1}`,
+          url: url,
+          isHls: false
+        })
+      })
     }
   }
-
-  if (!currentItem.value) return []
-  return buildSources(currentItem.value, currentSeason.value, currentEp.value).map(s => ({ ...s, isHls: false }))
+  
+  return allSources
 })
 
 // ─── Load rows ────────────────────────────────────────────────────────────────
@@ -388,10 +526,11 @@ async function loadRow(key: string) {
     }
     const data: any = await $fetch(endpointMap[key])
     row.items = (data.results || []) as CatalogItem[]
-    if (!hero.value && row.key === 'trending' && row.items.length) {
-      // Pick random hero from trending
+    if (heroes.value.length === 0 && row.key === 'trending' && row.items.length) {
+      // Populate hero carousel from trending (up to 5 items)
       const pool = row.items.filter(i => i.backdrop)
-      hero.value = pool[Math.floor(Math.random() * pool.length)] || row.items[0]
+      heroes.value = pool.slice(0, 5)
+      startHeroCarousel()
     }
   } catch {
     row.items = []
@@ -436,13 +575,78 @@ async function submitPin() {
   }
 }
 
+// ─── Hero Carousel ────────────────────────────────────────────────────────────
+function startHeroCarousel() {
+  if (heroCarouselTimer) clearInterval(heroCarouselTimer)
+  if (heroes.value.length <= 1) return
+  
+  heroCarouselTimer = setInterval(() => {
+    heroIndex.value = (heroIndex.value + 1) % heroes.value.length
+  }, 5000) // Rotate every 5s
+}
+
+function stopHeroCarousel() {
+  if (heroCarouselTimer) {
+    clearInterval(heroCarouselTimer)
+    heroCarouselTimer = null
+  }
+}
+
 onMounted(() => {
+  loadURLParams() // Load search state from URL
   checkStatus().then(() => {
     if (unlocked.value) {
       rows.value.forEach(r => loadRow(r.key))
     }
   })
 })
+
+onBeforeUnmount(() => {
+  stopHeroCarousel()
+})
+
+// ─── URL Persist & Filters ────────────────────────────────────────────────────
+function updateURLParams() {
+  const params = new URLSearchParams()
+  if (searchQuery.value) params.set('q', searchQuery.value)
+  if (searchFilters.value.category !== 'all') params.set('category', searchFilters.value.category)
+  if (searchFilters.value.genre) params.set('genre', searchFilters.value.genre)
+  if (searchFilters.value.year) params.set('year', searchFilters.value.year)
+  
+  const newURL = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname
+  window.history.replaceState({}, '', newURL)
+}
+
+function loadURLParams() {
+  const params = new URLSearchParams(window.location.search)
+  const q = params.get('q')
+  const category = params.get('category')
+  const genre = params.get('genre')
+  const year = params.get('year')
+  
+  if (q) searchQuery.value = q
+  if (category) searchFilters.value.category = category
+  if (genre) searchFilters.value.genre = genre
+  if (year) searchFilters.value.year = year
+  
+  // Trigger search if query exists
+  if (q) onSearch()
+}
+
+function applyFilters() {
+  updateURLParams()
+  // Re-run search with new filters
+  if (searchQuery.value.length > 1) {
+    fetchSearch(searchQuery.value, 1, false)
+  }
+}
+
+function resetFilters() {
+  searchFilters.value.category = 'all'
+  searchFilters.value.genre = ''
+  searchFilters.value.year = ''
+  applyFilters()
+}
 
 // ─── Search ──────────────────────────────────────────────────────────────────
 function normalizeLK21(item: any): CatalogItem {
@@ -478,7 +682,19 @@ async function fetchSearch(query: string, page = 1, append = false) {
     )
 
     // Combined filtered results
-    const merged = [...tmdbResults, ...lk21Results]
+    let merged = [...tmdbResults, ...lk21Results]
+    
+    // Apply category filter
+    if (searchFilters.value.category !== 'all') {
+      merged = merged.filter(item => item.type === searchFilters.value.category)
+    }
+    
+    // Apply year filter
+    if (searchFilters.value.year) {
+      merged = merged.filter(item => item.year?.toString() === searchFilters.value.year)
+    }
+    
+    // Note: Genre filter butuh API support (TMDB genre IDs), skip untuk sekarang
 
     if (append) {
       searchResults.value = [...searchResults.value, ...merged]
@@ -499,10 +715,12 @@ function onSearch() {
   if (searchQuery.value.length < 2) {
     searchResults.value = []
     searchHasMore.value = false
+    updateURLParams() // Clear URL params when search cleared
     return
   }
   searchLoading.value = true
   searchPage.value = 1
+  updateURLParams() // Update URL with search query
   searchTimer = setTimeout(async () => {
     await fetchSearch(searchQuery.value, 1, false)
     searchLoading.value = false
@@ -530,6 +748,7 @@ function extractYear(title: string): string {
 function clearSearch() {
   searchQuery.value = ''
   searchResults.value = []
+  resetFilters()
 }
 
 // ─── Detail ───────────────────────────────────────────────────────────────────
@@ -541,6 +760,9 @@ async function openDetail(item: CatalogItem) {
   // Tutup search saat modal buka
   searchQuery.value = ''
   searchResults.value = []
+  
+  // Lock body scroll
+  document.body.style.overflow = 'hidden'
 
   // ═══ LK21 SOURCE ═══
   if ((item as any).source === 'lk21') {
@@ -618,6 +840,8 @@ async function openDetail(item: CatalogItem) {
 function closeDetail() {
   detail.value = null
   episodes.value = []
+  // Unlock body scroll
+  document.body.style.overflow = ''
 }
 
 // ─── Episodes ─────────────────────────────────────────────────────────────────
@@ -681,16 +905,117 @@ function playHLS(opts: { url: string; label: string }) {
   activeSrc.value = opts.label
 }
 
-function openPlayer(item: CatalogItem, season: number, ep: number) {
+async function openPlayer(item: CatalogItem, season: number, ep: number) {
   currentItem.value = item
   currentSeason.value = season
   currentEp.value = ep
-  activeSrc.value = 'vidsrc.me'
-  const srcs = buildSources(item, season, ep)
-  playerUrl.value = srcs[0].url
+  lk21ProxyUrl.value = null
+  indoxxiProxyUrl.value = null
+  scrapingLogs.value = []
+  streamLoading.value = false
+  
+  const addLog = (msg: string) => {
+    console.log(`[FiGo Scraper Log] ${msg}`)
+    scrapingLogs.value.push(msg)
+  }
+
   playerLabel.value = item.type === 'movie'
     ? item.title
     : `${item.title} — S${String(season).padStart(2,'0')}E${String(ep).padStart(2,'0')}`
+
+  // 1. Embed langsung sebagai fallback instant
+  const srcs = buildSources(item, season, ep)
+  activeSrc.value = srcs[0].name
+  playerUrl.value = srcs[0].url
+
+  addLog(`Memulai pencarian stream untuk: "${item.title}"`)
+  addLog(`[Embed Direct] Sumber embed universal (${srcs[0].name}) langsung aktif diawal.`)
+  addLog(`[Embed Options] ${srcs.length} embed tersedia: ${srcs.map(s => s.name).join(', ')}`)
+
+  // 2. Background scraping paralel LK21 + Embed validation
+  await Promise.all([
+    runBackgroundScraper(item, season, ep, addLog),
+    validateEmbedSources(srcs, addLog)
+  ])
+}
+
+async function validateEmbedSources(sources: { name: string; url: string }[], addLog: (msg: string) => void) {
+  addLog(`[Embed Validation] Memulai pengecekan ${sources.length} embed sources...`)
+  
+  const results = await Promise.allSettled(
+    sources.map(async (src) => {
+      try {
+        // HEAD request dengan timeout 5s untuk cek reachability
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 5000)
+        
+        const response = await fetch(src.url, {
+          method: 'HEAD',
+          signal: controller.signal,
+          mode: 'no-cors' // Bypass CORS untuk embed check
+        })
+        
+        clearTimeout(timeout)
+        
+        // no-cors mode selalu return opaque response (status 0), tapi kalau fetch sukses berarti reachable
+        return { name: src.name, status: 'reachable' }
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          return { name: src.name, status: 'timeout' }
+        }
+        return { name: src.name, status: 'failed', error: err.message }
+      }
+    })
+  )
+  
+  results.forEach((result, idx) => {
+    if (result.status === 'fulfilled') {
+      const { name, status, error } = result.value as any
+      if (status === 'reachable') {
+        addLog(`[Embed] ✓ ${name} — tersedia`)
+      } else if (status === 'timeout') {
+        addLog(`[Embed] ⏱ ${name} — timeout (>5s)`)
+      } else {
+        addLog(`[Embed] ✗ ${name} — gagal (${error || 'unreachable'})`)
+      }
+    } else {
+      addLog(`[Embed] ✗ ${sources[idx].name} — error validasi`)
+    }
+  })
+}
+
+async function runBackgroundScraper(item: CatalogItem, season: number, ep: number, addLog: (msg: string) => void) {
+  // Promise LK21
+  const lk21Promise = (async () => {
+    try {
+      addLog(`[LK21 Search] Mencari film "${item.title}" di database LK21...`)
+      const searchRes: any = await $fetch(`/api/lk21/search?q=${encodeURIComponent(item.title)}`)
+      const lk21Match = (searchRes.results || [])[0]
+      if (lk21Match && lk21Match.url) {
+        addLog(`[LK21 Match] Ditemukan match internal: "${lk21Match.title}" (${lk21Match.url})`)
+        const targetUrl = lk21Match.url.startsWith('http') ? lk21Match.url : `https://tv11.lk21official.cc${lk21Match.url}`
+        const lk21Stream: any = await $fetch(`/api/stream/lk21-proxy?url=${encodeURIComponent(targetUrl)}`)
+        if (lk21Stream.success && lk21Stream.proxy_url) {
+          addLog(`[LK21 HLS Proxy] Sukses ekstraksi dari match! Proxy URL siap.`)
+          addLog(`[FiGo Proxy LK21] Berhasil mengambil stream HLS (URL: ${lk21Stream.proxy_url})`)
+          lk21ProxyUrl.value = lk21Stream.proxy_url
+        } else {
+          addLog(`[LK21 HLS Proxy] Match ditemukan tapi gagal ekstrak HLS stream.`)
+        }
+      } else {
+        addLog(`[LK21 Search] Film "${item.title}" tidak ditemukan di database LK21.`)
+      }
+    } catch (e: any) {
+      addLog(`[LK21 Search] Error: ${e.message || e}`)
+    }
+  })()
+
+  // INDOXXI scraper disabled — morencius.com pakai JS obfuscation yang butuh headless browser
+  // const indoxxiPromise = (async () => { ... })()
+  
+  // Tunggu LK21 selesai
+  await lk21Promise
+  // await Promise.allSettled([lk21Promise, indoxxiPromise])
 }
 
 function switchSource(src: { name: string; url: string; isHls?: boolean }) {
@@ -712,11 +1037,27 @@ function closePlayer() {
   color: var(--text-main, #fff);
   font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   overflow-x: hidden;
+  --modal-bg: #181818;
+  --modal-backdrop: rgba(0, 0, 0, 0.8);
+  --card-bg: #1e1e1e;
+  --card-border: #2a2a2a;
+  --player-bg: #000;
+  --player-controls-bg: rgba(0, 0, 0, 0.9);
+  --text-secondary: #aaa;
+  --text-muted: #666;
 }
 
 :global(html.light) .stream-root {
   --bg-main: #f8fafc;
   --text-main: #0f172a;
+  --modal-bg: #ffffff;
+  --modal-backdrop: rgba(15, 23, 42, 0.8);
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --player-bg: #f1f5f9;
+  --player-controls-bg: rgba(255, 255, 255, 0.95);
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
 }
 
 /* ─── PIN Gate ─────────────────────────────────────────────── */
@@ -848,10 +1189,16 @@ function closePlayer() {
 
 /* ─── Search Results ────────────────────────────────────────────── */
 .search-results-grid {
+  position: relative;
+  z-index: 50; /* Di bawah search-bar (100), di atas konten biasa (0) */
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   padding: 12px 16px 24px;
+  transition: margin-left 0.3s ease;
+}
+.search-results-grid.with-sidebar {
+  margin-left: 240px; /* Width of filter sidebar */
 }
 @media (min-width: 640px) {
   .search-results-grid {
@@ -861,6 +1208,129 @@ function closePlayer() {
 @media (min-width: 1024px) {
   .search-results-grid {
     grid-template-columns: repeat(6, 1fr);
+  }
+  .search-results-grid.with-sidebar {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .search-results-grid.with-sidebar {
+    margin-left: 0;
+  }
+}
+
+/* ─── Filter Sidebar ──────────────────────────────────────────────── */
+.filter-sidebar {
+  position: fixed;
+  left: 0;
+  top: 80px; /* Below search bar */
+  width: 240px;
+  height: calc(100vh - 80px);
+  background: #1a1a1a;
+  border-right: 1px solid #333;
+  padding: 20px;
+  z-index: 40;
+  overflow-y: auto;
+}
+.filter-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 20px;
+}
+.filter-group {
+  margin-bottom: 20px;
+}
+.filter-label {
+  display: block;
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.category-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cat-tab {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.cat-tab:hover {
+  background: #333;
+  border-color: #555;
+}
+.cat-tab.active {
+  background: #0066ff;
+  border-color: #0066ff;
+  color: #fff;
+  font-weight: 600;
+}
+.filter-select {
+  width: 100%;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.filter-select:hover {
+  border-color: #555;
+}
+.filter-select:focus {
+  outline: none;
+  border-color: #0066ff;
+}
+.filter-reset {
+  width: 100%;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+.filter-reset:hover {
+  background: #333;
+  color: #fff;
+}
+
+/* Slide transition for filter sidebar */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.slide-right-enter-from {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+.slide-right-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+@media (max-width: 768px) {
+  .filter-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    top: 0;
+    border-right: none;
+    border-bottom: 1px solid #333;
   }
 }
 .empty-state {
@@ -912,6 +1382,7 @@ function closePlayer() {
   max-height: 420px;
   background-size: cover;
   background-position: center top;
+  transition: background-image 0.8s ease-in-out; /* Smooth carousel transition */
 }
 .hero-gradient {
   position: absolute;
@@ -1093,7 +1564,7 @@ function closePlayer() {
   position: fixed;
   inset: 0;
   background: #000000cc;
-  z-index: 400; /* Di atas search-bar (100), di bawah player (600) */
+  z-index: 9999; /* Overlay semua (sidebar, header, dll) */
   display: flex;
   align-items: flex-end;
   overflow: hidden;
@@ -1436,4 +1907,167 @@ function closePlayer() {
 .modal-fade-enter-active, .modal-fade-leave-active { transition: all .25s ease; }
 .modal-fade-enter-from { opacity: 0; transform: translateY(40px); }
 .modal-fade-leave-to   { opacity: 0; transform: translateY(40px); }
+
+/* ─── Scraper Logs ──────────────────────────────────────────────── */
+.scraper-logs {
+  background: var(--player-bg);
+  border-top: 1px solid var(--card-border);
+  padding: 10px 14px;
+  font-family: monospace;
+  font-size: 11px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.logs-header {
+  color: #fbbf24;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+.logs-body {
+  color: var(--text-secondary);
+}
+.log-line {
+  margin: 2px 0;
+  line-height: 1.4;
+}
+
+/* ─── Filter Sidebar ─────────────────────────────────────────────── */
+.filter-sidebar {
+  position: fixed;
+  left: 0;
+  top: 80px; /* Below search bar */
+  width: 240px;
+  height: calc(100vh - 80px);
+  background: #141414;
+  border-right: 1px solid #2a2a2a;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 90;
+}
+
+.filter-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.filter-group {
+  margin-bottom: 24px;
+}
+
+.filter-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.category-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cat-tab {
+  background: #222;
+  border: 1px solid #333;
+  color: #aaa;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.cat-tab:hover {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #fff;
+}
+
+.cat-tab.active {
+  background: #e50914;
+  border-color: #e50914;
+  color: #fff;
+  font-weight: 600;
+}
+
+.filter-select {
+  width: 100%;
+  background: #222;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-select:hover {
+  border-color: #444;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #e50914;
+}
+
+.filter-reset {
+  width: 100%;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #aaa;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.filter-reset:hover {
+  background: #333;
+  color: #fff;
+}
+
+/* Search results with sidebar */
+.search-results-grid.with-sidebar {
+  margin-left: 260px;
+  transition: margin-left 0.3s ease;
+}
+
+/* Slide-right transition for filter sidebar */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.slide-right-enter-from {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.slide-right-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .filter-sidebar {
+    width: 100%;
+    left: 0;
+    z-index: 95;
+  }
+  
+  .search-results-grid.with-sidebar {
+    margin-left: 0;
+  }
+}
 </style>

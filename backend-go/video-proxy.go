@@ -22,6 +22,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 )
 
 const (
@@ -36,9 +38,11 @@ type videoProxyState struct {
 }
 
 func newVideoProxyState() *videoProxyState {
+	transport := cloudflarebp.AddCloudFlareByPass(&http.Transport{})
 	return &videoProxyState{
 		client: &http.Client{
-			Timeout: httpGetTimout,
+			Transport: transport,
+			Timeout:   httpGetTimout,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return nil // Allow redirects
 			},

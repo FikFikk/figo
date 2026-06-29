@@ -13,6 +13,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	cloudflarebp "github.com/DaRealFreak/cloudflare-bp-go"
 )
 
 // HLSProxyState handles decryption and proxying HLS streams
@@ -21,17 +23,21 @@ type HLSProxyState struct {
 }
 
 func newHLSProxyState() *HLSProxyState {
+	transport := cloudflarebp.AddCloudFlareByPass(&http.Transport{})
 	return &HLSProxyState{
 		client: &http.Client{
-			Timeout: 15 * time.Second,
+			Transport: transport,
+			Timeout:   25 * time.Second,
 		},
 	}
 }
 
 func (h *HLSProxyState) registerRoutes(mux *http.ServeMux) {
-	log.Println("[HLS Proxy] Registering /stream/rebahin, /stream/proxy-m3u8, and HLS proxy endpoints")
+	log.Println("[HLS Proxy] Registering /stream/rebahin, /stream/proxy-m3u8, /stream/resolve-lk21, /stream/resolve-indoxxi, and HLS proxy endpoints")
 	mux.HandleFunc("/stream/rebahin", h.handleRebahinStream)
 	mux.HandleFunc("/stream/proxy-m3u8", h.handleProxyM3U8)
+	mux.HandleFunc("/stream/resolve-lk21", h.handleResolveLK21Stream)
+	mux.HandleFunc("/stream/resolve-indoxxi", h.handleResolveIndoxxiStream)
 	
 	// HLS proxy unified router dengan logging
 	mux.HandleFunc("/hls/", func(w http.ResponseWriter, r *http.Request) {
@@ -111,18 +117,50 @@ func (h *HLSProxyState) handleRebahinStream(w http.ResponseWriter, r *http.Reque
 
 	log.Printf("[HLS Proxy] Fetching Rebahin page: %s", targetURL)
 
-	// Step 1: Fetch Rebahin detail page to get embed iframe (e.g. playsobat.xyz/e/...)
-	req, _ := http.NewRequest("GET", targetURL, nil)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-	resp, err := h.client.Do(req)
-	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
-		return
-	}
-	defer resp.Body.Close()
+	// Step 1: Fetch Rebahin detail page with enhanced headers + retry
+	var bodyStr string
+	
+	for attempt := 1; attempt <= 3; attempt++ {
+		req, _ := http.NewRequest("GET", targetURL, nil)
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
+		req.Header.Set("Accept-Language", "en-US,en;q=0.9,id;q=0.8")
+		req.Header.Set("Accept-Encoding", "gzip, deflate, br")
+		req.Header.Set("Connection", "keep-alive")
+		req.Header.Set("Upgrade-Insecure-Requests", "1")
+		req.Header.Set("Sec-Fetch-Dest", "document")
+		req.Header.Set("Sec-Fetch-Mode", "navigate")
+		req.Header.Set("Sec-Fetch-Site", "none")
+		
+		resp, err := h.client.Do(req)
+		if err != nil {
+			if attempt < 3 {
+				log.Printf("[Rebahin] Attempt %d/3 failed: %v, retrying...", attempt, err)
+				time.Sleep(time.Duration(attempt*2) * time.Second)
+				continue
+			}
+			respondJSON(w, http.StatusInternalServerError, map[string]any{"error": "rebahin fetch failed after 3 attempts: " + err.Error()})
+			return
+		}
+		defer resp.Body.Close()
 
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	bodyStr := string(bodyBytes)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyStr = string(bodyBytes)
+		
+		// Check Cloudflare challenge
+		if strings.Contains(bodyStr, "challenges.cloudflare.com") || strings.Contains(bodyStr, "Just a moment") || strings.Contains(bodyStr, "Checking your browser") {
+			if attempt < 3 {
+				log.Printf("[Rebahin] Cloudflare challenge detected (attempt %d/3), retrying...", attempt)
+				time.Sleep(time.Duration(attempt*3) * time.Second)
+				continue
+			}
+			respondJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "cloudflare challenge not bypassed after 3 attempts"})
+			return
+		}
+		
+		// Success
+		break
+	}
 
 	// Find iframe playsobat src
 	iframeRegex := regexp.MustCompile(`<iframe[^>]*src=['"]([^'"]+)['"]`)
@@ -203,6 +241,31 @@ func respondJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+// /stream/resolve-lk21?url=...
+func (h *HLSProxyState) handleResolveLK21Stream(w http.ResponseWriter, r *http.Request) {
+	targetURL := r.URL.Query().Get("url")
+	if targetURL == "" {
+		respondJSON(w, http.StatusBadRequest, map[string]any{"error": "missing url parameter"})
+		return
+	}
+
+	client := NewLK21Client()
+	masterM3U8, err := client.GetLK21MasterHLS(targetURL)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+
+	base64URL := base64.StdEncoding.EncodeToString([]byte(masterM3U8))
+	proxyURL := fmt.Sprintf("https://go-api.fikfikk.my.id/hls/%s/master.m3u8", base64URL)
+
+	respondJSON(w, http.StatusOK, map[string]any{
+		"success":    true,
+		"master_m3u8": masterM3U8,
+		"proxy_url":   proxyURL,
+	})
 }
 
 // /api/stream/proxy-m3u8?url=...
@@ -419,3 +482,75 @@ func resolveURL(base *url.URL, ref string) string {
 	}
 	return base.ResolveReference(refURL).String()
 }
+
+// /stream/resolve-indoxxi?url=<iframe_embed_url>
+// Extract HLS m3u8 from INDOXXI embed players (abyssplayer.com, vidplayer.live, etc)
+func (h *HLSProxyState) handleResolveIndoxxiStream(w http.ResponseWriter, r *http.Request) {
+	embedURL := r.URL.Query().Get("url")
+	if embedURL == "" {
+		respondJSON(w, http.StatusBadRequest, map[string]any{"error": "missing url parameter"})
+		return
+	}
+
+	log.Printf("[INDOXXI Resolve] Fetching embed page: %s", embedURL)
+
+	// Fetch embed iframe page
+	req, _ := http.NewRequest("GET", embedURL, nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+	req.Header.Set("Referer", "https://146.190.87.25/")
+
+	resp, err := h.client.Do(req)
+	if err != nil {
+		log.Printf("[INDOXXI Resolve] Fetch error: %v", err)
+		respondJSON(w, http.StatusBadGateway, map[string]any{"error": fmt.Sprintf("fetch failed: %v", err)})
+		return
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	content := string(bodyBytes)
+
+	// Extract m3u8 URL — common patterns:
+	// 1. file:"https://...m3u8"
+	// 2. source:'https://...m3u8'
+	// 3. src:"https://...m3u8"
+	// 4. sources:[{file:"https://...m3u8"}]
+	patterns := []string{
+		`file[:\s]*["']([^"']*\.m3u8[^"']*)["']`,
+		`source[:\s]*["']([^"']*\.m3u8[^"']*)["']`,
+		`src[:\s]*["']([^"']*\.m3u8[^"']*)["']`,
+		`https?://[^"'\s]*\.m3u8[^"'\s]*`,
+	}
+
+	var m3u8URL string
+	for _, pattern := range patterns {
+		re := regexp.MustCompile(pattern)
+		matches := re.FindStringSubmatch(content)
+		if len(matches) > 1 {
+			m3u8URL = matches[1]
+			break
+		} else if len(matches) == 1 && strings.Contains(matches[0], ".m3u8") {
+			m3u8URL = matches[0]
+			break
+		}
+	}
+
+	if m3u8URL == "" {
+		log.Printf("[INDOXXI Resolve] m3u8 not found in embed page")
+		respondJSON(w, http.StatusNotFound, map[string]any{"error": "m3u8 URL not found in embed page"})
+		return
+	}
+
+	log.Printf("[INDOXXI Resolve] Extracted m3u8: %s", m3u8URL)
+
+	// Encode m3u8 URL ke base64 dan buat proxy URL
+	base64URL := base64.StdEncoding.EncodeToString([]byte(m3u8URL))
+	proxyURL := fmt.Sprintf("https://go-api.fikfikk.my.id/hls/%s/master.m3u8", base64URL)
+
+	respondJSON(w, http.StatusOK, map[string]any{
+		"success":    true,
+		"m3u8_url":   m3u8URL,
+		"proxy_url":  proxyURL,
+	})
+}
+
