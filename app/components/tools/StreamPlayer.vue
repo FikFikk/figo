@@ -480,7 +480,16 @@ const altSources = computed(() => {
     })
   }
   
-  // 2. Embed universal sources (vidsrc, 2embed, dll)
+  // 2. TMDB Proxy (movie only, direct MP4)
+  if (currentItem.value?.type === 'movie' && currentItem.value.id) {
+    allSources.push({
+      name: 'TMDB Proxy',
+      url: `https://tmdbprxy.pixtive.tech/api/movie/${currentItem.value.id}/stream.mp4`,
+      isHls: false
+    })
+  }
+  
+  // 3. Embed universal sources (vidsrc, 2embed, dll)
   if (currentItem.value) {
     const embedSources = buildSources(currentItem.value, currentSeason.value, currentEp.value).map(s => ({ ...s, isHls: false }))
     allSources.push(...embedSources)
