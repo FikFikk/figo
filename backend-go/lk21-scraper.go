@@ -159,7 +159,7 @@ func (c *LK21Client) SearchLK21(query string) ([]map[string]interface{}, error) 
 		link, _ := s.Find("a").Attr("href")
 		poster, _ := s.Find("img").Attr("src")
 		
-		if title != "" && link != "" {
+		if title != "" && link != "" && strings.Contains(strings.ToLower(title), strings.ToLower(query)) {
 			results = append(results, map[string]interface{}{
 				"title":  title,
 				"url":    link,
@@ -260,6 +260,57 @@ func isValidPlayerURL(url string) bool {
 	}
 	
 	return false
+}
+
+// GetLK21MasterHLS mengekstrak link .m3u8 fisik asli dari halaman film LK21
+func (c *LK21Client) GetLK21MasterHLS(filmURL string) (string, error) {
+	embedURLs, err := c.GetLK21StreamURL(filmURL)
+	if err != nil || len(embedURLs) == 0 {
+		return "", fmt.Errorf("no embed URLs found: %v", err)
+	}
+
+	for _, embedURL := range embedURLs {
+		if strings.Contains(embedURL, "/iframe/p2p/") || strings.Contains(embedURL, "/iframe/") {
+			// Extract ID dari playeriframe.sbs URL
+			parts := strings.Split(embedURL, "/")
+			p2pID := parts[len(parts)-1]
+			if p2pID == "" && len(parts) > 1 {
+				p2pID = parts[len(parts)-2]
+			}
+
+			if p2pID != "" {
+				// Call api2.php di cloud.hownetwork.xyz
+				apiURL := "https://cloud.hownetwork.xyz/api2.php?id=" + p2pID
+				form := url.Values{}
+				form.Set("r", "https://playeriframe.sbs/")
+				form.Set("d", "cloud.hownetwork.xyz")
+
+				req, err := http.NewRequest("POST", apiURL, strings.NewReader(form.Encode()))
+				if err != nil {
+					continue
+				}
+				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+				req.Header.Set("Referer", "https://cloud.hownetwork.xyz/")
+
+				resp, err := c.client.Do(req)
+				if err != nil {
+					continue
+				}
+				defer resp.Body.Close()
+
+				body, _ := io.ReadAll(resp.Body)
+				var res struct {
+					File string `json:"file"`
+				}
+				if err := json.Unmarshal(body, &res); err == nil && res.File != "" {
+					return res.File, nil
+				}
+			}
+		}
+	}
+
+	return "", fmt.Errorf("failed to extract physical m3u8 link from embeds")
 }
 
 // Handler untuk endpoint /api/lk21/domain
