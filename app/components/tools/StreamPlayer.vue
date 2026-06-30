@@ -32,18 +32,22 @@
 
     <!-- ═══ SEARCH BAR ═══ -->
     <div class="search-bar">
-      <div class="search-inner">
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="searchSource === 'lk21' ? 'Cari film Indonesia di LK21...' : 'Cari film, series, anime...'"
-          class="search-input"
-          @input="onSearch"
-        />
-        <button v-if="searchQuery" class="search-clear" @click="clearSearch">✕</button>
+      <div class="search-container">
+        <div class="search-inner">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            v-model="searchQuery"
+            type="text"
+            :placeholder="searchSource === 'lk21' ? 'Cari film Indonesia di LK21...' : 'Cari film, series, anime...'"
+            class="search-input"
+            @input="onSearch"
+            @focus="onSearchFocus"
+            @blur="onSearchBlur"
+          />
+          <button v-if="searchQuery || searchFocused" class="search-clear" @click="clearSearch">✕</button>
+        </div>
       </div>
     </div>
 
@@ -57,26 +61,26 @@
           <div class="category-tabs">
             <button 
               :class="['cat-tab', { active: searchFilters.category === 'all' }]" 
-              @click="searchFilters.category = 'all'; applyFilters()"
+              @click="searchFilters.category = 'all'; applyInstantFilter()"
             >Semua</button>
             <button 
               :class="['cat-tab', { active: searchFilters.category === 'movie' }]" 
-              @click="searchFilters.category = 'movie'; applyFilters()"
+              @click="searchFilters.category = 'movie'; applyInstantFilter()"
             >Film</button>
             <button 
               :class="['cat-tab', { active: searchFilters.category === 'series' }]" 
-              @click="searchFilters.category = 'series'; applyFilters()"
+              @click="searchFilters.category = 'series'; applyInstantFilter()"
             >Series</button>
             <button 
               :class="['cat-tab', { active: searchFilters.category === 'anime' }]" 
-              @click="searchFilters.category = 'anime'; applyFilters()"
+              @click="searchFilters.category = 'anime'; applyInstantFilter()"
             >Anime</button>
           </div>
         </div>
 
         <div class="filter-group">
           <label class="filter-label">Genre</label>
-          <select v-model="searchFilters.genre" class="filter-select" @change="applyFilters">
+          <select v-model="searchFilters.genre" class="filter-select" @change="applyInstantFilter">
             <option value="">Semua Genre</option>
             <option value="action">Action</option>
             <option value="comedy">Comedy</option>
@@ -107,9 +111,12 @@
     </Transition>
 
     <!-- ═══ SEARCH RESULTS ═══ -->
-    <template v-if="searchQuery.length > 1">
+    <template v-if="isSearchActive">
       <div v-if="searchLoading" class="center-loader"><span class="loader-spin"/></div>
-      <div v-else-if="searchResults.length" class="search-results-grid" :class="{ 'with-sidebar': isSearchActive }">
+      
+      <!-- Show search results if query exists -->
+      <div v-else-if="searchQuery.length > 1 && searchResults.length" class="search-results-wrapper">
+        <div class="search-results-grid" :class="{ 'with-sidebar': isSearchActive }">
         <div
           v-for="item in searchResults"
           :key="item.id + item.type"
@@ -119,7 +126,6 @@
           <div class="poster-wrap">
             <img :src="item.poster" :alt="item.title" class="poster-img" loading="lazy" />
             <div class="poster-type-badge">{{ item.type === 'movie' ? 'FILM' : item.type === 'series' ? 'SERIES' : 'ANIME' }}</div>
-            <!-- Badge sumber: LK21 vs TMDB -->
             <div v-if="(item as any).source === 'lk21'" class="poster-source-badge">ID</div>
             <div class="poster-overlay">
               <div class="poster-rating">★ {{ item.rating || 'N/A' }}</div>
@@ -129,12 +135,39 @@
           <div class="poster-year">{{ item.year }}</div>
         </div>
       </div>
+      </div>
+      
+      <!-- Show default results when no query -->
+      <div v-else-if="!searchQuery && defaultResults.length" class="search-results-wrapper">
+        <h2 class="search-section-title">Baru Ditambahkan</h2>
+        <div class="search-results-grid" :class="{ 'with-sidebar': isSearchActive }">
+        <div
+          v-for="item in (searchResults.length ? searchResults : defaultResults)"
+          :key="item.id + item.type"
+          class="poster-card"
+          @click="openDetail(item)"
+        >
+          <div class="poster-wrap">
+            <img :src="item.poster" :alt="item.title" class="poster-img" loading="lazy" />
+            <div class="poster-type-badge">{{ item.type === 'movie' ? 'FILM' : item.type === 'series' ? 'SERIES' : 'ANIME' }}</div>
+            <div class="poster-overlay">
+              <div class="poster-rating">★ {{ item.rating || 'N/A' }}</div>
+            </div>
+          </div>
+          <div class="poster-title">{{ item.title }}</div>
+          <div class="poster-year">{{ item.year }}</div>
+        </div>
+      </div>
+      </div>
+      
       <!-- Load More -->
-      <div v-if="searchResults.length && searchHasMore" class="load-more-wrap">
+      <div v-if="searchResults.length && searchHasMore" class="load-more-wrapper">
+        <div class="load-more-wrap">
         <button class="load-more-btn" :disabled="searchLoadingMore" @click="loadMoreResults">
           <span v-if="searchLoadingMore" class="loader-spin small" />
           <span v-else>Muat Lebih Banyak</span>
         </button>
+      </div>
       </div>
       <div v-else-if="!searchLoading && !searchResults.length" class="empty-state">Tidak ada hasil untuk "{{ searchQuery }}"</div>
     </template>
@@ -144,7 +177,7 @@
       <!-- Hero Banner -->
       <div v-if="hero" class="hero" :style="{ backgroundImage: `url(${hero.backdrop})` }">
         <div class="hero-gradient"/>
-        <div class="hero-content">
+        <div class="hero-content hero-content-container">
           <div class="hero-meta">
             <span class="hero-badge">{{ hero.type === 'movie' ? 'FILM' : hero.type === 'tv' ? 'SERIES' : 'SERIES' }}</span>
             <span class="hero-rating">★ {{ hero.rating }}</span>
@@ -166,8 +199,9 @@
       </div>
 
       <!-- Rows -->
-      <div class="rows-container">
-        <div v-for="row in rows" :key="row.key" class="content-row">
+      <div class="rows-wrapper">
+        <div class="rows-container">
+          <div v-for="row in rows.filter(r => r.visible || showMoreRows)" :key="row.key" class="content-row">
           <h2 class="row-title">{{ row.label }}</h2>
           <div v-if="row.loading" class="row-loading">
             <div v-for="i in 6" :key="i" class="skeleton-card"/>
@@ -190,6 +224,17 @@
             </div>
           </div>
           <div v-else class="row-empty">Gagal memuat</div>
+        </div>
+        
+        <!-- Load More Button -->
+        <div v-if="!showMoreRows" class="load-more-section">
+          <button class="load-more-btn" @click="loadMoreCatalogs">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="load-more-icon">
+              <circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/>
+            </svg>
+            Muat Katalog Lainnya
+          </button>
+        </div>
         </div>
       </div>
     </template>
@@ -367,16 +412,27 @@ interface Row {
   label: string
   loading: boolean
   items: CatalogItem[]
+  visible?: boolean // untuk lazy loading
 }
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const rows = ref<Row[]>([
-  { key: 'trending',  label: 'Trending Minggu Ini',   loading: true, items: [] },
-  { key: 'new',       label: 'Baru Ditambahkan',       loading: true, items: [] },
-  { key: 'netflix',   label: 'Netflix Originals',      loading: true, items: [] },
-  { key: 'movies',    label: 'Film Populer',            loading: true, items: [] },
-  { key: 'anime',     label: 'Anime',                  loading: true, items: [] },
+  { key: 'trending',  label: 'Trending Minggu Ini',   loading: true, items: [], visible: true },
+  { key: 'new',       label: 'Baru Ditambahkan',       loading: true, items: [], visible: true },
+  { key: 'netflix',   label: 'Netflix Originals',      loading: true, items: [], visible: true },
+  { key: 'movies',    label: 'Film Populer',            loading: true, items: [], visible: false },
+  { key: 'anime',     label: 'Anime',                  loading: true, items: [], visible: false },
+  { key: 'kdrama',    label: 'Drama Korea',            loading: true, items: [], visible: false },
+  { key: 'horror',    label: 'Horror',                 loading: true, items: [], visible: false },
+  { key: 'indonesia', label: 'Film Indonesia',         loading: true, items: [], visible: false },
+  { key: 'action',    label: 'Action',                 loading: true, items: [], visible: false },
+  { key: 'japanese',  label: 'Film Jepang',            loading: true, items: [], visible: false },
+  { key: 'romance',   label: 'Romance',                loading: true, items: [], visible: false },
+  { key: 'thriller',  label: 'Thriller',               loading: true, items: [], visible: false },
+  { key: 'top-rated', label: 'Top Rated',              loading: true, items: [], visible: false },
 ])
+
+const showMoreRows = ref(false)
 
 const heroes = ref<CatalogItem[]>([]) // Array for carousel
 const heroIndex = ref(0)
@@ -401,6 +457,8 @@ const searchPage = ref(1)
 const searchHasMore = ref(false)
 const searchLoadingMore = ref(false)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
+const searchFocused = ref(false) // Track search focus state
+const defaultResults = ref<CatalogItem[]>([]) // Default "Baru Ditambahkan" results
 
 // Search filters
 const searchFilters = ref({
@@ -409,7 +467,7 @@ const searchFilters = ref({
   year: ''
 })
 
-const isSearchActive = computed(() => searchQuery.value.length > 1)
+const isSearchActive = computed(() => searchFocused.value || searchQuery.value.length > 0)
 
 // ─── Sources (embed providers) ────────────────────────────────────────────────
 function buildSources(item: CatalogItem, season = 1, ep = 1) {
@@ -527,11 +585,19 @@ async function loadRow(key: string) {
   if (!row) return
   try {
     const endpointMap: Record<string, string> = {
-      trending: '/api/trending',
-      new:      '/api/new',
-      netflix:  '/api/netflix',
-      movies:   '/api/movies',
-      anime:    '/api/anime',
+      trending:  '/api/trending',
+      new:       '/api/new',
+      netflix:   '/api/netflix',
+      movies:    '/api/movies',
+      anime:     '/api/anime',
+      kdrama:    '/api/kdrama',
+      horror:    '/api/horror',
+      indonesia: '/api/indonesia',
+      action:    '/api/action',
+      japanese:  '/api/japanese',
+      romance:   '/api/romance',
+      thriller:  '/api/thriller',
+      'top-rated': '/api/top-rated',
     }
     const data: any = await $fetch(endpointMap[key])
     row.items = (data.results || []) as CatalogItem[]
@@ -574,14 +640,68 @@ async function submitPin() {
     })
     unlocked.value = true
     pinInput.value = ''
-    // Load rows setelah unlock
+    // Load hanya 3 row pertama setelah unlock
     rows.value.forEach(r => { r.loading = true; r.items = [] })
-    rows.value.forEach(r => loadRow(r.key))
+    rows.value.filter(r => r.visible).forEach(r => loadRow(r.key))
   } catch {
     pinError.value = 'PIN salah. Coba lagi.'
   } finally {
     pinLoading.value = false
   }
+}
+
+// Load more catalogs
+function loadMoreCatalogs() {
+  showMoreRows.value = true
+  // Load semua row yang belum visible
+  rows.value.filter(r => !r.visible && r.items.length === 0).forEach(r => loadRow(r.key))
+}
+
+// ─── Search Focus & Default Results ───────────────────────────────────────────
+async function loadDefaultResults() {
+  if (defaultResults.value.length > 0) return // Already loaded
+  try {
+    const data: any = await $fetch('/api/new')
+    defaultResults.value = (data.results || []).slice(0, 20) as CatalogItem[]
+  } catch {
+    defaultResults.value = []
+  }
+}
+
+function onSearchFocus() {
+  searchFocused.value = true
+  if (defaultResults.value.length === 0) {
+    loadDefaultResults()
+  }
+}
+
+function onSearchBlur() {
+  // Delay blur to allow clicks on sidebar
+  setTimeout(() => {
+    if (!searchQuery.value) {
+      searchFocused.value = false
+    }
+  }, 200)
+}
+
+// Apply filter instantly (tanpa perlu ketik di search)
+function applyInstantFilter() {
+  const { category } = searchFilters.value
+  if (category === 'all') {
+    // Reset: show default results
+    searchResults.value = []
+    searchQuery.value = ''
+    return
+  }
+  
+  // Filter default results by category
+  const filtered = defaultResults.value.filter(item => {
+    if (category === 'movie') return item.type === 'movie'
+    if (category === 'series') return item.type === 'tv' || item.type === 'series'
+    if (category === 'anime') return item.type === 'anime' || item.type === 'tv' // Anime detection bisa diimprove
+    return true
+  })
+  searchResults.value = filtered
 }
 
 // ─── Hero Carousel ────────────────────────────────────────────────────────────
@@ -757,6 +877,7 @@ function extractYear(title: string): string {
 function clearSearch() {
   searchQuery.value = ''
   searchResults.value = []
+  searchFocused.value = false
   resetFilters()
 }
 
@@ -1132,14 +1253,28 @@ function closePlayer() {
 /* ─── Search Bar ────────────────────────────────────────────────── */
 .search-bar {
   position: sticky;
-  top: 0;
-  z-index: 100;
+  top: 72px;
+  z-index: 40;
   background: var(--search-bg-fade, linear-gradient(rgba(20,20,20,0.95), rgba(20,20,20,0)));
-  padding: 12px 16px 8px;
-  backdrop-filter: blur(8px);
+  padding: 16px 0 32px;
+  margin-bottom: -100px;
+  pointer-events: none;
+}
+.search-bar > * {
+  pointer-events: auto;
 }
 :global(html.light) .search-bar {
   --search-bg-fade: linear-gradient(rgba(248,250,252,0.95), rgba(248,250,252,0));
+}
+.search-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+@media (min-width: 768px) {
+  .search-container {
+    padding: 0 32px;
+  }
 }
 .search-inner {
   display: flex;
@@ -1202,18 +1337,54 @@ function closePlayer() {
   transform: scale(1.05);
 }
 
-/* ─── Search Results ────────────────────────────────────────────── */
+/* ─── Search Results ─────────────────────────────────────────── */
+.search-results-wrapper {
+  max-width: 1400px;
+  margin: 120px auto 0; /* Top margin untuk avoid navbar overlap */
+  padding: 0 24px;
+  min-height: 60vh;
+}
+@media (min-width: 768px) {
+  .search-results-wrapper {
+    padding: 0 32px;
+    margin-left: 260px; /* Offset untuk sidebar */
+    max-width: calc(1400px - 260px);
+  }
+}
+@media (max-width: 768px) {
+  .search-results-wrapper {
+    margin-top: 140px; /* Navbar + search bar */
+    padding-bottom: 320px; /* Space untuk bottom sheet filter */
+  }
+}
+@media (min-width: 769px) {
+  .search-results-wrapper {
+    margin-top: 140px; /* Navbar + search bar */
+  }
+}
+.search-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e5e5e5;
+  margin: 0 0 16px;
+  padding: 0;
+}
 .search-results-grid {
   position: relative;
-  z-index: 50; /* Di bawah search-bar (100), di atas konten biasa (0) */
+  z-index: 10;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  padding: 12px 16px 24px;
-  transition: margin-left 0.3s ease;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 0;
+}
+@media (max-width: 640px) {
+  .search-results-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
 }
 .search-results-grid.with-sidebar {
-  margin-left: 240px; /* Width of filter sidebar */
+  /* No extra margin, sudah dihandle di wrapper */
 }
 @media (min-width: 640px) {
   .search-results-grid {
@@ -1238,20 +1409,34 @@ function closePlayer() {
 .filter-sidebar {
   position: fixed;
   left: 0;
-  top: 80px; /* Below search bar */
+  top: 140px; /* Below navbar + search bar */
   width: 240px;
-  height: calc(100vh - 80px);
-  background: #1a1a1a;
-  border-right: 1px solid #333;
-  padding: 20px;
-  z-index: 40;
+  height: calc(100vh - 140px);
+  background: var(--sidebar-bg, #1a1a1a);
+  border-right: 1px solid var(--sidebar-border, #333);
+  padding: 24px 20px;
+  z-index: 35;
   overflow-y: auto;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+}
+:global(html.light) .filter-sidebar {
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e2e8f0;
 }
 .filter-title {
   font-size: 18px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 20px;
+  font-weight: 700;
+  color: var(--filter-title-color, #fff);
+  margin: 0 0 20px;
+}
+:global(html.light) .filter-title {
+  --filter-title-color: #1e293b;
+}
+@media (max-width: 768px) {
+  .filter-title {
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
 }
 .filter-group {
   margin-bottom: 20px;
@@ -1268,6 +1453,16 @@ function closePlayer() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+@media (max-width: 768px) {
+  .category-tabs {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .cat-tab {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
 }
 .cat-tab {
   background: #2a2a2a;
@@ -1342,24 +1537,61 @@ function closePlayer() {
   .filter-sidebar {
     width: 100%;
     height: auto;
-    position: relative;
-    top: 0;
+    max-height: 50vh;
+    position: fixed;
+    left: 0;
+    top: auto;
+    bottom: 0;
     border-right: none;
-    border-bottom: 1px solid #333;
+    border-top: 2px solid var(--sidebar-border, #333);
+    border-radius: 20px 20px 0 0;
+    z-index: 100;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+    padding: 20px 24px 32px;
+  }
+  .filter-sidebar::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: #555;
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .slide-right-enter-from,
+  .slide-right-leave-to {
+    transform: translateY(100%);
   }
 }
 .empty-state {
   text-align: center;
   color: #666;
-  padding: 48px 16px;
+  padding: 48px 24px;
   font-size: 15px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+@media (min-width: 768px) {
+  .empty-state {
+    padding: 48px 32px;
+  }
 }
 
 /* ─── Load More ──────────────────────────────────────────────────── */
+.load-more-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+@media (min-width: 768px) {
+  .load-more-wrapper {
+    padding: 0 32px;
+  }
+}
 .load-more-wrap {
   display: flex;
   justify-content: center;
-  padding: 24px 16px;
+  padding: 24px 0;
 }
 .load-more-btn {
   background: #222;
@@ -1392,9 +1624,9 @@ function closePlayer() {
 /* ─── Hero Banner ───────────────────────────────────────────────── */
 .hero {
   position: relative;
-  height: 56vw;
-  min-height: 220px;
-  max-height: 420px;
+  height: 60vh;
+  min-height: 400px;
+  max-height: 700px;
   background-size: cover;
   background-position: center top;
   transition: background-image 0.8s ease-in-out; /* Smooth carousel transition */
@@ -1402,14 +1634,29 @@ function closePlayer() {
 .hero-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, #141414 0%, #14141488 60%, transparent 100%);
+  background: linear-gradient(to bottom, rgba(20,20,20,0.8) 0%, rgba(20,20,20,0) 20%),
+              linear-gradient(to top, #141414 0%, #14141488 40%, transparent 100%);
+}
+:global(html.light) .hero-gradient {
+  background: linear-gradient(to bottom, rgba(248,250,252,0.8) 0%, rgba(248,250,252,0) 20%),
+              linear-gradient(to top, #f8fafc 0%, rgba(248,250,252,0.5) 40%, transparent 100%);
 }
 .hero-content {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 0 16px 20px;
+  padding: 0 0 40px;
+}
+.hero-content-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px 0;
+}
+@media (min-width: 768px) {
+  .hero-content-container {
+    padding: 0 32px 0;
+  }
 }
 .hero-meta {
   display: flex;
@@ -1478,12 +1725,22 @@ function closePlayer() {
 .btn-icon { width: 16px; height: 16px; }
 
 /* ─── Rows ──────────────────────────────────────────────────────── */
-.rows-container { padding: 8px 0 40px; }
+.rows-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8px 24px 40px;
+}
+@media (min-width: 768px) {
+  .rows-wrapper {
+    padding: 8px 32px 40px;
+  }
+}
+.rows-container { }
 .content-row { margin-bottom: 4px; }
 .row-title {
   font-size: 16px;
   font-weight: 700;
-  padding: 10px 16px 6px;
+  padding: 10px 0 6px;
   margin: 0;
   color: #e5e5e5;
 }
@@ -1491,20 +1748,20 @@ function closePlayer() {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding: 4px 16px 12px;
+  padding: 4px 0 12px;
   scrollbar-width: none;
 }
 .row-scroll::-webkit-scrollbar { display: none; }
 .row-loading {
   display: flex;
   gap: 8px;
-  padding: 4px 16px 12px;
+  padding: 4px 0 12px;
   overflow: hidden;
 }
 .skeleton-card {
   flex-shrink: 0;
-  width: 100px;
-  height: 150px;
+  width: 180px;
+  height: 270px;
   background: linear-gradient(90deg, #222 25%, #333 50%, #222 75%);
   background-size: 200% 100%;
   border-radius: 6px;
@@ -1514,13 +1771,58 @@ function closePlayer() {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-.row-empty { padding: 8px 16px; color: #555; font-size: 13px; }
+.row-empty { padding: 8px 0; color: #555; font-size: 13px; }
+
+/* ─── Load More ───────────────────────────────────────── */
+.load-more-section {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0;
+}
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--load-more-bg, #2a2a2a);
+  border: 1px solid var(--load-more-border, #444);
+  color: var(--load-more-text, #e5e5e5);
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+:global(html.light) .load-more-btn {
+  --load-more-bg: #ffffff;
+  --load-more-border: #cbd5e1;
+  --load-more-text: #1e293b;
+}
+.load-more-btn:hover {
+  background: var(--load-more-hover-bg, #333);
+  border-color: var(--load-more-hover-border, #555);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+:global(html.light) .load-more-btn:hover {
+  --load-more-hover-bg: #f8fafc;
+  --load-more-hover-border: #94a3b8;
+}
+.load-more-icon {
+  width: 20px;
+  height: 20px;
+}
 
 /* ─── Poster Card ───────────────────────────────────────────────── */
 .poster-card {
   flex-shrink: 0;
-  width: 100px;
+  width: 180px;
   cursor: pointer;
+}
+@media (max-width: 640px) {
+  .poster-card {
+    width: 140px;
+  }
 }
 .search-results-grid .poster-card { 
   width: 100%; 

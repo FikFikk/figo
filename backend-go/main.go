@@ -20,6 +20,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -71,6 +73,9 @@ type fileCandidate struct {
 }
 
 func main() {
+	// Terlebih dahulu load file .env dari folder root (satu tingkat di atas)
+	godotenv.Load("../.env")
+
 	state := &serverState{
 		jobs:        map[string]*downloadJob{},
 		downloader:  make(chan struct{}, envInt("DOWNLOAD_CONCURRENCY", 1)),

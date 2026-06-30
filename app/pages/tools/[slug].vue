@@ -1,5 +1,10 @@
 <template>
-  <div class="pt-24 pb-20 px-6 md:px-8 max-w-7xl mx-auto min-h-screen">
+  <!-- Conditional layout: full screen untuk stream, normal untuk tools lainnya -->
+  <div v-if="activeTool === 'stream'" class="min-h-screen">
+    <!-- Full screen tanpa sidebar untuk bioskop -->
+    <ToolsStreamPlayer />
+  </div>
+  <div v-else class="pt-24 pb-20 px-6 md:px-8 max-w-7xl mx-auto min-h-screen">
     <div class="flex flex-col lg:flex-row gap-8">
       
       <!-- Mobile Navigation (Sticky) -->
@@ -99,9 +104,7 @@
             <div v-else-if="activeTool === 'qr'">
               <ToolsQrEngine />
             </div>
-            <div v-else-if="activeTool === 'stream'">
-              <ToolsStreamPlayer />
-            </div>
+            <!-- Stream sudah di-render di luar kondisional layout -->
             <div v-else-if="activeTool === 'hls-player'">
               <ToolsStreamingPlayer />
             </div>

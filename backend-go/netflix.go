@@ -34,29 +34,29 @@ import (
 )
 
 const (
-	tmdbBase        = "https://api.themoviedb.org/3"
-	tmdbImageBase   = "https://image.tmdb.org/t/p"
-	tmdbNetflixID   = "8"   // Netflix watch provider ID di TMDB
-	tmdbRegion      = "US"
-	tmdbMoviesCacheKey      = "tmdb:movies:trending"
-	tmdbNetflixCacheKey     = "tmdb:netflix:trending"
+	tmdbBase            = "https://api.themoviedb.org/3"
+	tmdbImageBase       = "https://image.tmdb.org/t/p"
+	tmdbNetflixID       = "8" // Netflix watch provider ID di TMDB
+	tmdbRegion          = "US"
+	tmdbMoviesCacheKey  = "tmdb:movies:trending"
+	tmdbNetflixCacheKey = "tmdb:netflix:trending"
 )
 
 // --- Raw struct dari TMDB ---
 
 type tmdbMovie struct {
-	ID               int     `json:"id"`
-	Title            string  `json:"title"`
-	OriginalTitle    string  `json:"original_title"`
-	Overview         string  `json:"overview"`
-	PosterPath       string  `json:"poster_path"`
-	BackdropPath     string  `json:"backdrop_path"`
-	ReleaseDate      string  `json:"release_date"`
-	VoteAverage      float64 `json:"vote_average"`
-	VoteCount        int     `json:"vote_count"`
-	GenreIDs         []int   `json:"genre_ids"`
-	Popularity       float64 `json:"popularity"`
-	Adult            bool    `json:"adult"`
+	ID            int     `json:"id"`
+	Title         string  `json:"title"`
+	OriginalTitle string  `json:"original_title"`
+	Overview      string  `json:"overview"`
+	PosterPath    string  `json:"poster_path"`
+	BackdropPath  string  `json:"backdrop_path"`
+	ReleaseDate   string  `json:"release_date"`
+	VoteAverage   float64 `json:"vote_average"`
+	VoteCount     int     `json:"vote_count"`
+	GenreIDs      []int   `json:"genre_ids"`
+	Popularity    float64 `json:"popularity"`
+	Adult         bool    `json:"adult"`
 }
 
 type tmdbSeries struct {
@@ -75,10 +75,10 @@ type tmdbSeries struct {
 
 type tmdbMovieDetail struct {
 	tmdbMovie
-	Runtime  int    `json:"runtime"`
-	Status   string `json:"status"`
-	Tagline  string `json:"tagline"`
-	Genres   []struct {
+	Runtime int    `json:"runtime"`
+	Status  string `json:"status"`
+	Tagline string `json:"tagline"`
+	Genres  []struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"genres"`
@@ -204,6 +204,14 @@ func (ns *netflixState) registerNetflixRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/catalog/anime", ns.animeHandler)
 	mux.HandleFunc("/catalog/anime/search", ns.animeSearchHandler)
 	mux.HandleFunc("/catalog/new", ns.newHandler)
+	mux.HandleFunc("/catalog/kdrama", ns.kdramaHandler)
+	mux.HandleFunc("/catalog/horror", ns.horrorHandler)
+	mux.HandleFunc("/catalog/indonesia", ns.indonesiaHandler)
+	mux.HandleFunc("/catalog/action", ns.actionHandler)
+	mux.HandleFunc("/catalog/japanese", ns.japaneseHandler)
+	mux.HandleFunc("/catalog/romance", ns.romanceHandler)
+	mux.HandleFunc("/catalog/thriller", ns.thrillerHandler)
+	mux.HandleFunc("/catalog/top-rated", ns.topRatedHandler)
 	mux.HandleFunc("/catalog/multi/search", ns.multiSearchHandler)
 	mux.HandleFunc("/catalog/season", ns.seasonHandler)
 }
@@ -744,6 +752,385 @@ func (ns *netflixState) animeSearchHandler(w http.ResponseWriter, r *http.Reques
 }
 
 // ================================================================
+// K-DRAMA — /catalog/kdrama (Drama Korea populer)
+// ================================================================
+
+func (ns *netflixState) kdramaHandler(w http.ResponseWriter, r *http.Request) {
+	if !ns.hasKey() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"message": "TMDB_API_KEY belum dikonfigurasi di server.",
+			"results": []any{},
+		})
+		return
+	}
+	const cacheKey = "tmdb:kdrama"
+	if cached, ok := ns.cache.get(cacheKey); ok {
+		writeRawJSON(w, http.StatusOK, cached)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), httpGetTimout)
+	defer cancel()
+
+	var page1, page2 tmdbPageResult[tmdbSeries]
+	p1 := url.Values{"with_original_language": {"ko"}, "sort_by": {"popularity.desc"}, "page": {"1"}}
+	p2 := url.Values{"with_original_language": {"ko"}, "sort_by": {"popularity.desc"}, "page": {"2"}}
+	err1 := ns.fetchTMDB(ctx, "/discover/tv", p1, &page1)
+	err2 := ns.fetchTMDB(ctx, "/discover/tv", p2, &page2)
+	if err1 != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]any{"message": "Gagal memuat K-Drama.", "results": []any{}})
+		return
+	}
+	all := page1.Results
+	if err2 == nil {
+		all = append(all, page2.Results...)
+	}
+	items := make([]movieItem, 0, len(all))
+	for _, s := range all {
+		if s.PosterPath == "" {
+			continue
+		}
+		items = append(items, mapTMDBSeries(s))
+	}
+	payload, _ := json.Marshal(map[string]any{"results": items, "total": len(items)})
+	ns.cache.set(cacheKey, payload)
+	writeRawJSON(w, http.StatusOK, payload)
+}
+
+// ================================================================
+// HORROR — /catalog/horror (Film & Series Horror)
+// ================================================================
+
+func (ns *netflixState) horrorHandler(w http.ResponseWriter, r *http.Request) {
+	if !ns.hasKey() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"message": "TMDB_API_KEY belum dikonfigurasi di server.",
+			"results": []any{},
+		})
+		return
+	}
+	const cacheKey = "tmdb:horror"
+	if cached, ok := ns.cache.get(cacheKey); ok {
+		writeRawJSON(w, http.StatusOK, cached)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), httpGetTimout)
+	defer cancel()
+
+	// Genre 27 = Horror di TMDB
+	var movies tmdbPageResult[tmdbMovie]
+	var series tmdbPageResult[tmdbSeries]
+	p := url.Values{"with_genres": {"27"}, "sort_by": {"popularity.desc"}, "page": {"1"}}
+	err1 := ns.fetchTMDB(ctx, "/discover/movie", p, &movies)
+	err2 := ns.fetchTMDB(ctx, "/discover/tv", p, &series)
+
+	items := make([]movieItem, 0)
+	if err1 == nil {
+		for _, m := range movies.Results {
+			if m.Adult || m.PosterPath == "" {
+				continue
+			}
+			items = append(items, mapTMDBMovie(m))
+		}
+	}
+	if err2 == nil {
+		for _, s := range series.Results {
+			if s.PosterPath == "" {
+				continue
+			}
+			items = append(items, mapTMDBSeries(s))
+		}
+	}
+	payload, _ := json.Marshal(map[string]any{"results": items, "total": len(items)})
+	ns.cache.set(cacheKey, payload)
+	writeRawJSON(w, http.StatusOK, payload)
+}
+
+// ================================================================
+// INDONESIA — /catalog/indonesia (Film Indonesia)
+// ================================================================
+
+func (ns *netflixState) indonesiaHandler(w http.ResponseWriter, r *http.Request) {
+	if !ns.hasKey() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"message": "TMDB_API_KEY belum dikonfigurasi di server.",
+			"results": []any{},
+		})
+		return
+	}
+	const cacheKey = "tmdb:indonesia"
+	if cached, ok := ns.cache.get(cacheKey); ok {
+		writeRawJSON(w, http.StatusOK, cached)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), httpGetTimout)
+	defer cancel()
+
+	var page1, page2 tmdbPageResult[tmdbMovie]
+	p1 := url.Values{"with_original_language": {"id"}, "sort_by": {"popularity.desc"}, "page": {"1"}}
+	p2 := url.Values{"with_original_language": {"id"}, "sort_by": {"popularity.desc"}, "page": {"2"}}
+	err1 := ns.fetchTMDB(ctx, "/discover/movie", p1, &page1)
+	err2 := ns.fetchTMDB(ctx, "/discover/movie", p2, &page2)
+	if err1 != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]any{"message": "Gagal memuat Film Indonesia.", "results": []any{}})
+		return
+	}
+	all := page1.Results
+	if err2 == nil {
+		all = append(all, page2.Results...)
+	}
+	items := make([]movieItem, 0, len(all))
+	for _, m := range all {
+		if m.Adult || m.PosterPath == "" {
+			continue
+		}
+		items = append(items, mapTMDBMovie(m))
+	}
+	payload, _ := json.Marshal(map[string]any{"results": items, "total": len(items)})
+	ns.cache.set(cacheKey, payload)
+	writeRawJSON(w, http.StatusOK, payload)
+}
+
+// ================================================================
+// ACTION — /catalog/action (Film & Series Action)
+// ================================================================
+
+func (ns *netflixState) actionHandler(w http.ResponseWriter, r *http.Request) {
+	if !ns.hasKey() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"message": "TMDB_API_KEY belum dikonfigurasi di server.",
+			"results": []any{},
+		})
+		return
+	}
+	const cacheKey = "tmdb:action"
+	if cached, ok := ns.cache.get(cacheKey); ok {
+		writeRawJSON(w, http.StatusOK, cached)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), httpGetTimout)
+	defer cancel()
+
+	// Genre 28 = Action di TMDB
+	var movies tmdbPageResult[tmdbMovie]
+	var series tmdbPageResult[tmdbSeries]
+	p := url.Values{"with_genres": {"28"}, "sort_by": {"popularity.desc"}, "page": {"1"}}
+	err1 := ns.fetchTMDB(ctx, "/discover/movie", p, &movies)
+	err2 := ns.fetchTMDB(ctx, "/discover/tv", p, &series)
+
+	items := make([]movieItem, 0)
+	if err1 == nil {
+		for _, m := range movies.Results {
+			if m.Adult || m.PosterPath == "" {
+				continue
+			}
+			items = append(items, mapTMDBMovie(m))
+		}
+	}
+	if err2 == nil {
+		for _, s := range series.Results {
+			if s.PosterPath == "" {
+				continue
+			}
+			items = append(items, mapTMDBSeries(s))
+		}
+	}
+	payload, _ := json.Marshal(map[string]any{"results": items, "total": len(items)})
+	ns.cache.set(cacheKey, payload)
+	writeRawJSON(w, http.StatusOK, payload)
+}
+
+// ================================================================
+// JAPANESE — /catalog/japanese (Film Jepang)
+// ================================================================
+
+func (ns *netflixState) japaneseHandler(w http.ResponseWriter, r *http.Request) {
+	if !ns.hasKey() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"message": "TMDB_API_KEY belum dikonfigurasi di server.",
+			"results": []any{},
+		})
+		return
+	}
+	const cacheKey = "tmdb:japanese"
+	if cached, ok := ns.cache.get(cacheKey); ok {
+		writeRawJSON(w, http.StatusOK, cached)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), httpGetTimout)
+	defer cancel()
+
+	var page1, page2 tmdbPageResult[tmdbMovie]
+	p1 := url.Values{"with_original_language": {"ja"}, "sort_by": {"popularity.desc"}, "page": {"1"}}
+	p2 := url.Values{"with_original_language": {"ja"}, "sort_by": {"popularity.desc"}, "page": {"2"}}
+	err1 := ns.fetchTMDB(ctx, "/discover/movie", p1, &page1)
+	err2 := ns.fetchTMDB(ctx, "/discover/movie", p2, &page2)
+	if err1 != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]any{"message": "Gagal memuat Film Jepang.", "results": []any{}})
+		return
+	}
+	all := page1.Results
+	if err2 == nil {
+		all = append(all, page2.Results...)
+	}
+	items := make([]movieItem, 0, len(all))
+	for _, m := range all {
+		if m.Adult || m.PosterPath == "" {
+			continue
+		}
+		items = append(items, mapTMDBMovie(m))
+	}
+	payload, _ := json.Marshal(map[string]any{"results": items, "total": len(items)})
+	ns.cache.set(cacheKey, payload)
+	writeRawJSON(w, http.StatusOK, payload)
+}
+
+// ================================================================
+// ROMANCE — /catalog/romance (Film & Series Romance)
+// ================================================================
+
+func (ns *netflixState) romanceHandler(w http.ResponseWriter, r *http.Request) {
+	if !ns.hasKey() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"message": "TMDB_API_KEY belum dikonfigurasi di server.",
+			"results": []any{},
+		})
+		return
+	}
+	const cacheKey = "tmdb:romance"
+	if cached, ok := ns.cache.get(cacheKey); ok {
+		writeRawJSON(w, http.StatusOK, cached)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), httpGetTimout)
+	defer cancel()
+
+	// Genre 10749 = Romance di TMDB
+	var movies tmdbPageResult[tmdbMovie]
+	var series tmdbPageResult[tmdbSeries]
+	p := url.Values{"with_genres": {"10749"}, "sort_by": {"popularity.desc"}, "page": {"1"}}
+	err1 := ns.fetchTMDB(ctx, "/discover/movie", p, &movies)
+	err2 := ns.fetchTMDB(ctx, "/discover/tv", p, &series)
+
+	items := make([]movieItem, 0)
+	if err1 == nil {
+		for _, m := range movies.Results {
+			if m.Adult || m.PosterPath == "" {
+				continue
+			}
+			items = append(items, mapTMDBMovie(m))
+		}
+	}
+	if err2 == nil {
+		for _, s := range series.Results {
+			if s.PosterPath == "" {
+				continue
+			}
+			items = append(items, mapTMDBSeries(s))
+		}
+	}
+	payload, _ := json.Marshal(map[string]any{"results": items, "total": len(items)})
+	ns.cache.set(cacheKey, payload)
+	writeRawJSON(w, http.StatusOK, payload)
+}
+
+// ================================================================
+// THRILLER — /catalog/thriller (Film & Series Thriller)
+// ================================================================
+
+func (ns *netflixState) thrillerHandler(w http.ResponseWriter, r *http.Request) {
+	if !ns.hasKey() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"message": "TMDB_API_KEY belum dikonfigurasi di server.",
+			"results": []any{},
+		})
+		return
+	}
+	const cacheKey = "tmdb:thriller"
+	if cached, ok := ns.cache.get(cacheKey); ok {
+		writeRawJSON(w, http.StatusOK, cached)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), httpGetTimout)
+	defer cancel()
+
+	// Genre 53 = Thriller di TMDB
+	var movies tmdbPageResult[tmdbMovie]
+	var series tmdbPageResult[tmdbSeries]
+	p := url.Values{"with_genres": {"53"}, "sort_by": {"popularity.desc"}, "page": {"1"}}
+	err1 := ns.fetchTMDB(ctx, "/discover/movie", p, &movies)
+	err2 := ns.fetchTMDB(ctx, "/discover/tv", p, &series)
+
+	items := make([]movieItem, 0)
+	if err1 == nil {
+		for _, m := range movies.Results {
+			if m.Adult || m.PosterPath == "" {
+				continue
+			}
+			items = append(items, mapTMDBMovie(m))
+		}
+	}
+	if err2 == nil {
+		for _, s := range series.Results {
+			if s.PosterPath == "" {
+				continue
+			}
+			items = append(items, mapTMDBSeries(s))
+		}
+	}
+	payload, _ := json.Marshal(map[string]any{"results": items, "total": len(items)})
+	ns.cache.set(cacheKey, payload)
+	writeRawJSON(w, http.StatusOK, payload)
+}
+
+// ================================================================
+// TOP RATED — /catalog/top-rated (Film Rating Tinggi)
+// ================================================================
+
+func (ns *netflixState) topRatedHandler(w http.ResponseWriter, r *http.Request) {
+	if !ns.hasKey() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"message": "TMDB_API_KEY belum dikonfigurasi di server.",
+			"results": []any{},
+		})
+		return
+	}
+	const cacheKey = "tmdb:top-rated"
+	if cached, ok := ns.cache.get(cacheKey); ok {
+		writeRawJSON(w, http.StatusOK, cached)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), httpGetTimout)
+	defer cancel()
+
+	var movies tmdbPageResult[tmdbMovie]
+	var series tmdbPageResult[tmdbSeries]
+	p := url.Values{"vote_average.gte": {"8.0"}, "vote_count.gte": {"1000"}, "sort_by": {"vote_average.desc"}, "page": {"1"}}
+	err1 := ns.fetchTMDB(ctx, "/discover/movie", p, &movies)
+	err2 := ns.fetchTMDB(ctx, "/discover/tv", p, &series)
+
+	items := make([]movieItem, 0)
+	if err1 == nil {
+		for _, m := range movies.Results {
+			if m.Adult || m.PosterPath == "" {
+				continue
+			}
+			items = append(items, mapTMDBMovie(m))
+		}
+	}
+	if err2 == nil {
+		for _, s := range series.Results {
+			if s.PosterPath == "" {
+				continue
+			}
+			items = append(items, mapTMDBSeries(s))
+		}
+	}
+	payload, _ := json.Marshal(map[string]any{"results": items, "total": len(items)})
+	ns.cache.set(cacheKey, payload)
+	writeRawJSON(w, http.StatusOK, payload)
+}
+
+// ================================================================
 // NEW — /catalog/new  (film now_playing + series on_the_air terbaru)
 // ================================================================
 
@@ -944,11 +1331,11 @@ func (ns *netflixState) multiSearchHandler(w http.ResponseWriter, r *http.Reques
 // ================================================================
 
 type tmdbEpisode struct {
-	EpisodeNumber int    `json:"episode_number"`
-	Name          string `json:"name"`
-	Overview      string `json:"overview"`
-	StillPath     string `json:"still_path"`
-	AirDate       string `json:"air_date"`
+	EpisodeNumber int     `json:"episode_number"`
+	Name          string  `json:"name"`
+	Overview      string  `json:"overview"`
+	StillPath     string  `json:"still_path"`
+	AirDate       string  `json:"air_date"`
 	VoteAverage   float64 `json:"vote_average"`
 }
 
@@ -957,12 +1344,12 @@ type tmdbSeasonResp struct {
 }
 
 type episodeItem struct {
-	Ep       int    `json:"ep"`
-	Season   int    `json:"season"`
-	Title    string `json:"title"`
-	Overview string `json:"overview"`
-	Still    string `json:"still"`
-	AirDate  string `json:"air_date"`
+	Ep       int     `json:"ep"`
+	Season   int     `json:"season"`
+	Title    string  `json:"title"`
+	Overview string  `json:"overview"`
+	Still    string  `json:"still"`
+	AirDate  string  `json:"air_date"`
 	Rating   float64 `json:"rating"`
 }
 
@@ -1016,5 +1403,3 @@ func (ns *netflixState) seasonHandler(w http.ResponseWriter, r *http.Request) {
 	ns.cache.set(cacheKey, payload)
 	writeRawJSON(w, http.StatusOK, payload)
 }
-
-
