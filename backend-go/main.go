@@ -114,6 +114,10 @@ func main() {
 	mux.HandleFunc("/lk21/search", handleLK21Search)
 	mux.HandleFunc("/lk21/stream", handleLK21Stream)
 
+	// VidLink Scraper — Generate token + scrape video streams
+	vidlink := newVidlinkState()
+	vidlink.registerRoutes(mux)
+
 	port := envString("PORT", defaultPort)
 	server := &http.Server{
 		Addr:              "127.0.0.1:" + port,

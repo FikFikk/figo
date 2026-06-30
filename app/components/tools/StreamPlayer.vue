@@ -480,11 +480,11 @@ const altSources = computed(() => {
     })
   }
   
-  // 2. TMDB Proxy (movie only, direct MP4)
+  // 2. VidLink (movie only, redirect to embed)
   if (currentItem.value?.type === 'movie' && currentItem.value.id) {
     allSources.push({
-      name: 'TMDB Proxy',
-      url: `https://tmdbprxy.pixtive.tech/api/movie/${currentItem.value.id}/stream.mp4`,
+      name: 'VidLink',
+      url: `https://go-api.fikfikk.my.id/vidlink/${currentItem.value.id}`,
       isHls: false
     })
   }
@@ -1030,6 +1030,12 @@ async function runBackgroundScraper(item: CatalogItem, season: number, ep: numbe
 function switchSource(src: { name: string; url: string; isHls?: boolean }) {
   activeSrc.value = src.name
   playerUrl.value = src.url
+  
+  // Log saat VidLink dipilih
+  if (src.name === 'VidLink') {
+    addLog(`[VidLink] Loading VidLink embed untuk movie ID ${currentItem.value?.id}`)
+    addLog(`[VidLink] Redirect ke: ${src.url}`)
+  }
 }
 
 function closePlayer() {
