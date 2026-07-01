@@ -33,48 +33,73 @@
     <!-- ═══ SEARCH BAR ═══ -->
     <div class="search-bar">
       <div class="search-container">
-        <div class="search-inner">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input
-            v-model="searchQuery"
-            type="text"
-            :placeholder="searchSource === 'lk21' ? 'Cari film Indonesia di LK21...' : 'Cari film, series, anime...'"
-            class="search-input"
-            @input="onSearch"
-            @focus="onSearchFocus"
-            @blur="onSearchBlur"
-          />
-          <button v-if="searchQuery || searchFocused" class="search-clear" @click="clearSearch">✕</button>
+        <div class="search-shell" :class="{ active: isSearchActive }">
+          <div class="search-inner">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              v-model="searchQuery"
+              type="text"
+              :placeholder="searchSource === 'lk21' ? 'Cari film Indonesia di LK21...' : 'Cari film, series, anime...'"
+              class="search-input"
+              @input="onSearch"
+              @focus="onSearchFocus"
+              @blur="onSearchBlur"
+            />
+            <button
+              v-if="showFilterToggle"
+              class="search-filter-toggle"
+              :class="{ active: isFilterPanelOpen }"
+              @click="toggleFilterPanel"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18"/>
+                <path d="M7 12h10"/>
+                <path d="M10 18h4"/>
+              </svg>
+              <span>Filter</span>
+              <span v-if="activeFilterCount" class="filter-count">{{ activeFilterCount }}</span>
+            </button>
+            <button v-if="searchQuery || searchFocused" class="search-clear" @click="clearSearch">✕</button>
+          </div>
+
+          <div v-if="isSearchActive" class="search-toolbar">
+            <div class="search-status">
+              <span class="search-chip primary">{{ searchQuery.length > 1 ? 'Mode Pencarian' : 'Jelajah Cepat' }}</span>
+              <span v-if="activeFilterCount" class="search-chip muted">{{ activeFilterCount }} filter aktif</span>
+            </div>
+            <div class="search-toolbar-actions">
+              <button class="search-source-btn" :class="{ active: searchSource === 'tmdb' }" @click="switchSearchSource('tmdb')">Global</button>
+              <button class="search-source-btn" :class="{ active: searchSource === 'lk21' }" @click="switchSearchSource('lk21')">Indonesia</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
+    <Transition name="search-overlay-fade">
+      <div v-if="showMobileFilterSheet" class="mobile-filter-overlay" @click="closeFilterPanel" />
+    </Transition>
+
     <!-- ═══ SEARCH FILTER SIDEBAR ═══ -->
-    <Transition name="slide-right">
-      <div v-if="isSearchActive" class="filter-sidebar">
-        <h3 class="filter-title">Filter</h3>
+    <Transition :name="isMobileFilterSheet ? 'slide-up' : 'slide-right'">
+      <aside v-if="isFilterPanelOpen" class="filter-sidebar" :class="{ mobile: isMobileFilterSheet }">
+        <div class="filter-header">
+          <div>
+            <h3 class="filter-title">Filter Pencarian</h3>
+            <p class="filter-subtitle">Persempit hasil lebih cepat tanpa buang ruang layar.</p>
+          </div>
+          <button v-if="isMobileFilterSheet" class="filter-close" @click="closeFilterPanel">✕</button>
+        </div>
         
         <div class="filter-group">
           <label class="filter-label">Kategori</label>
-          <div class="category-tabs">
-            <button 
-              :class="['cat-tab', { active: searchFilters.category === 'all' }]" 
-              @click="searchFilters.category = 'all'; applyInstantFilter()"
-            >Semua</button>
-            <button 
-              :class="['cat-tab', { active: searchFilters.category === 'movie' }]" 
-              @click="searchFilters.category = 'movie'; applyInstantFilter()"
-            >Film</button>
-            <button 
-              :class="['cat-tab', { active: searchFilters.category === 'series' }]" 
-              @click="searchFilters.category = 'series'; applyInstantFilter()"
-            >Series</button>
-            <button 
-              :class="['cat-tab', { active: searchFilters.category === 'anime' }]" 
-              @click="searchFilters.category = 'anime'; applyInstantFilter()"
-            >Anime</button>
+          <div class="category-tabs compact">
+            <button :class="['cat-tab', { active: searchFilters.category === 'all' }]" @click="searchFilters.category = 'all'; applyInstantFilter()">Semua</button>
+            <button :class="['cat-tab', { active: searchFilters.category === 'movie' }]" @click="searchFilters.category = 'movie'; applyInstantFilter()">Film</button>
+            <button :class="['cat-tab', { active: searchFilters.category === 'series' }]" @click="searchFilters.category = 'series'; applyInstantFilter()">Series</button>
+            <button :class="['cat-tab', { active: searchFilters.category === 'anime' }]" @click="searchFilters.category = 'anime'; applyInstantFilter()">Anime</button>
           </div>
         </div>
 
@@ -94,7 +119,7 @@
 
         <div class="filter-group">
           <label class="filter-label">Tahun</label>
-          <select v-model="searchFilters.year" class="filter-select" @change="applyFilters">
+          <select v-model="searchFilters.year" class="filter-select" @change="applyInstantFilter">
             <option value="">Semua Tahun</option>
             <option value="2026">2026</option>
             <option value="2025">2025</option>
@@ -107,69 +132,87 @@
         </div>
 
         <button class="filter-reset" @click="resetFilters">Reset Filter</button>
-      </div>
+      </aside>
     </Transition>
 
     <!-- ═══ SEARCH RESULTS ═══ -->
     <template v-if="isSearchActive">
-      <div v-if="searchLoading" class="center-loader"><span class="loader-spin"/></div>
-      
-      <!-- Show search results if query exists -->
-      <div v-else-if="searchQuery.length > 1 && searchResults.length" class="search-results-wrapper">
-        <div class="search-results-grid" :class="{ 'with-sidebar': isSearchActive }">
-        <div
-          v-for="item in searchResults"
-          :key="item.id + item.type"
-          class="poster-card"
-          @click="openDetail(item)"
-        >
-          <div class="poster-wrap">
-            <img :src="item.poster" :alt="item.title" class="poster-img" loading="lazy" />
-            <div class="poster-type-badge">{{ item.type === 'movie' ? 'FILM' : item.type === 'series' ? 'SERIES' : 'ANIME' }}</div>
-            <div v-if="(item as any).source === 'lk21'" class="poster-source-badge">ID</div>
-            <div class="poster-overlay">
-              <div class="poster-rating">★ {{ item.rating || 'N/A' }}</div>
+      <div class="search-experience">
+        <div class="search-content-shell" :class="{ 'with-filter': !isMobileFilterSheet && isFilterPanelOpen }">
+          <div v-if="searchLoading" class="search-loading-state">
+            <span class="loader-spin" />
+            <p>Mencari konten terbaik untukmu...</p>
+          </div>
+
+          <div v-else-if="searchQuery.length > 1 && searchResults.length" class="search-results-wrapper cinematic">
+            <div class="search-results-header">
+              <div>
+                <h2 class="search-section-title">Hasil untuk "{{ searchQuery }}"</h2>
+                <p class="search-section-subtitle">{{ searchResults.length }} hasil tampil · fokus ke yang paling relevan dulu.</p>
+              </div>
+            </div>
+            <div class="search-results-grid">
+              <div
+                v-for="item in searchResults"
+                :key="item.id + item.type"
+                class="poster-card"
+                @click="openDetail(item)"
+              >
+                <div class="poster-wrap">
+                  <img :src="item.poster" :alt="item.title" class="poster-img" loading="lazy" />
+                  <div class="poster-type-badge">{{ item.type === 'movie' ? 'FILM' : item.type === 'series' ? 'SERIES' : 'ANIME' }}</div>
+                  <div v-if="(item as any).source === 'lk21'" class="poster-source-badge">ID</div>
+                  <div class="poster-overlay">
+                    <div class="poster-rating">★ {{ item.rating || 'N/A' }}</div>
+                  </div>
+                </div>
+                <div class="poster-title">{{ item.title }}</div>
+                <div class="poster-year">{{ item.year }}</div>
+              </div>
             </div>
           </div>
-          <div class="poster-title">{{ item.title }}</div>
-          <div class="poster-year">{{ item.year }}</div>
-        </div>
-      </div>
-      </div>
-      
-      <!-- Show default results when no query -->
-      <div v-else-if="!searchQuery && defaultResults.length" class="search-results-wrapper">
-        <h2 class="search-section-title">Baru Ditambahkan</h2>
-        <div class="search-results-grid" :class="{ 'with-sidebar': isSearchActive }">
-        <div
-          v-for="item in (searchResults.length ? searchResults : defaultResults)"
-          :key="item.id + item.type"
-          class="poster-card"
-          @click="openDetail(item)"
-        >
-          <div class="poster-wrap">
-            <img :src="item.poster" :alt="item.title" class="poster-img" loading="lazy" />
-            <div class="poster-type-badge">{{ item.type === 'movie' ? 'FILM' : item.type === 'series' ? 'SERIES' : 'ANIME' }}</div>
-            <div class="poster-overlay">
-              <div class="poster-rating">★ {{ item.rating || 'N/A' }}</div>
+
+          <div v-else-if="!searchQuery && defaultResults.length" class="search-results-wrapper cinematic">
+            <div class="search-results-header">
+              <div>
+                <h2 class="search-section-title">Baru Ditambahkan</h2>
+                <p class="search-section-subtitle">Pilihan cepat saat kamu belum menentukan judul.</p>
+              </div>
+            </div>
+            <div class="search-results-grid">
+              <div
+                v-for="item in (searchResults.length ? searchResults : defaultResults)"
+                :key="item.id + item.type"
+                class="poster-card"
+                @click="openDetail(item)"
+              >
+                <div class="poster-wrap">
+                  <img :src="item.poster" :alt="item.title" class="poster-img" loading="lazy" />
+                  <div class="poster-type-badge">{{ item.type === 'movie' ? 'FILM' : item.type === 'series' ? 'SERIES' : 'ANIME' }}</div>
+                  <div v-if="(item as any).source === 'lk21'" class="poster-source-badge">ID</div>
+                  <div class="poster-overlay">
+                    <div class="poster-rating">★ {{ item.rating || 'N/A' }}</div>
+                  </div>
+                </div>
+                <div class="poster-title">{{ item.title }}</div>
+                <div class="poster-year">{{ item.year }}</div>
+              </div>
             </div>
           </div>
-          <div class="poster-title">{{ item.title }}</div>
-          <div class="poster-year">{{ item.year }}</div>
+
+          <div v-else-if="!searchLoading && !searchResults.length" class="empty-state search-empty-state">
+            <div class="empty-icon">🎬</div>
+            <h3>Tidak ada hasil</h3>
+            <p>Coba judul lain atau longgarkan filter supaya hasil lebih luas.</p>
+          </div>
+
+          <div v-if="searchHasMore && !searchLoading" class="load-more-wrapper search-load-more-wrapper">
+            <button class="load-more-btn" :disabled="searchLoadingMore" @click="loadMoreResults">
+              {{ searchLoadingMore ? 'Memuat...' : 'Muat Lagi' }}
+            </button>
+          </div>
         </div>
       </div>
-      </div>
-      
-      <!-- Load More -->
-      <div v-if="searchResults.length && searchHasMore" class="load-more-wrapper">
-        <div class="load-more-wrap">
-        <button class="load-more-btn" :disabled="searchLoadingMore" @click="loadMoreResults">
-          <span v-if="searchLoadingMore" class="loader-spin small" />
-          <span v-else>Muat Lebih Banyak</span>
-        </button>
-      </div>
-      </div>
-      <div v-else-if="!searchLoading && !searchResults.length" class="empty-state">Tidak ada hasil untuk "{{ searchQuery }}"</div>
     </template>
 
     <!-- ═══ MAIN CONTENT (home) ═══ -->
@@ -284,7 +327,7 @@
           <div v-if="detail.movie?.type === 'series' || detail.movie?.type === 'tv'" class="episodes-section">
             <h3 class="section-title">Episode</h3>
             <!-- Season pills -->
-            <div v-if="detail.movie?.seasons > 1" class="season-pills">
+            <div v-if="(detail.movie?.seasons ?? 0) > 1" class="season-pills">
               <button
                 v-for="s in detail.movie.seasons"
                 :key="s"
@@ -459,6 +502,8 @@ const searchLoadingMore = ref(false)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 const searchFocused = ref(false) // Track search focus state
 const defaultResults = ref<CatalogItem[]>([]) // Default "Baru Ditambahkan" results
+const isMobileViewport = ref(false)
+const isFilterPanelOpen = ref(false)
 
 // Search filters
 const searchFilters = ref({
@@ -468,6 +513,16 @@ const searchFilters = ref({
 })
 
 const isSearchActive = computed(() => searchFocused.value || searchQuery.value.length > 0)
+const showFilterToggle = computed(() => isSearchActive.value)
+const isMobileFilterSheet = computed(() => isMobileViewport.value)
+const showMobileFilterSheet = computed(() => isMobileFilterSheet.value && isFilterPanelOpen.value)
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (searchFilters.value.category !== 'all') count += 1
+  if (searchFilters.value.genre) count += 1
+  if (searchFilters.value.year) count += 1
+  return count
+})
 
 // ─── Sources (embed providers) ────────────────────────────────────────────────
 function buildSources(item: CatalogItem, season = 1, ep = 1) {
@@ -599,7 +654,9 @@ async function loadRow(key: string) {
       thriller:  '/api/thriller',
       'top-rated': '/api/top-rated',
     }
-    const data: any = await $fetch(endpointMap[key])
+    const endpoint = endpointMap[key]
+    if (!endpoint) return
+    const data: any = await $fetch(endpoint)
     row.items = (data.results || []) as CatalogItem[]
     if (heroes.value.length === 0 && row.key === 'trending' && row.items.length) {
       // Populate hero carousel from trending (up to 5 items)
@@ -670,6 +727,7 @@ async function loadDefaultResults() {
 
 function onSearchFocus() {
   searchFocused.value = true
+  isFilterPanelOpen.value = true
   if (defaultResults.value.length === 0) {
     loadDefaultResults()
   }
@@ -680,28 +738,59 @@ function onSearchBlur() {
   setTimeout(() => {
     if (!searchQuery.value) {
       searchFocused.value = false
+      if (isMobileViewport.value) {
+        isFilterPanelOpen.value = false
+      }
     }
   }, 200)
 }
 
+function syncSearchLayout() {
+  if (typeof window === 'undefined') return
+  isMobileViewport.value = window.innerWidth <= 900
+  isFilterPanelOpen.value = isSearchActive.value && !isMobileViewport.value
+}
+
+function toggleFilterPanel() {
+  isFilterPanelOpen.value = !isFilterPanelOpen.value
+}
+
+function closeFilterPanel() {
+  if (isMobileViewport.value) {
+    isFilterPanelOpen.value = false
+  }
+}
+
+function filterItems(items: CatalogItem[]) {
+  let filtered = [...items]
+
+  if (searchFilters.value.category !== 'all') {
+    filtered = filtered.filter(item => {
+      if (searchFilters.value.category === 'movie') return item.type === 'movie'
+      if (searchFilters.value.category === 'series') return item.type === 'tv' || item.type === 'series'
+      if (searchFilters.value.category === 'anime') return item.type === 'anime'
+      return true
+    })
+  }
+
+  if (searchFilters.value.year) {
+    filtered = filtered.filter(item => item.year?.toString() === searchFilters.value.year)
+  }
+
+  return filtered
+}
+
 // Apply filter instantly (tanpa perlu ketik di search)
 function applyInstantFilter() {
-  const { category } = searchFilters.value
-  if (category === 'all') {
-    // Reset: show default results
-    searchResults.value = []
-    searchQuery.value = ''
+  updateURLParams()
+
+  if (searchQuery.value.length > 1) {
+    searchPage.value = 1
+    fetchSearch(searchQuery.value, 1, false)
     return
   }
-  
-  // Filter default results by category
-  const filtered = defaultResults.value.filter(item => {
-    if (category === 'movie') return item.type === 'movie'
-    if (category === 'series') return item.type === 'tv' || item.type === 'series'
-    if (category === 'anime') return item.type === 'anime' || item.type === 'tv' // Anime detection bisa diimprove
-    return true
-  })
-  searchResults.value = filtered
+
+  searchResults.value = filterItems(defaultResults.value)
 }
 
 // ─── Hero Carousel ────────────────────────────────────────────────────────────
@@ -723,6 +812,8 @@ function stopHeroCarousel() {
 
 onMounted(() => {
   loadURLParams() // Load search state from URL
+  syncSearchLayout()
+  window.addEventListener('resize', syncSearchLayout)
   checkStatus().then(() => {
     if (unlocked.value) {
       rows.value.forEach(r => loadRow(r.key))
@@ -732,6 +823,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopHeroCarousel()
+  window.removeEventListener('resize', syncSearchLayout)
 })
 
 // ─── URL Persist & Filters ────────────────────────────────────────────────────
@@ -763,18 +855,14 @@ function loadURLParams() {
 }
 
 function applyFilters() {
-  updateURLParams()
-  // Re-run search with new filters
-  if (searchQuery.value.length > 1) {
-    fetchSearch(searchQuery.value, 1, false)
-  }
+  applyInstantFilter()
 }
 
 function resetFilters() {
   searchFilters.value.category = 'all'
   searchFilters.value.genre = ''
   searchFilters.value.year = ''
-  applyFilters()
+  applyInstantFilter()
 }
 
 // ─── Search ──────────────────────────────────────────────────────────────────
@@ -871,7 +959,7 @@ function switchSearchSource(source: 'tmdb' | 'lk21') {
 // Helper: extract tahun dari title (e.g. "Toy Story 5 (2026)" → "2026")
 function extractYear(title: string): string {
   const match = title.match(/\((\d{4})\)/)
-  return match ? match[1] : ''
+  return match?.[1] ?? ''
 }
 
 function clearSearch() {
@@ -917,10 +1005,12 @@ async function openDetail(item: CatalogItem) {
         const serverNames = Object.keys(streamData.servers || {})
         if (serverNames.length > 0) {
           const firstServer = serverNames[0]
-          playHLS({ 
-            url: streamData.servers[firstServer], 
-            label: firstServer 
-          })
+          if (firstServer) {
+            playHLS({ 
+              url: streamData.servers[firstServer], 
+              label: firstServer 
+            })
+          }
         }
       } else {
         const streamData: any = await $fetch(`/api/lk21/stream?url=${encodeURIComponent(lk21Url)}`)
@@ -1007,6 +1097,7 @@ async function selectSeason(s: number) {
 function startPlayer() {
   if (!detail.value?.movie) return
   const item = detail.value.movie as CatalogItem
+  closeDetail() // Tutup modal sebelum buka player
   if (item.type === 'movie') {
     openPlayer(item, 1, 1)
   } else {
@@ -1018,7 +1109,9 @@ function startPlayer() {
 function playEp(ep: Episode) {
   if (!detail.value?.movie) return
   activeEp.value = ep
-  openPlayer(detail.value.movie as CatalogItem, activeSeason.value, ep.ep)
+  const item = detail.value.movie as CatalogItem
+  closeDetail() // Tutup modal sebelum buka player
+  openPlayer(item, activeSeason.value, ep.ep)
 }
 
 function playVideo(opts: { embedUrl: string }) {
@@ -1053,14 +1146,16 @@ async function openPlayer(item: CatalogItem, season: number, ep: number) {
     ? item.title
     : `${item.title} — S${String(season).padStart(2,'0')}E${String(ep).padStart(2,'0')}`
 
-  // 1. Embed langsung sebagai fallback instant
   const srcs = buildSources(item, season, ep)
-  activeSrc.value = srcs[0].name
-  playerUrl.value = srcs[0].url
+  const primarySource = srcs[0]
+  if (!primarySource) return
+
+  activeSrc.value = primarySource.name
+  playerUrl.value = primarySource.url
 
   addLog(`Memulai pencarian stream untuk: "${item.title}"`)
-  addLog(`[Embed Direct] Sumber embed universal (${srcs[0].name}) langsung aktif diawal.`)
-  addLog(`[Embed Options] ${srcs.length} embed tersedia: ${srcs.map(s => s.name).join(', ')}`)
+  addLog(`[Embed Direct] Sumber embed universal (${primarySource.name}) langsung aktif diawal.`)
+  addLog(`[Embed Options] ${srcs.length} embed tersedia: ${srcs.map((s) => s.name).join(', ')}`)
 
   // 2. Background scraping paralel LK21 + Embed validation
   await Promise.all([
@@ -1109,7 +1204,7 @@ async function validateEmbedSources(sources: { name: string; url: string }[], ad
         addLog(`[Embed] ✗ ${name} — gagal (${error || 'unreachable'})`)
       }
     } else {
-      addLog(`[Embed] ✗ ${sources[idx].name} — error validasi`)
+      addLog(`[Embed] ✗ ${sources[idx]?.name || 'Unknown Source'} — error validasi`)
     }
   })
 }
@@ -1151,12 +1246,6 @@ async function runBackgroundScraper(item: CatalogItem, season: number, ep: numbe
 function switchSource(src: { name: string; url: string; isHls?: boolean }) {
   activeSrc.value = src.name
   playerUrl.value = src.url
-  
-  // Log saat VidLink dipilih
-  if (src.name === 'VidLink') {
-    addLog(`[VidLink] Loading VidLink embed untuk movie ID ${currentItem.value?.id}`)
-    addLog(`[VidLink] Redirect ke: ${src.url}`)
-  }
 }
 
 function closePlayer() {
@@ -1255,16 +1344,16 @@ function closePlayer() {
   position: sticky;
   top: 72px;
   z-index: 40;
-  background: var(--search-bg-fade, linear-gradient(rgba(20,20,20,0.95), rgba(20,20,20,0)));
-  padding: 16px 0 32px;
-  margin-bottom: -100px;
+  background: var(--search-bg-fade, linear-gradient(rgba(10,12,18,0.96), rgba(10,12,18,0.68) 65%, rgba(10,12,18,0)));
+  padding: 16px 0 24px;
+  margin-bottom: -76px;
   pointer-events: none;
 }
 .search-bar > * {
   pointer-events: auto;
 }
 :global(html.light) .search-bar {
-  --search-bg-fade: linear-gradient(rgba(248,250,252,0.95), rgba(248,250,252,0));
+  --search-bg-fade: linear-gradient(rgba(248,250,252,0.96), rgba(248,250,252,0.82) 65%, rgba(248,250,252,0));
 }
 .search-container {
   max-width: 1400px;
@@ -1276,21 +1365,28 @@ function closePlayer() {
     padding: 0 32px;
   }
 }
+.search-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .search-inner {
   display: flex;
   align-items: center;
-  background: var(--search-box-bg, #2a2a2a);
-  border: 1px solid var(--search-box-border, #3a3a3a);
-  border-radius: 12px;
-  padding: 0 12px;
-  gap: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  background: rgba(20, 23, 34, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 0 12px 0 16px;
+  gap: 10px;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.28);
+  backdrop-filter: blur(18px);
 }
 :global(html.light) .search-inner {
-  --search-box-bg: #ffffff;
-  --search-box-border: #e2e8f0;
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(148, 163, 184, 0.24);
+  box-shadow: 0 16px 32px rgba(148, 163, 184, 0.18);
 }
-.search-icon { width: 18px; height: 18px; color: #999; flex-shrink: 0; }
+.search-icon { width: 18px; height: 18px; color: #94a3b8; flex-shrink: 0; }
 .search-input {
   flex: 1;
   background: none;
@@ -1298,269 +1394,366 @@ function closePlayer() {
   outline: none;
   color: inherit;
   font-size: 15px;
-  padding: 11px 0;
+  padding: 15px 0;
 }
-.search-input::placeholder { color: #888; }
+.search-input::placeholder { color: #7c8799; }
+.search-filter-toggle,
+.search-clear,
+.search-source-btn,
+.filter-close {
+  border: none;
+  cursor: pointer;
+}
+.search-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.06);
+  color: #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.search-filter-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+.search-filter-toggle.active {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+}
+.filter-count {
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.16);
+  border-radius: 999px;
+  font-size: 11px;
+}
 .search-clear {
   background: none;
-  border: none;
-  color: #999;
+  color: #94a3b8;
   font-size: 16px;
-  cursor: pointer;
-  padding: 4px;
+  padding: 6px;
 }
-
-/* ─── Source Toggle ───────────────────────────────────────────────── */
-.search-source-toggle {
+.search-toolbar {
   display: flex;
-  gap: 4px;
-  margin-left: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.source-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 16px;
-  cursor: pointer;
+.search-status,
+.search-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.search-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.search-chip.primary {
+  background: rgba(37, 99, 235, 0.18);
+  color: #bfdbfe;
+}
+.search-chip.muted {
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+}
+.search-source-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #94a3b8;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
   transition: all 0.2s ease;
-  color: #999;
 }
-.source-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-.source-btn.active {
-  background: rgba(229, 9, 20, 0.2);
-  border-color: rgba(229, 9, 20, 0.5);
+.search-source-btn.active {
+  background: rgba(229, 9, 20, 0.18);
+  border-color: rgba(229, 9, 20, 0.34);
   color: #fff;
-  transform: scale(1.05);
 }
-
-/* ─── Search Results ─────────────────────────────────────────── */
-.search-results-wrapper {
+.search-experience {
   max-width: 1400px;
-  margin: 120px auto 0; /* Top margin untuk avoid navbar overlap */
-  padding: 0 24px;
-  min-height: 60vh;
+  margin: 112px auto 0;
+  padding: 0 24px 32px;
 }
-@media (min-width: 768px) {
-  .search-results-wrapper {
-    padding: 0 32px;
-    margin-left: 260px; /* Offset untuk sidebar */
-    max-width: calc(1400px - 260px);
-  }
+.search-content-shell.with-filter {
+  margin-left: 288px;
 }
-@media (max-width: 768px) {
-  .search-results-wrapper {
-    margin-top: 140px; /* Navbar + search bar */
-    padding-bottom: 320px; /* Space untuk bottom sheet filter */
-  }
+.search-loading-state,
+.search-empty-state {
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
-@media (min-width: 769px) {
-  .search-results-wrapper {
-    margin-top: 140px; /* Navbar + search bar */
-  }
+.search-loading-state p,
+.search-empty-state p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.search-results-wrapper {
+  min-height: 50vh;
+}
+.search-results-wrapper.cinematic {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 24px;
+  padding: 24px;
+}
+:global(html.light) .search-results-wrapper.cinematic {
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.88));
+  border-color: rgba(148, 163, 184, 0.18);
+}
+.search-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 .search-section-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #e5e5e5;
-  margin: 0 0 16px;
-  padding: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: inherit;
+  margin: 0;
+}
+.search-section-subtitle {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
 }
 .search-results-grid {
   position: relative;
   z-index: 10;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 18px;
   padding: 0;
 }
-@media (max-width: 640px) {
-  .search-results-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 12px;
-  }
-}
-.search-results-grid.with-sidebar {
-  /* No extra margin, sudah dihandle di wrapper */
-}
-@media (min-width: 640px) {
-  .search-results-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-@media (min-width: 1024px) {
-  .search-results-grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-  .search-results-grid.with-sidebar {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
-@media (max-width: 768px) {
-  .search-results-grid.with-sidebar {
-    margin-left: 0;
-  }
-}
-
-/* ─── Filter Sidebar ──────────────────────────────────────────────── */
 .filter-sidebar {
   position: fixed;
-  left: 0;
-  top: 140px; /* Below navbar + search bar */
-  width: 240px;
-  height: calc(100vh - 140px);
-  background: var(--sidebar-bg, #1a1a1a);
-  border-right: 1px solid var(--sidebar-border, #333);
-  padding: 24px 20px;
-  z-index: 35;
+  left: max(24px, calc((100vw - 1400px) / 2 + 24px));
+  top: 152px;
+  width: 264px;
+  max-height: calc(100vh - 176px);
+  background: rgba(17, 24, 39, 0.92);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 20px;
+  z-index: 45;
   overflow-y: auto;
-  box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+  box-shadow: 0 22px 50px rgba(0,0,0,0.3);
+  backdrop-filter: blur(18px);
 }
 :global(html.light) .filter-sidebar {
-  --sidebar-bg: #ffffff;
-  --sidebar-border: #e2e8f0;
+  background: rgba(255,255,255,0.94);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+.filter-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 .filter-title {
   font-size: 18px;
-  font-weight: 700;
-  color: var(--filter-title-color, #fff);
-  margin: 0 0 20px;
+  font-weight: 800;
+  color: inherit;
+  margin: 0;
 }
-:global(html.light) .filter-title {
-  --filter-title-color: #1e293b;
+.filter-subtitle {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
 }
-@media (max-width: 768px) {
-  .filter-title {
-    font-size: 16px;
-    margin-bottom: 16px;
-  }
+.filter-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: inherit;
+  flex-shrink: 0;
 }
 .filter-group {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 .filter-label {
   display: block;
-  font-size: 13px;
-  color: #999;
+  font-size: 12px;
+  color: var(--text-secondary);
   margin-bottom: 8px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
 }
 .category-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
-@media (max-width: 768px) {
-  .category-tabs {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  .cat-tab {
-    padding: 10px 8px;
-    font-size: 12px;
-  }
+.category-tabs.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .cat-tab {
-  background: #2a2a2a;
-  border: 1px solid #444;
-  color: #ccc;
-  padding: 8px 12px;
-  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #cbd5e1;
+  padding: 10px 12px;
+  border-radius: 12px;
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s;
-}
-.cat-tab:hover {
-  background: #333;
-  border-color: #555;
+  transition: all 0.2s ease;
 }
 .cat-tab.active {
-  background: #0066ff;
-  border-color: #0066ff;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-color: transparent;
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
 }
 .filter-select {
   width: 100%;
-  background: #2a2a2a;
-  border: 1px solid #444;
-  color: #ccc;
-  padding: 10px 12px;
-  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: inherit;
+  padding: 12px 14px;
+  border-radius: 12px;
   font-size: 14px;
   cursor: pointer;
-  transition: border-color 0.2s;
-}
-.filter-select:hover {
-  border-color: #555;
-}
-.filter-select:focus {
-  outline: none;
-  border-color: #0066ff;
 }
 .filter-reset {
   width: 100%;
-  background: #2a2a2a;
-  border: 1px solid #444;
-  color: #ccc;
-  padding: 10px;
-  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  color: inherit;
+  padding: 12px;
+  border-radius: 12px;
   font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 10px;
+  transition: all 0.2s ease;
+  margin-top: 8px;
 }
 .filter-reset:hover {
-  background: #333;
-  color: #fff;
+  background: rgba(148, 163, 184, 0.18);
 }
-
-/* Slide transition for filter sidebar */
+.mobile-filter-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.65);
+  z-index: 44;
+}
 .slide-right-enter-active,
-.slide-right-leave-active {
-  transition: transform 0.3s ease, opacity 0.3s ease;
+.slide-right-leave-active,
+.slide-up-enter-active,
+.slide-up-leave-active,
+.search-overlay-fade-enter-active,
+.search-overlay-fade-leave-active {
+  transition: all 0.24s ease;
 }
-.slide-right-enter-from {
-  transform: translateX(-100%);
-  opacity: 0;
-}
+.slide-right-enter-from,
 .slide-right-leave-to {
-  transform: translateX(-100%);
+  transform: translateX(-24px);
   opacity: 0;
 }
-
-@media (max-width: 768px) {
-  .filter-sidebar {
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(24px);
+  opacity: 0;
+}
+.search-overlay-fade-enter-from,
+.search-overlay-fade-leave-to {
+  opacity: 0;
+}
+@media (max-width: 900px) {
+  .search-bar {
+    margin-bottom: -56px;
+    padding-bottom: 18px;
+  }
+  .search-experience {
+    margin-top: 104px;
+    padding: 0 16px 24px;
+  }
+  .search-content-shell.with-filter {
+    margin-left: 0;
+  }
+  .search-inner {
+    border-radius: 16px;
+    padding-right: 10px;
+  }
+  .search-toolbar {
+    align-items: stretch;
+  }
+  .search-status,
+  .search-toolbar-actions {
     width: 100%;
-    height: auto;
-    max-height: 50vh;
-    position: fixed;
+  }
+  .search-results-wrapper.cinematic {
+    padding: 18px;
+    border-radius: 20px;
+  }
+  .search-results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .filter-sidebar {
     left: 0;
+    right: 0;
     top: auto;
     bottom: 0;
-    border-right: none;
-    border-top: 2px solid var(--sidebar-border, #333);
-    border-radius: 20px 20px 0 0;
-    z-index: 100;
-    box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
-    padding: 20px 24px 32px;
+    width: 100%;
+    max-height: min(72vh, 560px);
+    border-radius: 24px 24px 0 0;
+    padding: 18px 18px 28px;
   }
-  .filter-sidebar::before {
+  .filter-sidebar.mobile::before {
     content: '';
     display: block;
-    width: 40px;
-    height: 4px;
-    background: #555;
-    border-radius: 2px;
-    margin: 0 auto 16px;
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.42);
+    margin: 0 auto 14px;
   }
-  .slide-right-enter-from,
-  .slide-right-leave-to {
-    transform: translateY(100%);
+  .category-tabs,
+  .category-tabs.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .search-container {
+    padding: 0 16px;
+  }
+  .search-inner {
+    gap: 8px;
+    padding-left: 14px;
+  }
+  .search-filter-toggle span:not(.filter-count) {
+    display: none;
+  }
+  .search-section-title {
+    font-size: 20px;
+  }
+  .search-results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 }
 .empty-state {
@@ -1688,6 +1881,7 @@ function closePlayer() {
   line-height: 1.5;
   margin: 0 0 14px;
   display: -webkit-box;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -1735,7 +1929,9 @@ function closePlayer() {
     padding: 8px 32px 40px;
   }
 }
-.rows-container { }
+.rows-container {
+  display: block;
+}
 .content-row { margin-bottom: 4px; }
 .row-title {
   font-size: 16px;
@@ -1975,6 +2171,7 @@ function closePlayer() {
   line-height: 1.5;
   margin: 0 0 14px;
   display: -webkit-box;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
