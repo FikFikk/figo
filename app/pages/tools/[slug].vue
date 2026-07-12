@@ -104,6 +104,9 @@
             <div v-else-if="activeTool === 'qr'">
               <ToolsQrEngine />
             </div>
+            <div v-else-if="activeTool === 'forex'">
+              <ToolsForexResearch />
+            </div>
             <!-- Stream sudah di-render di luar kondisional layout -->
             <div v-else-if="activeTool === 'hls-player'">
               <ToolsStreamingPlayer />
@@ -160,6 +163,10 @@ const toolSeoMap: Record<string, { title: string; description: string }> = {
     title: 'QR Code Generator Online Gratis — Buat QR Code Instan — FiGo Tools',
     description: 'Buat QR code dari teks, URL, nomor telepon, atau data apapun secara gratis. Download QR code sebagai gambar PNG. Instan, tanpa login, tanpa batas.'
   },
+  'forex-research': {
+    title: 'Forex Research Dashboard — Signal Score, Bias & Reasoning — FiGo Tools',
+    description: 'Dashboard riset forex untuk melihat signal score, bias BUY/SELL, dan reasoning JSON dari collector lokal. Research mode, bukan auto-trading.'
+  },
   'stream': {
     title: 'FiGo Bioskop — Katalog Film & Series — FiGo Tools',
     description: 'Jelajahi katalog film dan series, lihat detail episode per season, dan putar lewat proxy aman. Akses dilindungi PIN.'
@@ -194,6 +201,7 @@ const slugToId: Record<string, string> = {
   'file-metadata': 'metadata',
   'secure-generator': 'generator',
   'qr-engine': 'qr',
+  'forex-research': 'forex',
   'stream': 'stream',
   'hls-player': 'hls-player',
 }
@@ -209,6 +217,7 @@ const availableTools = [
   { id: 'metadata', slug: 'file-metadata', name: 'File Metadata', icon: 'analytics' },
   { id: 'generator', slug: 'secure-generator', name: 'Secure Generator', icon: 'vpn_key' },
   { id: 'qr', slug: 'qr-engine', name: 'QR Engine', icon: 'qr_code_2' },
+  { id: 'forex', slug: 'forex-research', name: 'Forex Research', icon: 'monitoring' },
   { id: 'stream', slug: 'stream', name: 'Bioskop', icon: 'movie' },
 ]
 
