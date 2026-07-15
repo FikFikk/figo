@@ -18,7 +18,7 @@
         </h2>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 max-w-7xl mx-auto">
         <ToolCard
           v-for="(tool, idx) in coreTools"
           :key="tool.title"
@@ -130,6 +130,16 @@ const { isDark } = useColorMode()
 const router = useRouter()
 
 const coreTools = [
+  {
+    icon: 'Book',
+    title: 'Artikel',
+    description: 'Arsip spiritual, tasawuf, dekonstruksi sejarah, dan kitab esoterik.',
+    actionLabel: 'Read Now',
+    iconBgClass: 'bg-indigo-50',
+    iconBgDark: 'bg-indigo-500/15',
+    iconColorClass: 'text-indigo-500',
+    route: '/tools/artikel'
+  },
   {
     icon: 'transform',
     title: 'Convert',

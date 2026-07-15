@@ -21,6 +21,10 @@
     <!-- Content -->
     <div v-else-if="recipe">
 
+      <div v-if="recipe.note" style="background:#fef3c7; border-left:4px solid #f59e0b; padding:12px; border-radius:4px; margin-bottom:20px; color:#92400e; font-size:14px; font-weight:500">
+        🚨 {{ recipe.note }}
+      </div>
+
       <!-- Title -->
       <h1 class="recipe-title">{{ recipe.title }}</h1>
 

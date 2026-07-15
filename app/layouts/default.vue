@@ -7,7 +7,7 @@ const { isDark } = useColorMode()
     :class="isDark ? 'bg-[#0f1117] text-gray-100' : 'bg-surface text-on-surface'"
   >
     <AppNavbar />
-    <main class="flex-1 relative overflow-hidden">
+    <main class="flex-1 relative">
       <slot />
     </main>
     <AppFooter class="md:pb-0 pb-6" />
