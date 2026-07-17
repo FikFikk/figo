@@ -12,16 +12,17 @@
       </div>
     </div>
 
-    <div class="space-y-5">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+      <div class="lg:col-span-7 flex flex-col gap-6">
 
       <!-- Atas: Input -->
       <div>
         <!-- Input Text / URL -->
         <div>
           <label class="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2 block">Content Type</label>
-          <div class="flex gap-1.5 mb-4 overflow-x-auto pb-2 no-scrollbar">
+          <div class="flex gap-1.5 mb-4 overflow-x-auto pb-2 custom-scrollbar snap-x">
             <button v-for="t in contentTypes" :key="t.id" @click="contentType = t.id"
-              class="flex items-center gap-1 px-3 py-2 rounded-2xl text-[10px] font-bold transition-all relative whitespace-nowrap flex-shrink-0"
+              class="flex items-center gap-1 px-4 py-2 rounded-2xl text-[11px] sm:text-xs font-bold transition-all relative whitespace-nowrap flex-shrink-0 snap-start"
               :class="contentType === t.id ? 'bg-primary text-white shadow-sm' : (t.soon ? 'bg-black/5 dark:bg-white/5 text-slate-400 dark:text-gray-600' : 'bg-black/5 dark:bg-white/5 text-slate-500 hover:text-slate-700 dark:hover:text-gray-300')"
             >
               <span class="material-symbols-outlined text-xs">{{ t.icon }}</span>
@@ -121,51 +122,15 @@
         </div>
       </div>
 
-      <!-- Bawah: Centered Preview -->
-      <div class="flex flex-col items-center justify-center gap-6 relative">
-
-        <!-- Kiri: Customization (Now always a Modal) -->
-        <div>
-          <!-- Floating Button (All Devices) -->
-          <ClientOnly>
-            <Teleport to="body">
-              <div v-show="!showMobileControls" class="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-[100] sm:bottom-10">
-                <button @click="showMobileControls = true" class="flex items-center gap-2 px-6 py-3 rounded-full bg-slate-800 dark:bg-white text-white dark:text-slate-900 font-black text-[11px] uppercase tracking-wider shadow-2xl shadow-black/30 hover:scale-105 active:scale-95 transition-all">
-                  <span class="material-symbols-outlined text-sm">tune</span>
-                  Controls
-                </button>
-              </div>
-            </Teleport>
-          </ClientOnly>
-
-          <!-- Customization Modal -->
-          <ClientOnly>
-            <Teleport to="body">
-              <Transition
-                enter-active-class="transition duration-300 ease-out"
-                enter-from-class="transform translate-y-full opacity-0"
-                enter-to-class="transform translate-y-0 opacity-100"
-                leave-active-class="transition duration-200 ease-in"
-                leave-from-class="transform translate-y-0 opacity-100"
-                leave-to-class="transform translate-y-full opacity-0"
-              >
-                <div v-show="showMobileControls" class="fixed inset-0 z-[110] flex flex-col justify-end pb-[80px] sm:pb-0 sm:justify-center sm:items-center">
-                  <!-- Backdrop -->
-                  <div @click="showMobileControls = false" class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
-
-                <div :class="[
-                  'relative z-10 w-full sm:w-[480px] max-h-[85vh] sm:max-h-[90vh] overflow-y-auto rounded-t-[2rem] sm:rounded-3xl border p-5 shadow-2xl transition-transform duration-300',
-                  isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'
-                ]">
-                <!-- Header/Close -->
-                <div class="flex justify-between items-center mb-6 sticky top-0 bg-inherit z-20 py-2 -mx-2 px-2">
-                  <h3 class="font-bold text-xs uppercase tracking-widest opacity-50">QR Controls</h3>
-                  <button @click="showMobileControls = false" class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/20 transition-all">
-                    <span class="material-symbols-outlined text-sm opacity-70">close</span>
-                  </button>
-                </div>
-
-              <!-- Customize Tabs -->
+      
+      <!-- Panel Desain & Kontrol -->
+      <div class="p-5 md:p-6 rounded-3xl border transition-all mt-6" :class="isDark ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50/50 border-slate-200'">
+        <h3 class="font-bold text-xs uppercase tracking-widest opacity-50 mb-4 flex items-center gap-2">
+          <span class="material-symbols-outlined text-sm">tune</span> 
+          Design Controls
+        </h3>
+        <div class="w-full">
+          <!-- Customize Tabs -->
             <div class="flex gap-1 mb-4 p-1 rounded-2xl" :class="isDark ? 'bg-black/20' : 'bg-slate-100'">
               <button v-for="tab in ['Style', 'Frames', 'Shapes']" :key="tab" @click="customizeTab = tab"
                 class="flex-1 py-2 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
@@ -292,15 +257,15 @@
                 </div>
               </div>
             </div>
-            </div>
-            </div>
-              </Transition>
-            </Teleport>
-          </ClientOnly>
+            
+            
+          
         </div>
 
-        <!-- Kanan: Preview -->
-        <div class="flex flex-col items-center gap-4 w-full">
+        </div>
+
+      <!-- Kanan: Preview -->
+      <div class="lg:col-span-5 flex flex-col items-center gap-6 sticky top-24 w-full">
           <div class="w-full aspect-square max-w-[340px] rounded-2xl flex items-center justify-center overflow-hidden transition-all relative"
             :class="qrDataUrl ? 'bg-white' : (isDark ? 'border-2 border-dashed border-white/10 bg-white/5' : 'border-2 border-dashed border-slate-200 bg-slate-50')"
           >

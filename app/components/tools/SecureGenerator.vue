@@ -15,9 +15,9 @@
     </div>
 
     <!-- IOS-STYLE TABS -->
-    <div class="flex p-1 mb-8 rounded-2xl transition-colors" :class="isDark ? 'bg-slate-800/80' : 'bg-slate-100'">
+    <div class="flex overflow-x-auto custom-scrollbar p-1 mb-6 sm:mb-8 rounded-2xl transition-colors" :class="isDark ? 'bg-slate-800/80' : 'bg-slate-100'">
       <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
-        class="flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all duration-200 relative"
+        class="flex-1 shrink-0 whitespace-nowrap py-2 px-4 rounded-xl text-[11px] sm:text-sm font-semibold transition-all duration-200 relative"
         :class="activeTab === tab.id ? (isDark ? 'text-white bg-slate-700 shadow-sm' : 'text-slate-800 bg-white shadow-sm ring-1 ring-black/5') : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
       >
         <span class="relative z-10">{{ tab.label }}</span>
@@ -35,8 +35,8 @@
                :class="isDark ? 'text-white placeholder-slate-600' : 'text-slate-900 placeholder-slate-400'">
                
         <!-- Generator Output -->
-        <div v-else class="flex-1 min-w-0">
-          <p class="font-mono text-xl sm:text-2xl font-bold tracking-wide break-all leading-tight selection:bg-indigo-500/30"
+        <div v-else class="flex-1 min-w-0 pr-2">
+          <p class="font-mono text-[17px] sm:text-2xl font-bold tracking-tight break-all leading-snug selection:bg-indigo-500/30"
                 :class="isDark ? 'text-indigo-400' : 'text-indigo-600'">
             {{ generatedOutput || 'Generating...' }}
           </p>
@@ -417,3 +417,13 @@ onMounted(() => {
   generate()
 })
 </script>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.custom-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+</style>
