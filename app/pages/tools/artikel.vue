@@ -44,17 +44,45 @@
     <div v-if="loading" class="flex justify-center py-12"><div class="animate-pulse flex space-x-2"><div class="w-3 h-3 bg-emerald-500 rounded-full"></div><div class="w-3 h-3 bg-emerald-500 rounded-full"></div><div class="w-3 h-3 bg-emerald-500 rounded-full"></div></div></div>
 
     <!-- LIST GRID ARTIKEL -->
-    <div v-else-if="!selectedDoc" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
-      <div v-for="doc in documents" :key="doc.id" @click="openDetail(doc)" class="flex flex-col p-6 bg-white dark:bg-[#121212] border border-slate-200 dark:border-slate-800 rounded-2xl cursor-pointer hover:bg-slate-50 dark:hover:bg-[#181818] hover:border-emerald-500/50 dark:hover:border-emerald-900/50 transition-all shadow-sm hover:shadow-lg dark:hover:shadow-emerald-900/10">
+    <div v-else-if="!selectedDoc" class="max-w-5xl mx-auto w-full">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div v-for="doc in paginatedDocuments"  :key="doc.id" @click="openDetail(doc)" class="flex flex-col p-6 bg-white dark:bg-[#121212] border border-slate-200 dark:border-slate-800 rounded-2xl cursor-pointer hover:bg-slate-50 dark:hover:bg-[#181818] hover:border-emerald-500/50 dark:hover:border-emerald-900/50 transition-all shadow-sm hover:shadow-lg dark:hover:shadow-emerald-900/10">
         <div class="flex items-center gap-2 mb-4">
           <span class="px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl">{{ doc.kategori }}</span>
         </div>
         <h2 class="text-xl font-medium text-slate-800 dark:text-slate-50 mb-2 leading-snug">{{ doc.judul }}</h2>
         <p class="text-xs font-medium text-slate-500 dark:text-slate-500 mb-4 uppercase tracking-wider">{{ doc.tokoh }}</p>
         <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed flex-grow font-serif">{{ doc.deskripsi }}</p>
-        <div class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-end">
-           <span class="text-xs text-emerald-600 dark:text-emerald-500 font-semibold group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">BACA MAKSNA -></span>
+        <div class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/60 flex flex-col gap-2">
+           <div class="flex justify-between items-center text-xs font-semibold">
+              <span v-if="allProgress[doc.id] && allProgress[doc.id].percent > 0" class="text-indigo-500 dark:text-indigo-400">LANJUT BACA ({{ allProgress[doc.id].percent }}%)</span>
+              <span v-else class="text-emerald-600 dark:text-emerald-500 transition-colors">BACA MAKNA -></span>
+           </div>
+           <div v-if="allProgress[doc.id] && allProgress[doc.id].percent > 0" class="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+             <div class="bg-indigo-500 h-full rounded-full transition-all duration-500" :style="`width: ${allProgress[doc.id].percent}%`"></div>
+           </div>
         </div>
+      </div>
+      </div>
+      
+      <!-- GRID PAGINATION -->
+      <div v-if="totalGridPages > 1" class="mt-10 mb-6 flex items-center justify-center gap-2 sm:gap-4">
+        <button @click="prevGridPage" :disabled="currentGridPage === 1" class="px-3 sm:px-4 py-2 bg-white dark:bg-[#121212] hover:bg-slate-50 dark:hover:bg-[#1a1a1a] disabled:opacity-30 disabled:cursor-not-allowed border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 transition-all flex items-center justify-center shadow-sm">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <div class="flex items-center gap-1 sm:gap-2 overflow-x-auto max-w-[60vw] custom-scrollbar px-1 py-1">
+          <button 
+            v-for="page in totalGridPages" :key="'gpage-'+page"
+            @click="currentGridPage = page" 
+            class="min-w-[36px] h-9 rounded-xl text-sm font-bold border transition-all shrink-0" 
+            :class="page === currentGridPage ? 'bg-emerald-600 dark:bg-emerald-900 border-emerald-500 dark:border-emerald-600 text-white shadow-md' : 'bg-transparent border-transparent text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'"
+          >
+            {{ page }}
+          </button>
+        </div>
+        <button @click="nextGridPage" :disabled="currentGridPage === totalGridPages" class="px-3 sm:px-4 py-2 bg-white dark:bg-[#121212] hover:bg-slate-50 dark:hover:bg-[#1a1a1a] disabled:opacity-30 disabled:cursor-not-allowed border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 transition-all flex items-center justify-center shadow-sm">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+        </button>
       </div>
     </div>
 
@@ -65,10 +93,10 @@
       <button 
         v-if="selectedDoc"
         @click.stop="showMobileSidebar = true"
-        class="lg:hidden fixed bottom-24 right-5 sm:right-6 z-40 bg-emerald-600 shadow-[0_5px_20px_rgba(16,185,129,0.5)] border border-emerald-500 text-white p-3.5 rounded-2xl flex items-center justify-center hover:scale-105 transition-transform"
+        class="lg:hidden fixed bottom-24 right-5 sm:right-6 z-40 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl shadow-sm border border-slate-200/50 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 p-3.5 rounded-2xl flex items-center justify-center hover:scale-105 transition-transform hover:text-emerald-600 dark:hover:text-emerald-500"
       >
         <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-        <span v-if="docHighlights.length > 0" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border border-white dark:border-[#121212]">{{ docHighlights.length }}</span>
+        <span v-if="docHighlights.length > 0" class="absolute -top-1.5 -right-1.5 bg-emerald-500/90 dark:bg-emerald-600 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-sm">{{ docHighlights.length }}</span>
       </button>
 
       <!-- MOBILE BOTTOM SHEET OVERLAY FOR SOROTAN -->
@@ -80,7 +108,10 @@
                  <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><svg class="w-5 h-5 text-emerald-600 dark:text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg> Daftar Sorotan ({{docHighlights.length}})</h3>
                  <button @click="showMobileSidebar=false" class="p-1 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl text-xs font-bold text-slate-600 dark:text-white transition-colors">Tutup</button>
               </div>
-              <div v-if="docHighlights.length === 0" class="text-xs text-slate-400 dark:text-slate-500 text-center py-6">Belum ada sorotan tersimpan.</div>
+              <div v-if="docHighlights.length === 0" class="text-xs text-slate-400 dark:text-slate-500 text-center py-10 px-4 leading-relaxed tracking-wide">
+                 <svg class="w-8 h-8 mx-auto mb-3 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                 Belum ada sorotan tersimpan.<br><br><span class="font-medium text-slate-500 dark:text-slate-400">Hint:</span> Anda bisa menahan / mengeblok teks pada artikel untuk memunculkan pop-up warna stabilo.
+              </div>
               <div class="space-y-3">
                  <div v-for="(h, idx) in docHighlights" :key="'mob-'+idx" @click="jumpToHighlight(h)" class="p-4 bg-slate-50 dark:bg-[#0a0a0a] active:bg-slate-100 dark:active:bg-[#1a1a1a] rounded-2xl border-l-[4px] border-slate-200 dark:border-slate-800 cursor-pointer relative group" :class="{'border-amber-400 dark:border-yellow-500': h.color==='yellow','border-emerald-400 dark:border-emerald-500': h.color==='emerald','border-indigo-400 dark:border-indigo-500': h.color==='indigo'}">
                     <div class="text-[10px] text-slate-400 dark:text-slate-500 mb-2 font-mono uppercase font-semibold flex justify-between items-center">
@@ -101,7 +132,10 @@
              <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
              <h3 class="text-sm font-semibold tracking-wider text-slate-700 dark:text-slate-200 uppercase">Catatan Sorotan</h3>
           </div>
-          <div v-if="docHighlights.length === 0" class="text-xs text-slate-400 dark:text-slate-500 text-center py-6">Seleksi teks di kanan untuk menstabilo otomatis.</div>
+          <div v-if="docHighlights.length === 0" class="text-xs text-slate-400 dark:text-slate-500 text-center py-10 px-4 leading-relaxed tracking-wide">
+             <svg class="w-8 h-8 mx-auto mb-3 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+             Belum ada sorotan tersimpan.<br><br><span class="font-medium text-slate-500 dark:text-slate-400">Hint:</span> Sorot / blok teks di sebelah kanan untuk memunculkan opsi stabilo penanda bacaan.
+          </div>
           <div class="space-y-3">
              <div v-for="(h, idx) in docHighlights" :key="idx" @click="jumpToHighlight(h)" class="p-3 bg-slate-50 dark:bg-[#0a0a0a] hover:bg-slate-100 dark:hover:bg-[#1a1a1a] rounded-2xl border-l-[4px] border-slate-200 dark:border-slate-800 cursor-pointer transition-colors group relative" :class="{'border-amber-400 dark:border-yellow-500': h.color==='yellow','border-emerald-400 dark:border-emerald-500': h.color==='emerald','border-indigo-400 dark:border-indigo-500': h.color==='indigo'}">
                 <div class="text-[10px] text-slate-400 dark:text-slate-500 mb-1.5 font-mono uppercase font-semibold">Bab {{ h.page }}</div>
@@ -169,7 +203,8 @@
               >
                 {{ item }}
               </button>
-            </template>
+
+</template>
           </div>
 
           <button @click="nextPage" :disabled="currentPage===totalPages" class="px-5 py-2.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 disabled:opacity-30 disabled:cursor-not-allowed border border-emerald-200 dark:border-emerald-900/50 rounded-2xl text-sm font-semibold transition-all flex items-center gap-2">
@@ -180,6 +215,9 @@
       </div>
     </div>
   </div>
+
+    
+
 </template>
 
 <script setup>
@@ -192,11 +230,36 @@ const router = useRouter()
 const loading = ref(false)
 const selectedDoc = ref(null)
 const currentPage = ref(1)
+const currentGridPage = ref(1)
+const gridItemsPerPage = 9
+
+const totalGridPages = computed(() => Math.ceil(documents.value.length / gridItemsPerPage))
+const paginatedDocuments = computed(() => {
+  const start = (currentGridPage.value - 1) * gridItemsPerPage
+  return documents.value.slice(start, start + gridItemsPerPage)
+})
+const nextGridPage = () => {
+  if (currentGridPage.value < totalGridPages.value) {
+    currentGridPage.value++
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+const prevGridPage = () => {
+  if (currentGridPage.value > 1) {
+    currentGridPage.value--
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
 
 const highlights = ref([])
 const showMenu = ref(false)
 const currentSelectionData = ref(null)
 const showMobileSidebar = ref(false)
+
+const allProgress = ref({}) // map of docId -> progress
+
+
 
 const documents = ref([
   {
@@ -282,7 +345,96 @@ const documents = ref([
   }
 ])
 
+const initialDocId = route.query.id
+const initialDocVal = documents.value.find(d => d.id === initialDocId)
+if (initialDocVal && !selectedDoc.value) {
+    selectedDoc.value = initialDocVal
+}
+
+useSeoMeta({
+  title: () => selectedDoc.value ? `${selectedDoc.value.judul} - Pengetahuan Nusantara FiGo` : 'Pengetahuan Nusantara - Arsip Spiritual & Literatur FiGo',
+  description: () => selectedDoc.value ? selectedDoc.value.deskripsi : 'Pusat arsip spiritual, literatur Kejawen, Tasawuf, dan peninggalan Nusantara.',
+  ogTitle: () => selectedDoc.value ? `${selectedDoc.value.judul} - Pengetahuan Nusantara FiGo` : 'Pengetahuan Nusantara FiGo',
+  ogDescription: () => selectedDoc.value ? selectedDoc.value.deskripsi : 'Pusat arsip spiritual dan literatur Nusantara bebas akses.',
+  twitterTitle: () => selectedDoc.value ? `${selectedDoc.value.judul}` : 'Pengetahuan Nusantara FiGo',
+  twitterDescription: () => selectedDoc.value ? selectedDoc.value.deskripsi : 'Pusat arsip spiritual dan literatur.',
+  twitterCard: 'summary_large_image'
+})
+
+
+
+
+
+
+// Removed modal state - relying entirely on card tracking
+const loadProgressData = () => {
+  const cachedProg = localStorage.getItem('figo_article_progress_map')
+  if (cachedProg) {
+    try { allProgress.value = JSON.parse(cachedProg) } catch(e) {}
+  }
+}
+
+let scrollTimeout = null
+const calculateAndSaveProgress = () => {
+  if (!selectedDoc.value) return
+  if (scrollTimeout) return
+  
+  scrollTimeout = setTimeout(() => {
+    const doc = selectedDoc.value
+    if (!doc || !doc.judul) {
+      scrollTimeout = null
+      return
+    }
+    
+    // Calculate vertical scroll on current page
+    const scrollHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
+    const docHeight = scrollHeight - window.innerHeight
+    const scrollY = window.scrollY || document.documentElement.scrollTop || 0
+    
+    let scrollFraction = 0
+    if (docHeight > 20) {
+      scrollFraction = Math.max(0, Math.min(1, scrollY / docHeight))
+    } else {
+      // Prevent 100% bug on initial mounting when height hasn't expanded yet
+      scrollFraction = scrollY > 10 ? 1 : 0
+    }
+    
+    const page = currentPage.value
+    const total = (doc.data && doc.data.arsip_pengetahuan) ? doc.data.arsip_pengetahuan.length : 1
+    
+    // Progress formula: (Completed Pages + Current Page Scroll) / Total Pages
+    const completedPages = page - 1
+    let percent = Math.floor(((completedPages + scrollFraction) / total) * 100)
+    
+    if (percent > 100) percent = 100
+    // Optional: Avoid 100% just from mounting if they haven't explicitly finished it
+    // Actually, formula handles this dynamically based on scroll
+
+    const progObj = {
+      docId: doc.id,
+      docTitle: doc.judul,
+      page: page,
+      percent: percent,
+      timestamp: Date.now()
+    }
+    
+    allProgress.value[doc.id] = progObj
+    localStorage.setItem('figo_article_progress_map', JSON.stringify(allProgress.value))
+    
+    scrollTimeout = null
+  }, 250) // quick debounce for smooth 5% tracking responses
+}
+
+// Track page changes
+watch([currentPage, selectedDoc], () => {
+  // Wait 600ms for Nuxt/Vue page transitions to fully finish so height isn't 0
+  setTimeout(calculateAndSaveProgress, 600) 
+}, { deep: true })
+
 onMounted(async () => {
+  loadProgressData()
+  window.addEventListener('scroll', calculateAndSaveProgress)
+
   document.addEventListener('selectionchange', handleTextSelection)
   document.addEventListener('mouseup', handleTextSelection)
   document.addEventListener('touchend', handleTextSelection)
@@ -308,6 +460,7 @@ watch([selectedDoc, currentPage], ([newDoc, newPage]) => {
 
 
 onUnmounted(() => {
+
   document.removeEventListener('selectionchange', handleTextSelection)
   document.removeEventListener('mouseup', handleTextSelection)
   document.removeEventListener('touchend', handleTextSelection)
@@ -456,7 +609,7 @@ const closeDetail = () => { selectedDoc.value = null; currentPage.value = 1; sho
 const getParagraphs = (text) => { if (!text) return []; return text.split('\n\n').map(p => p.trim()).filter(p => p.length > 0) }
 const openDetail = async (doc, changeUrl = true) => {
   loading.value = true
-  if (changeUrl) currentPage.value = 1
+  if (changeUrl) { currentPage.value = (allProgress.value[doc.id] ? allProgress.value[doc.id].page : 1) }
   showMenu.value = false; showMobileSidebar.value = false
   try {
     if (!doc.data) {
@@ -466,6 +619,11 @@ const openDetail = async (doc, changeUrl = true) => {
     selectedDoc.value = doc
   } catch (err) { alert("Gagal memuat arsip artikel.") } finally { loading.value = false }
 }
+
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', calculateAndSaveProgress)
+})
 </script>
 
 <style scoped>
