@@ -89,7 +89,16 @@
     <!-- DETAIL VIEW WITH SIDEBAR -->
     <div v-else class="animate-in fade-in zoom-in-95 duration-300 grid grid-cols-1 lg:grid-cols-12 gap-8 relative">
       
-      <!-- MOBILE FAB -->
+            <!-- MOBILE FAB PENGATURAN KIRI -->
+      <button 
+        v-if="selectedDoc"
+        @click.stop="showMobileSettings = true"
+        class="lg:hidden fixed bottom-24 left-5 sm:left-6 z-40 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl shadow-sm border border-slate-200/50 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 p-3.5 rounded-2xl flex items-center justify-center hover:scale-105 transition-transform hover:text-emerald-600 dark:hover:text-emerald-500 font-serif font-bold text-lg leading-none"
+      >
+        Aa
+      </button>
+      
+<!-- MOBILE FAB -->
       <button 
         v-if="selectedDoc"
         @click.stop="showMobileSidebar = true"
@@ -99,7 +108,45 @@
         <span v-if="docHighlights.length > 0" class="absolute -top-1.5 -right-1.5 bg-emerald-500/90 dark:bg-emerald-600 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-sm">{{ docHighlights.length }}</span>
       </button>
 
-      <!-- MOBILE BOTTOM SHEET OVERLAY FOR SOROTAN -->
+            <!-- MOBILE BOTTOM SHEET OVERLAY FOR SETTINGS -->
+      <Transition name="fade">
+        <div v-if="showMobileSettings" class="lg:hidden fixed inset-0 z-[110] bg-slate-900/60 dark:bg-black/80 flex items-end" @click.self="showMobileSettings = false">
+           <div class="bg-white dark:bg-[#121212] w-full rounded-t-3xl p-5 border-t border-slate-200 dark:border-slate-700 shadow-[0_-15px_40px_rgba(0,0,0,0.2)] animate-in slide-in-from-bottom-5">
+              <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100 dark:border-slate-800 relative">
+                 <div class="absolute left-1/2 -translate-x-1/2 -top-2 w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+                 <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><svg class="w-5 h-5 text-emerald-600 dark:text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg> Tampilan Baca</h3>
+                 <button @click="showMobileSettings = false" class="p-1 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl text-xs font-bold text-slate-600 dark:text-white transition-colors">Tutup</button>
+              </div>
+              
+              <div class="space-y-5 pb-4">
+                <div>
+                  <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-2 block">Ukuran Teks ({{readerSettings.fontSize}}px)</label>
+                  <div class="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <button @click="readerSettings.fontSize = Math.max(12, readerSettings.fontSize - 1)" class="w-10 h-10 rounded-lg hover:bg-white dark:hover:bg-slate-700 font-bold text-slate-600 dark:text-slate-300 transition-all">-</button>
+                    <input type="range" v-model.number="readerSettings.fontSize" min="12" max="32" class="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer accent-emerald-500">
+                    <button @click="readerSettings.fontSize = Math.min(32, readerSettings.fontSize + 1)" class="w-10 h-10 rounded-lg hover:bg-white dark:hover:bg-slate-700 font-bold text-slate-600 dark:text-slate-300 transition-all">+</button>
+                  </div>
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-2 block">Font & Perataan</label>
+                  <div class="grid grid-cols-2 gap-3 mb-3">
+                     <button @click="readerSettings.fontFamily = 'font-serif'" class="py-2.5 rounded-xl text-sm border transition-all" :class="readerSettings.fontFamily==='font-serif' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700 dark:text-emerald-400 font-bold' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600'">Serif</button>
+                     <button @click="readerSettings.fontFamily = 'font-sans'" class="py-2.5 rounded-xl text-sm border transition-all" :class="readerSettings.fontFamily==='font-sans' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700 dark:text-emerald-400 font-bold' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600'">Sans</button>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                     <button @click="readerSettings.textAlign = 'text-left'" class="py-2.5 rounded-xl border transition-all flex justify-center items-center" :class="readerSettings.textAlign==='text-left' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400'"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+                     <button @click="readerSettings.textAlign = 'text-justify'" class="py-2.5 rounded-xl border transition-all flex justify-center items-center" :class="readerSettings.textAlign==='text-justify' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400'"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+                  </div>
+                </div>
+                <button @click="resetReaderSettings(); showMobileSettings=false;" class="w-full mt-2 py-3 bg-slate-50 dark:bg-[#1a1a1a] hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold tracking-wider text-slate-500 dark:text-slate-400 transition-colors uppercase border border-slate-200 dark:border-slate-800">
+                  Kembalikan Bawaan
+                </button>
+              </div>
+           </div>
+        </div>
+      </Transition>
+
+<!-- MOBILE BOTTOM SHEET OVERLAY FOR SOROTAN -->
       <Transition name="fade">
         <div v-if="showMobileSidebar" class="lg:hidden fixed inset-0 z-[110] bg-slate-900/60 dark:bg-black/80 flex items-end" @click.self="showMobileSidebar = false">
            <div class="bg-white dark:bg-[#121212] w-full max-h-[70vh] rounded-t-3xl p-5 overflow-y-auto border-t border-slate-200 dark:border-slate-700 shadow-[0_-15px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_-15px_40px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-5">
@@ -127,22 +174,77 @@
 
       <!-- SIDEBAR DESKTOP -->
       <aside class="hidden lg:block lg:col-span-3 order-1">
-        <div class="sticky top-32 bg-white dark:bg-[#121212] border border-slate-200 dark:border-slate-800/80 p-5 rounded-2xl max-h-[75vh] overflow-y-auto custom-scrollbar shadow-sm dark:shadow-lg">
-          <div class="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800/80">
-             <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-             <h3 class="text-sm font-semibold tracking-wider text-slate-700 dark:text-slate-200 uppercase">Catatan Sorotan</h3>
+        <div class="sticky top-32 bg-white dark:bg-[#121212] border border-slate-200 dark:border-slate-800/80 p-3 rounded-2xl max-h-[75vh] overflow-y-auto custom-scrollbar shadow-sm dark:shadow-lg flex flex-col gap-3">
+
+          <!-- PENGATURAN BACA ACCORDION -->
+          <div class="border border-slate-100 dark:border-slate-800/80 rounded-2xl overflow-hidden transition-all duration-300" :class="activeSidebarTab === 'settings' ? 'bg-slate-50/50 dark:bg-slate-800/20' : 'bg-transparent'">
+            <div @click="activeSidebarTab = activeSidebarTab === 'settings' ? null : 'settings'" class="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
+              <div class="flex items-center gap-2">
+                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+                 <h3 class="text-xs font-semibold tracking-wider text-slate-700 dark:text-slate-200 uppercase group-hover:text-emerald-600 dark:group-hover:text-emerald-500 transition-colors">Tampilan Baca</h3>
+              </div>
+              <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="activeSidebarTab === 'settings' ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            
+            <div v-show="activeSidebarTab === 'settings'" class="px-4 pb-5 pt-1 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+              <div>
+                <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-2 block">Ukuran Teks ({{readerSettings.fontSize}}px)</label>
+                <div class="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <button @click="readerSettings.fontSize = Math.max(12, readerSettings.fontSize - 1)" class="w-8 h-8 rounded-lg hover:bg-white dark:hover:bg-slate-700 font-bold text-slate-600 dark:text-slate-300 shadow-sm transition-all">-</button>
+                  <input type="range" v-model.number="readerSettings.fontSize" min="12" max="32" class="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer accent-emerald-500">
+                  <button @click="readerSettings.fontSize = Math.min(32, readerSettings.fontSize + 1)" class="w-8 h-8 rounded-lg hover:bg-white dark:hover:bg-slate-700 font-bold text-slate-600 dark:text-slate-300 shadow-sm transition-all">+</button>
+                </div>
+              </div>
+              <div>
+                <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-2 block">Font</label>
+                <div class="grid grid-cols-2 gap-2">
+                   <button @click="readerSettings.fontFamily = 'font-serif'" class="py-1.5 rounded-xl text-sm border transition-all" :class="readerSettings.fontFamily==='font-serif' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700 dark:text-emerald-400 font-bold' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600'">Serif</button>
+                   <button @click="readerSettings.fontFamily = 'font-sans'" class="py-1.5 rounded-xl text-sm border transition-all" :class="readerSettings.fontFamily==='font-sans' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700 dark:text-emerald-400 font-bold' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600'">Sans</button>
+                </div>
+              </div>
+              <div>
+                <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-2 block">Perataan</label>
+                <div class="grid grid-cols-2 gap-2">
+                   <button @click="readerSettings.textAlign = 'text-left'" class="py-1.5 rounded-xl border transition-all flex justify-center items-center" :class="readerSettings.textAlign==='text-left' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400'"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+                   <button @click="readerSettings.textAlign = 'text-justify'" class="py-1.5 rounded-xl border transition-all flex justify-center items-center" :class="readerSettings.textAlign==='text-justify' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400'"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+                </div>
+              </div>
+              <div class="pt-2 mt-4 border-t border-slate-100 dark:border-slate-800/80">
+                <button @click="resetReaderSettings" class="w-full py-2 bg-slate-50 dark:bg-[#1a1a1a] hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[11px] font-bold tracking-wider text-slate-500 dark:text-slate-400 transition-colors uppercase border border-slate-200 dark:border-slate-800">
+                  Kembalikan Bawaan
+                </button>
+              </div>
+            </div>
           </div>
-          <div v-if="docHighlights.length === 0" class="text-xs text-slate-400 dark:text-slate-500 text-center py-10 px-4 leading-relaxed tracking-wide">
-             <svg class="w-8 h-8 mx-auto mb-3 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-             Belum ada sorotan tersimpan.<br><br><span class="font-medium text-slate-500 dark:text-slate-400">Hint:</span> Sorot / blok teks di sebelah kanan untuk memunculkan opsi stabilo penanda bacaan.
+
+          <!-- CATATAN SOROTAN ACCORDION -->
+          <div class="border border-slate-100 dark:border-slate-800/80 rounded-2xl overflow-hidden transition-all duration-300" :class="activeSidebarTab === 'highlights' ? 'bg-slate-50/50 dark:bg-slate-800/20' : 'bg-transparent'">
+            <div @click="activeSidebarTab = activeSidebarTab === 'highlights' ? null : 'highlights'" class="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
+              <div class="flex items-center gap-2">
+                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                 <h3 class="text-xs font-semibold tracking-wider text-slate-700 dark:text-slate-200 uppercase group-hover:text-emerald-600 dark:group-hover:text-emerald-500 transition-colors">Catatan Sorotan</h3>
+              </div>
+              <div class="flex items-center gap-2">
+                 <span v-if="docHighlights.length > 0" class="flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ docHighlights.length }}</span>
+                 <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="activeSidebarTab === 'highlights' ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+            </div>
+            
+            <div v-show="activeSidebarTab === 'highlights'" class="px-4 pb-5 pt-1 animate-in fade-in zoom-in-95 duration-200">
+              <div v-if="docHighlights.length === 0" class="text-xs text-slate-400 dark:text-slate-500 text-center py-8 px-4 leading-relaxed tracking-wide">
+                 <svg class="w-8 h-8 mx-auto mb-3 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                 Belum ada sorotan tersimpan.<br><br><span class="font-medium text-slate-500 dark:text-slate-400">Hint:</span> Sorot / blok teks di sebelah kanan untuk memunculkan opsi stabilo penanda bacaan.
+              </div>
+              <div class="space-y-3">
+                 <div v-for="(h, idx) in docHighlights" :key="idx" @click="jumpToHighlight(h)" class="p-3 bg-slate-50 dark:bg-[#0a0a0a] hover:bg-slate-100 dark:hover:bg-[#1a1a1a] rounded-2xl border-l-[4px] border-slate-200 dark:border-slate-800 cursor-pointer transition-colors group relative" :class="{'border-amber-400 dark:border-yellow-500': h.color==='yellow','border-emerald-400 dark:border-emerald-500': h.color==='emerald','border-indigo-400 dark:border-indigo-500': h.color==='indigo'}">
+                    <div class="text-[10px] text-slate-400 dark:text-slate-500 mb-1.5 font-mono uppercase font-semibold">Bab {{ h.page }}</div>
+                    <p class="text-[12px] text-slate-600 dark:text-slate-300 line-clamp-3 leading-relaxed">"{{ h.text }}"</p>
+                    <button @click.stop="removeHighlightByObject(h)" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 p-1 bg-white dark:bg-slate-900 shadow-sm dark:shadow-none border border-slate-200 dark:border-transparent rounded-full transition-opacity"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                 </div>
+              </div>
+            </div>
           </div>
-          <div class="space-y-3">
-             <div v-for="(h, idx) in docHighlights" :key="idx" @click="jumpToHighlight(h)" class="p-3 bg-slate-50 dark:bg-[#0a0a0a] hover:bg-slate-100 dark:hover:bg-[#1a1a1a] rounded-2xl border-l-[4px] border-slate-200 dark:border-slate-800 cursor-pointer transition-colors group relative" :class="{'border-amber-400 dark:border-yellow-500': h.color==='yellow','border-emerald-400 dark:border-emerald-500': h.color==='emerald','border-indigo-400 dark:border-indigo-500': h.color==='indigo'}">
-                <div class="text-[10px] text-slate-400 dark:text-slate-500 mb-1.5 font-mono uppercase font-semibold">Bab {{ h.page }}</div>
-                <p class="text-[12px] text-slate-600 dark:text-slate-300 line-clamp-3 leading-relaxed">"{{ h.text }}"</p>
-                <button @click.stop="removeHighlightByObject(h)" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 p-1 bg-white dark:bg-slate-900 shadow-sm dark:shadow-none border border-slate-200 dark:border-transparent rounded-full transition-opacity"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-             </div>
-          </div>
+
         </div>
       </aside>
 
@@ -153,7 +255,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg> Tutup Pustaka
           </button>
           
-          <!-- DI SINI TOMBOL ARROW NYA (SEJAJAR DAN SE TEMA) -->
+          <!-- DI SINI TOMBOL ARROW NYA -->
           <div class="flex items-center gap-2 shrink-0">
             <button @click="prevPage" :disabled="currentPage===1" class="p-2.5 bg-white dark:bg-[#121212] border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-[#1a1a1a] disabled:opacity-30 disabled:cursor-not-allowed transition text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white shadow-sm" title="Halaman Sebelumnya">
                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -180,7 +282,7 @@
           </div>
           <div v-if="currentBab.teori_akademik" class="mb-8 text-sm md:text-base text-emerald-600 dark:text-emerald-400/90 font-medium tracking-wide">>> {{ currentBab.teori_akademik }}</div>
           
-          <div class="text-[#333333] dark:text-[#D4D4D8] text-[16px] md:text-[18px] leading-[1.85] mb-8 space-y-7 font-serif text-left sm:text-justify max-w-[70ch] mx-auto selection:bg-emerald-100 dark:selection:bg-slate-700/50 selection:text-slate-900 dark:selection:text-white relative z-0">
+          <div :class="[readerSettings.fontFamily, readerSettings.textAlign]" :style="{ fontSize: readerSettings.fontSize + 'px' }" class="text-[#333333] dark:text-[#D4D4D8] leading-[1.85] mb-8 space-y-7 max-w-3xl mx-auto selection:bg-emerald-100 dark:selection:bg-slate-700/50 selection:text-slate-900 dark:selection:text-white relative z-0 transition-all duration-300">
             <!-- Render Paragraf -->
             <p v-for="(par, pIdx) in getParagraphs(currentBab.penjabaran_detail || currentBab.deskripsi)" :key="pIdx" :data-pidx="pIdx" v-html="renderParagraph(par, pIdx)"></p>
           </div>
@@ -256,8 +358,31 @@ const highlights = ref([])
 const showMenu = ref(false)
 const currentSelectionData = ref(null)
 const showMobileSidebar = ref(false)
+const showMobileSettings = ref(false)
+const activeSidebarTab = ref('highlights')
 
 const allProgress = ref({}) // map of docId -> progress
+
+// REactive Setting
+const readerSettings = ref({
+  fontSize: 18,
+  fontFamily: 'font-serif',
+  textAlign: 'text-left sm:text-justify'
+})
+
+
+const resetReaderSettings = () => {
+  readerSettings.value = {
+    fontSize: 18,
+    fontFamily: 'font-serif',
+    textAlign: 'text-left sm:text-justify'
+  }
+}
+
+watch(readerSettings, (val) => {
+  localStorage.setItem('figo_reader_settings', JSON.stringify(val))
+}, { deep: true })
+
 
 
 
@@ -432,6 +557,12 @@ watch([currentPage, selectedDoc], () => {
 }, { deep: true })
 
 onMounted(async () => {
+  
+  const cachedSettings = localStorage.getItem('figo_reader_settings')
+  if (cachedSettings) {
+    try { readerSettings.value = JSON.parse(cachedSettings) } catch(e) {}
+  }
+
   loadProgressData()
   window.addEventListener('scroll', calculateAndSaveProgress)
 
