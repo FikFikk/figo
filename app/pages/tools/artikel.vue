@@ -47,9 +47,15 @@
     <div v-else-if="!selectedDoc" class="max-w-5xl mx-auto w-full">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         <div v-for="doc in paginatedDocuments"  :key="doc.id" @click="openDetail(doc)" class="flex flex-col p-6 bg-white dark:bg-[#121212] border border-slate-200 dark:border-slate-800 rounded-2xl cursor-pointer hover:bg-slate-50 dark:hover:bg-[#181818] hover:border-emerald-500/50 dark:hover:border-emerald-900/50 transition-all shadow-sm hover:shadow-lg dark:hover:shadow-emerald-900/10">
-        <div class="flex items-center gap-2 mb-4">
+        
+        <div class="flex items-center justify-between gap-2 mb-4">
           <span class="px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl">{{ doc.kategori }}</span>
+          <button @click.stop="togglePin(doc.id)" class="text-slate-400 hover:text-emerald-500 transition-colors p-1" :class="pinnedIds.includes(doc.id) ? 'text-emerald-600 dark:text-emerald-500' : ''" title="Sematkan">
+            <svg v-if="pinnedIds.includes(doc.id)" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+          </button>
         </div>
+
         <h2 class="text-xl font-medium text-slate-800 dark:text-slate-50 mb-2 leading-snug">{{ doc.judul }}</h2>
         <p class="text-xs font-medium text-slate-500 dark:text-slate-500 mb-4 uppercase tracking-wider">{{ doc.tokoh }}</p>
         <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed flex-grow font-serif">{{ doc.deskripsi }}</p>
@@ -65,7 +71,22 @@
       </div>
       </div>
       
+      
+      <!-- SORTING OPTIONS -->
+      <div v-if="!selectedDoc" class="max-w-5xl mx-auto w-full flex justify-end mt-8 mb-2">
+         <div class="flex items-center gap-2 bg-white dark:bg-[#121212] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 shadow-sm">
+            <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>
+            <select v-model="sortMode" class="text-xs font-semibold bg-transparent text-slate-600 dark:text-slate-300 outline-none cursor-pointer">
+               <option value="new_old">Baru ke Lama</option>
+               <option value="old_new">Lama ke Baru</option>
+               <option value="az">A - Z</option>
+               <option value="za">Z - A</option>
+            </select>
+         </div>
+      </div>
+      
       <!-- GRID PAGINATION -->
+
       <div v-if="totalGridPages > 1" class="mt-10 mb-6 flex items-center justify-center gap-2 sm:gap-4">
         <button @click="prevGridPage" :disabled="currentGridPage === 1" class="px-3 sm:px-4 py-2 bg-white dark:bg-[#121212] hover:bg-slate-50 dark:hover:bg-[#1a1a1a] disabled:opacity-30 disabled:cursor-not-allowed border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 transition-all flex items-center justify-center shadow-sm">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
@@ -335,10 +356,51 @@ const currentPage = ref(1)
 const currentGridPage = ref(1)
 const gridItemsPerPage = 9
 
-const totalGridPages = computed(() => Math.ceil(documents.value.length / gridItemsPerPage))
+
+const highlights = ref([])
+const showMenu = ref(false)
+const currentSelectionData = ref(null)
+const showMobileSidebar = ref(false)
+const showMobileSettings = ref(false)
+const activeSidebarTab = ref('highlights')
+
+
+const pinnedIds = ref([])
+const sortMode = ref('new_old')
+
+const togglePin = (id) => {
+  if (pinnedIds.value.includes(id)) {
+    pinnedIds.value = pinnedIds.value.filter(i => i !== id)
+  } else {
+    pinnedIds.value.push(id)
+  }
+  localStorage.setItem('figo_pinned_articles', JSON.stringify(pinnedIds.value))
+}
+
+watch(sortMode, (val) => {
+  localStorage.setItem('figo_art_sort', val)
+  currentGridPage.value = 1
+})
+
+const sortedDocuments = computed(() => {
+  let docs = [...documents.value]
+  if (sortMode.value === 'old_new') docs.reverse()
+  else if (sortMode.value === 'az') docs.sort((a,b) => a.judul.localeCompare(b.judul))
+  else if (sortMode.value === 'za') docs.sort((a,b) => b.judul.localeCompare(a.judul))
+  
+  // Pin always on top
+  docs.sort((a, b) => {
+    const aPin = pinnedIds.value.includes(a.id) ? 1 : 0
+    const bPin = pinnedIds.value.includes(b.id) ? 1 : 0
+    return bPin - aPin
+  })
+  return docs
+})
+
+const totalGridPages = computed(() => Math.ceil(sortedDocuments.value.length / gridItemsPerPage))
 const paginatedDocuments = computed(() => {
   const start = (currentGridPage.value - 1) * gridItemsPerPage
-  return documents.value.slice(start, start + gridItemsPerPage)
+  return sortedDocuments.value.slice(start, start + gridItemsPerPage)
 })
 const nextGridPage = () => {
   if (currentGridPage.value < totalGridPages.value) {
@@ -352,14 +414,6 @@ const prevGridPage = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
-
-
-const highlights = ref([])
-const showMenu = ref(false)
-const currentSelectionData = ref(null)
-const showMobileSidebar = ref(false)
-const showMobileSettings = ref(false)
-const activeSidebarTab = ref('highlights')
 
 const allProgress = ref({}) // map of docId -> progress
 
@@ -387,6 +441,16 @@ watch(readerSettings, (val) => {
 
 
 const documents = ref([
+  {
+    id: 'kajian_syariat_makrifat_kejawen',
+    judul: 'Konsep Syariat, Tarekat, Hakikat, Makrifat dalam Kejawen',
+    tokoh: 'Mangkunegara IV & Tokoh Sufi Jawa',
+    kategori: 'Artikel Esoterik',
+    deskripsi: 'Sangkan Paraning Dumadi, Catur Sembah, dan sinkretisme mistisisme Islam di tanah Jawa secara komprehensif.',
+    url: '/dataset/kajian_syariat_makrifat_kejawen.json',
+    data: null
+  },
+
   {
     id: 'syahadat-panetep',
     judul: 'Bedah Suluk Syahadat Panetep Panatagama',
@@ -557,6 +621,12 @@ watch([currentPage, selectedDoc], () => {
 }, { deep: true })
 
 onMounted(async () => {
+
+  const lPin = localStorage.getItem('figo_pinned_articles')
+  if (lPin) pinnedIds.value = JSON.parse(lPin)
+  const sm = localStorage.getItem('figo_art_sort')
+  if (sm) sortMode.value = sm
+
   
   const cachedSettings = localStorage.getItem('figo_reader_settings')
   if (cachedSettings) {
