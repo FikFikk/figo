@@ -1393,6 +1393,8 @@ function closePlayer() {
   margin-bottom: -76px;
   pointer-events: none;
 }
+.search-bar.active { margin-bottom: 0px; background: rgba(10, 12, 18, 0.98); }
+:global(html.light) .search-bar.active { background: rgba(248, 250, 252, 0.98); }
 .search-bar > * {
   pointer-events: auto;
 }
@@ -1425,6 +1427,7 @@ function closePlayer() {
   gap: 14px;
 }
 .search-heading {
+    gap: 12px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1817,6 +1820,7 @@ function closePlayer() {
     gap: 16px;
   }
   .search-heading {
+    gap: 12px;
     align-items: stretch;
     flex-direction: column;
   }
