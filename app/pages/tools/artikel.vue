@@ -442,6 +442,51 @@ watch(readerSettings, (val) => {
 
 const documents = ref([
   {
+    id: 'serat-wedhatama',
+    judul: 'Serat Wedhatama & Falsafah Laku',
+    tokoh: 'KGPAA Mangkunegara IV',
+    kategori: 'Etika Spiritual',
+    deskripsi: 'Pegangan etika makrifat, kritik dogmatisme, dan Harmoni Catur Sembah (Valid: Public Domain).',
+    url: '/dataset/serat_wedhatama.json',
+    data: null
+  },
+  {
+    id: 'suluk-dewa-ruci',
+    judul: 'Suluk Dewa Ruci: Ekspedisi Mikrokosmos',
+    tokoh: 'Empu Prapanca / Yasadipura I',
+    kategori: 'Sastra Tasawuf Jawa',
+    deskripsi: 'Menyelami lautan batin, membunuh naga hawa nafsu, dan menemukan Tirta Perwitasari di relung kalbu (Valid: Public Domain).',
+    url: '/dataset/suluk_dewa_ruci.json',
+    data: null
+  },
+  {
+    id: 'serat-wirid-hidayat-jati',
+    judul: 'Serat Wirid Hidayat Jati',
+    tokoh: 'R.Ng. Ranggawarsita',
+    kategori: 'Metafisika Penciptaan',
+    deskripsi: 'Kitab babon Kejawen tentang ajaran Martabat Pitu (Tujuh Alam) proses penciptaan manusia secara detail (Valid: Public Domain).',
+    url: '/dataset/serat_wirid_hidayat_jati.json',
+    data: null
+  },
+  {
+    id: 'suluk-wujil',
+    judul: 'Suluk Wujil (Makna Ibadah Hakiki)',
+    tokoh: 'Sunan Bonang',
+    kategori: 'Kritik Ritualisme',
+    deskripsi: 'Dialog kritis Sunan Bonang kepada Wujil tentang makna Haji, Mekkah, dan Baitullah sejati dalam kelapangan dada (Valid: Public Domain).',
+    url: '/dataset/suluk_wujil.json',
+    data: null
+  },
+  {
+    id: 'serat-kalatidha-centhini',
+    judul: 'Serat Kalatidha & Ajaran Seh Amongraga',
+    tokoh: 'Ranggawarsita & Pakubuwana V',
+    kategori: 'Sosiologi Mistis',
+    deskripsi: 'Sikap spiritual (Eling lan Waspada) membentengi diri di tengah zaman Edan, serta ajaran Tasawuf jalanan (Valid: Public Domain).',
+    url: '/dataset/serat_kalatidha.json',
+    data: null
+  },
+  {
     id: 'kajian_syariat_makrifat_kejawen',
     judul: 'Konsep Syariat, Tarekat, Hakikat, Makrifat dalam Kejawen',
     tokoh: 'Mangkunegara IV & Tokoh Sufi Jawa',
