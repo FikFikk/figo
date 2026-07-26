@@ -812,6 +812,9 @@ const renderParagraph = (rawHTML, pIdx) => {
   
   escaped = escaped.replace(/\[IMAGE_ASSET:\s*(https?:\/\/[^\]]+)\]/gi, '<br><img src="$1" alt="Ilustrasi Buku" class="rounded-2xl max-w-full md:max-w-md my-8 shadow-sm border border-slate-200 dark:border-slate-800 object-contain mx-auto" /><br>');
   
+
+  escaped = escaped.replace(/\[FLIPBOOK:\s*(https?:\/\/[^\]]+)\]/gi, '<br><div class="relative w-full h-[65vh] xl:h-[75vh] my-8 rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700 bg-slate-900"><iframe src="$1" seamless="seamless" scrolling="no" frameborder="0" allowtransparency="true" allowfullscreen="true" class="w-full h-full"></iframe></div><br>');
+  
   return escaped
 }
 
