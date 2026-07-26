@@ -815,6 +815,9 @@ const renderParagraph = (rawHTML, pIdx) => {
 
   escaped = escaped.replace(/\[FLIPBOOK:\s*(https?:\/\/[^\]]+)\]/gi, '<br><div class="relative w-full h-[65vh] xl:h-[75vh] my-8 rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700 bg-slate-900"><iframe src="$1" seamless="seamless" scrolling="no" frameborder="0" allowtransparency="true" allowfullscreen="true" class="w-full h-full"></iframe></div><br>');
   
+  
+  escaped = escaped.replace(/↳\s*Terjemahan:\s*(.*)/gi, '<span class="text-emerald-700 dark:text-emerald-400/90 font-medium block mt-2 mb-6 text-[13px] md:text-[14px] leading-relaxed italic border-l-2 border-emerald-500/30 pl-3">Terjemahan: $1</span>');
+
   return escaped
 }
 
