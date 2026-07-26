@@ -292,6 +292,8 @@
           <h1 class="text-3xl md:text-3xl font-bold mb-4 text-slate-900 dark:text-white leading-tight font-serif tracking-tight">{{ selectedDoc.data?.buku_referensi || selectedDoc.judul }}</h1>
           <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400 font-medium">
             <span class="flex items-center gap-1.5 px-3 py-1 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800"><svg class="w-4 h-4 text-emerald-600 dark:text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"></path></svg> {{ selectedDoc.data?.kategori_akademik || selectedDoc.kategori }}</span>
+            <span v-if="selectedDoc.data?.author" class="flex items-center gap-1.5 px-3 py-1 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800"><svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg> {{ selectedDoc.data.author }}</span>
+            <span v-if="selectedDoc.data?.tanggal_posting" class="flex items-center gap-1.5 px-3 py-1 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800"><svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> {{ selectedDoc.data.tanggal_posting }}</span>
           </div>
         </div>
 
@@ -305,7 +307,7 @@
           
           <div :class="[readerSettings.fontFamily, readerSettings.textAlign]" :style="{ fontSize: readerSettings.fontSize + 'px' }" class="text-[#333333] dark:text-[#D4D4D8] leading-[1.85] mb-8 space-y-7 max-w-3xl mx-auto selection:bg-emerald-100 dark:selection:bg-slate-700/50 selection:text-slate-900 dark:selection:text-white relative z-0 transition-all duration-300">
             <!-- Render Paragraf -->
-            <p v-for="(par, pIdx) in getParagraphs(currentBab.penjabaran_detail || currentBab.deskripsi)" :key="pIdx" :data-pidx="pIdx" v-html="renderParagraph(par, pIdx)"></p>
+            <p v-for="(par, pIdx) in getParagraphs(currentBab.penjabaran_detail || currentBab.deskripsi)" :key="pIdx" :data-pidx="pIdx" class="break-words" v-html="renderParagraph(par, pIdx)"></p>
           </div>
         </div>
 
