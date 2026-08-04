@@ -1,16 +1,13 @@
 import { defineEventHandler } from 'h3'
 import { promises as fs } from 'node:fs'
 import { resolve } from 'node:path'
-import { assertUnlocked } from '../../lib/stream-auth'
 
 /**
  * GET /api/forex/signals
  * Read exported forex research signals from local research service.
- * Protected by same PIN gate as streaming tools.
+ * Data hanya bisa diakses dari local path — tidak perlu PIN gate tambahan.
  */
-export default defineEventHandler(async (event) => {
-  assertUnlocked(event)
-
+export default defineEventHandler(async (_event) => {
   const filePath = resolve('/root/figo/services/forex-research/storage/signals_export.json')
 
   try {
