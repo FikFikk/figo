@@ -123,6 +123,10 @@ func main() {
 	vidlink := newVidlinkState()
 	vidlink.registerRoutes(mux)
 
+	// AI Pro Studio — Remove BG, Upscale, Enhance, Denoise via Python workers
+	aiStudio := newAIStudioState()
+	aiStudio.registerRoutes(mux)
+
 	port := envString("PORT", defaultPort)
 	server := &http.Server{
 		Addr:              "127.0.0.1:" + port,
