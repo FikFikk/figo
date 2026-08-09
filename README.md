@@ -1,75 +1,57 @@
-# Nuxt Minimal Starter
+# FiGo — All-in-One Media & Tools Platform
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Platform berbasis **Nuxt 3 SSR** yang menggabungkan berbagai tools produktivitas: streaming video, AI image processing, analisis forex, dan manajemen dataset konten Nusantara.
+
+## Tech Stack
+
+- **Frontend**: Nuxt 3 (SSR), Vue 3, TailwindCSS
+- **Backend API**: Go (port 5001) — download engine dengan yt-dlp & ffmpeg
+- **AI Tools**: Remove BG, Image Upscale, Enhance, Denoise via proxy
+- **Auth**: PIN-based stream unlock dengan HMAC token signing
+
+## Fitur Utama
+
+| Modul | Deskripsi |
+|---|---|
+| 🎬 Stream Player | HLS native player, strict title search, PIN-protected |
+| 📥 Downloader | YouTube/media download via Go API + yt-dlp |
+| 🤖 AI Studio | Image processing: remove-bg, upscale, enhance, denoise |
+| 📈 Forex Signals | Multi-indikator: SMA, EMA, RSI, MACD, BB, ATR, Fibonacci |
+| 📚 Artikel | Dataset konten Nusantara (Wedhatama, Suluk Dewa Ruci, dll) |
 
 ## Setup
 
-Make sure to install dependencies:
-
 ```bash
-# npm
-npm install
-
-# pnpm
+# Install dependencies
 pnpm install
 
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
-npm run dev
-
-# pnpm
+# Development server (port 5000)
 pnpm dev
 
-# yarn
-yarn dev
-
-# bun
-bun run dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
+# Production build
 pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
 ```
 
-Locally preview production build:
+## Environment Variables
 
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+```env
+NUXT_STREAM_PIN=112233
+NUXT_STREAM_SECRET=your-secret-here
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## Architecture
+
+```mermaid
+graph TD
+    A[User] --> B[Nuxt 3 SSR :5000]
+    B --> C[Nitro API Routes]
+    C --> D[Go Download API :5001]
+    D --> E[yt-dlp + ffmpeg]
+    C --> F[AI Proxy Server]
+    F --> G[ZPI Image API]
+```
+
+## PM2 Process
+
+- **ID 4** — Web (Nuxt SSR)
+- **ID 5** — DL API (Go backend)
