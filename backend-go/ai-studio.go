@@ -17,7 +17,7 @@ import (
 
 const (
 	maxUploadSize    = 20 * 1024 * 1024 // 20MB
-	aiWorkerTimeout  = 120 * time.Second
+	aiWorkerTimeout  = 360 * time.Second // ARM64 CPU butuh ~3 menit untuk u2net inference
 )
 
 // aiStudioState menyimpan path ke Python venv dan worker script

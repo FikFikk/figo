@@ -16,10 +16,13 @@ export function useColorMode() {
 
     const x = event.clientX;
     const y = event.clientY;
-    const endRadius = Math.hypot(
+    const baseRadius = Math.hypot(
       Math.max(x, innerWidth - x),
       Math.max(y, innerHeight - y)
     );
+    // Buffer dinamis: Pastikan saat radius menyusut ke 0.95 (pantulan terakhir), 
+    // ukurannya tetap >= baseRadius agar sudut layar tidak terekspos.
+    const endRadius = baseRadius / 0.94; 
 
     const isCurrentlyDark = colorMode.value === 'dark';
     const willBeDark = !isCurrentlyDark;

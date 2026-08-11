@@ -1,0 +1,19 @@
+{
+  "buku_referensi": "Jangka Jayabaya",
+  "tokoh": "Prabu Jayabaya / Anonim",
+  "kategori_akademik": "Eskatologi & Messianisme Jawa",
+  "arsip_pengetahuan": [
+    {
+      "id_bab": "ZAMAN_EDAN_DAN_PENJAJAHAN",
+      "tema_utama": "Penjajahan Bangsa Asing",
+      "teori_akademik": "Siklus Zaman",
+      "penjabaran_detail": "Ramalan spesifik menyebutkan masuknya 'orang kulit putih' membawa tongkat yang memuntahkan petir (Belanda), yang akan berkuasa lama. Kemudian disusul oleh 'orang kate' dari utara berkulit kuning (Jepang) seumur jagung. Setelah itu tanah Jawa/Nusantara akan merdeka namun masuk ke Zaman Edan (zaman kekacauan moral, 'sing ora edan ora kumanan')."
+    },
+    {
+      "id_bab": "KEDATANGAN_RATU_ADIL",
+      "tema_utama": "Satria Piningit / Erucakra",
+      "teori_akademik": "Utopia Rekonstruksi Politik-Spiritual",
+      "penjabaran_detail": "Sebagai solusi akhir dari Zaman Edan, akan muncul tokoh Satria Piningit (Ksatria yang tersembunyi), yang akan mengembalikan keadilan dan ketentraman Nusantara. Konsep ini membangkitkan perlawanan anti-kolonialisme puluhan kali (seperti pemberontakan Diponegoro yang menggunakan gelar Erucakra)."
+    }
+  ]
+}

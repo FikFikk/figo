@@ -58,6 +58,20 @@
         Memuat...
       </div>
 
+      <!-- Active Patterns List -->
+      <div v-if="data?.length && detectedPatterns.length > 0 && !isAnalyzingPattern" class="absolute bottom-[70px] right-2 flex flex-col items-end gap-1.5 z-20 pointer-events-none">
+        <template v-for="(pat, idx) in detectedPatterns" :key="'pat-'+idx">
+          <div v-if="pat.label" class="animate-in fade-in slide-in-from-right-3 duration-300">
+             <div class="backdrop-blur-xl rounded-lg px-2.5 py-1 text-[9px] font-bold tracking-widest uppercase shadow-md flex items-center gap-1.5 border border-white/5 truncate max-w-full"
+               :style="{ backgroundColor: '#0f172a95', color: pat.color, borderLeft: '3px solid ' + pat.color }"
+             >
+               <span class="material-symbols-outlined text-[13px] opacity-70">polyline</span>
+               {{ pat.label }}
+             </div>
+          </div>
+        </template>
+      </div>
+
       <!-- Type Toggle & Pattern Analyzer -->
       <div v-if="data?.length" class="absolute bottom-[30px] right-2 flex items-center bg-white/50 dark:bg-black/50 backdrop-blur-md rounded-2xl p-0.5 z-20 border border-slate-200 dark:border-white/10 shadow-sm">
         

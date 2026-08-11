@@ -1,0 +1,25 @@
+{
+  "buku_referensi": "Serat Paramayoga (Kisah Babad & Mitos Leluhur Jawa)",
+  "tokoh": "Raden Ngabehi Ranggawarsita",
+  "kategori_akademik": "Sastra Epik, Sinkretisme & Mitologi Jawi",
+  "arsip_pengetahuan": [
+    {
+      "id_bab": "INTRO",
+      "tema_utama": "Latar Belakang Penulisan Paramayoga",
+      "teori_akademik": "Penggabungan Mitologi Hindu-Jawa dan Genealogi Islam",
+      "penjabaran_detail": "Serat Paramayoga adalah sebuah karya sastra berbentuk prosa yang ditulis oleh pujangga besar Kasunanan Surakarta, R. Ng. Ranggawarsita, atas prakarsa Pakubuwana IX (walau sumber lain menyebut pada masa PB VII/X) pada pertengahan abad ke-19. \n\nIstilah **Paramayoga** berasal dari kata *Parama* (Tertinggi/Utama/Luhur) dan *Yoga* (Zaman/Kelahiran). Karya ini ditulis sebagai upaya menyatukan dua sumber tradisi besar yang hidup di masyarakat Jawa: Tradisi Islam (teologi tauhid dan nabi-nabi) dan Tradisi Hindu-Jawa (dewa-dewa dan wiracarita)."
+    },
+    {
+      "id_bab": "BAB_SILSILAH",
+      "tema_utama": "Silsilah Kosmologis Nabi Adam & Dewa-Dewi",
+      "teori_akademik": "Menarik Nasab Leluhur Jawa dari Nabi Adam",
+      "penjabaran_detail": "Dalam Paramayoga, Ranggawarsita merentangkan jaring silsilah atau genealogi secara epik. Kisahnya dimulai dari Nabi Adam dan Siti Hawa.\n\nDalam naskah ini diceritakan bahwa salah satu putra Nabi Adam adalah Nabi Syis. Dari garis keturunan Nabi Syis ini lahir Sayid Anwar. Sayid Anwar menolak agama ayahnya dan mempelajari sihir serta mukjizat ke penjuru dunia, hingga kelak ia diangkat dan ditabalkan menjadi dewa bergelar **Sanghyang Nur Rasa** (moyang keilahian Jawa).\n\nDari Sanghyang Nur Rasa, lahirlah panteon dewa-dewa Jawa berturut-turut, seperti Sanghyang Wenang, Sanghyang Tunggal, hingga **Batara Guru** (Siwa/Manikmaya). Kemudian, keturunan dari Batara Guru inilah yang turun ke bumi dan menguasai tanah Nusantara serta menjadi cikal bakal rajaraja Jawa purba (Babad Purwa).\n\nJadi, para dewa yang disembah dalam budaya Hindu diposisikan dalam narasi Islam-Jawa sekadar sebagai 'jin' atau keturunan Nabi Adam yang lenceng, namun tetap memiliki kedudukan luhur secara kultural karena dianggap leluhur."
+    },
+    {
+      "id_bab": "BAB_MAKNA",
+      "tema_utama": "Fungsi Sosiologis Mitos",
+      "teori_akademik": "Legitimasi Kultural dan Jalan Tengah Spiritual",
+      "penjabaran_detail": "Serat Paramayoga bukanlah kitab penulisan sejarah (historiografi faktual), melainkan 'mitohistori' yang bermuatan fungsi ganda:\n\n1. **Legitimasi Raja Jawa:** Menyambungkan trah raja-raja keraton (Mataram/Surakarta) kepada para Nabi (legitimasi Islam) sekaligus kepada Batara (legitimasi kekuatan klenik/Brahma-Wisnu Hindu).\n2. **Resolusi Konflik:** Meredam kegelisahan psikologis orang Jawa di era itu yang terjebak pada ketegangan identitas antara menjadi *Muslim yang taat* (membuang ajaran leluhur) dan menjadi *Orang Jawa Kuno* (bertentangan dengan rukun Islam). Lewat Paramayoga, keduanya berdamai: Islam dihormati sebagai asal-usul sejati (Nabi Adam), sementara cerita pewayangan/leluhur diapresiasi sebagai sejarah perjalanan keturunan dari sang asal.\n\nMelalui kitab ini, sosok Ranggawarsita mengukuhkan dirinya bukan saja sebagai ahli sastra, melainkan pelindung keutuhan peradaban Jawa di bawah terpaan hegemoni kolonial dan krisis kultural di abad ke-19 penjajahan Belanda."
+    }
+  ]
+}

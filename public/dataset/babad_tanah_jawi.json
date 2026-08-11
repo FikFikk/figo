@@ -1,0 +1,19 @@
+{
+  "buku_referensi": "Babad Tanah Jawi",
+  "tokoh": "Berbagai Pujangga, disempurnakan Yasadipura I",
+  "kategori_akademik": "Historiografi Tradisional & Mitos Silsilah",
+  "arsip_pengetahuan": [
+    {
+      "id_bab": "SILSILAH_KOSMIK",
+      "tema_utama": "Genealogi Manusia Pertama hingga Raja Jawa",
+      "teori_akademik": "Legitimasi Kekuasaan berdasar Asal-usul Ilahiah",
+      "penjabaran_detail": "Babad Tanah Jawi menautkan TIGA akar nasab besar untuk melegitimasi raja-raja Mataram Islam: Pertama, garis Nabi-nabi (Adam - Syits - Nur Rasa), Kedua, garis dewa-dewa Hindu (Batara Guru - Batara Wisnu), Ketiga, garis Pewayangan (Pandawa/Arjuna). Sinkretisme ini berfungsi melegitimasi bahwa Kesultanan Mataram adalah pewaris sah tunggal dari semua kekuatan magis-religius di tanah Jawa."
+    },
+    {
+      "id_bab": "RUNTUHNYA_MAJAPAHIT",
+      "tema_utama": "Transisi Demak Bintara",
+      "teori_akademik": "Peralihan Epik Hindu-Buddha ke Islam",
+      "penjabaran_detail": "Menceritakan Brawijaya V (raja terakhir Majapahit) dan anak-anaknya. Gugurnya Majapahit digambarkan bukan semata-mata karena invasi Islam yang brutal, tetapi karena siklus 'Cakra Manggilingan' (roda zaman). Babad mengisahkan Raden Patah (Sultan Demak pertama) adalah anak kandung Brawijaya V sendiri, sehingga transisi Majapahit ke Demak diceritakan secara politis sebagai kesinambungan (estafet bapak ke anak), bukan penaklukan."
+    }
+  ]
+}

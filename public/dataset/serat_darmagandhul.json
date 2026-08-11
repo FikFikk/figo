@@ -1,0 +1,19 @@
+{
+  "buku_referensi": "Serat Darmagandhul",
+  "tokoh": "Kyai Kalamwadi (Anonim)",
+  "kategori_akademik": "Sastra Kritis & Narasi Tandingan Zaman Transisi",
+  "arsip_pengetahuan": [
+    {
+      "id_bab": "DIALOG_DARMAGANDHUL",
+      "tema_utama": "Kritik Atas Hilangnya Budaya Jawa Asli",
+      "teori_akademik": "Post-Kolonialisme Kultural Islam di Jawa",
+      "penjabaran_detail": "Serat Darmagandhul adalah teks yang sangat kontroversial. Berbentuk dialog antara Ki Kalamwadi dan muridnya, Darmagandhul. Teks ini menggambarkan penyesalan sosiolog-spiritual atas masuknya Islam (Arab) yang dianggap menghancurkan luhurnya peradaban Hindu-Buddha Majapahit, digambarkan sebagai 'ilmu agung yang ditukar dengan ilmu sempit'."
+    },
+    {
+      "id_bab": "SABDOPALON_NAGIH_JANJI",
+      "tema_utama": "Perpisahan Brawijaya dan Sabdopalon",
+      "teori_akademik": "Ramalan Kebangkitan Kembali Kearifan Lokal",
+      "penjabaran_detail": "Kisah klimaks ketika Sunan Kalijaga meyakinkan Prabu Brawijaya V masuk Islam. Dua abdi setia sang Prabu, Sabdopalon dan Nayagenggong (representasi dewa pamomong gaib tanah Jawa, Semar), menolak masuk Islam. Sabdopalon bersumpah moksa, namun bernubuat: 500 tahun dari masa itu, ia akan kembali untuk menagih janji dan mengembalikan tanah Jawa pada agama budi (ajaran sejatinya), ditandai dengan meletusnya Gunung Merapi membawa abu dan penyakit bala."
+    }
+  ]
+}

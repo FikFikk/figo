@@ -22,12 +22,14 @@
         <!-- API Source Toggle -->
         <button v-if="isPinVerified" @click="toggleApi"
           class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all border"
-          :class="stockApi.apiSource.value === 'yahoo'
+          :class="stockApi.apiSource.value === 'zpi'
+            ? (isDark ? 'bg-blue-500/15 text-blue-400 border-blue-500/20 hover:bg-blue-500/25' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100')
+            : stockApi.apiSource.value === 'yahoo'
             ? (isDark ? 'bg-purple-500/15 text-purple-400 border-purple-500/20 hover:bg-purple-500/25' : 'bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100')
             : (isDark ? 'bg-amber-500/15 text-amber-400 border-amber-500/20 hover:bg-amber-500/25' : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100')"
         >
-          <span class="material-symbols-outlined text-sm">{{ stockApi.apiSource.value === 'yahoo' ? 'public' : 'api' }}</span>
-          {{ stockApi.apiSource.value === 'yahoo' ? 'Yahoo Finance' : 'RapidAPI IDX' }}
+          <span class="material-symbols-outlined text-sm">{{ stockApi.apiSource.value === 'zpi' ? 'query_stats' : stockApi.apiSource.value === 'yahoo' ? 'public' : 'api' }}</span>
+          {{ stockApi.apiSource.value === 'zpi' ? 'ZPI TradingView' : stockApi.apiSource.value === 'yahoo' ? 'Yahoo Finance' : 'RapidAPI IDX' }}
           <span class="material-symbols-outlined text-xs opacity-50">swap_horiz</span>
         </button>
       </div>
@@ -169,18 +171,28 @@
       <StockEconomicCalendar v-if="isPinVerified" />
 
       <!-- Ensiklopedia Pola Saham (PUBLIK) -->
-      <div>
-        <div class="flex items-center gap-2 mb-4">
-          <span class="material-symbols-outlined text-lg text-primary">auto_awesome</span>
-          <h2 class="font-headline font-bold text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">Stock Patterns Encyclopedia</h2>
+      <div class="glass-panel rounded-2xl border overflow-hidden mt-6"
+        :class="isDark ? 'border-white/5' : 'border-slate-100'"
+      >
+        <button @click="encyclopediaOpen = !encyclopediaOpen"
+          class="w-full flex items-center justify-between p-5 text-left transition-colors"
+          :class="isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'"
+        >
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-lg text-primary">auto_awesome</span>
+            <h2 class="font-headline font-bold text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">Stock Patterns Encyclopedia</h2>
+          </div>
+          <span class="material-symbols-outlined text-lg transition-transform duration-300" :class="encyclopediaOpen ? 'rotate-180' : ''" style="opacity: 0.4">expand_more</span>
+        </button>
+        <div v-show="encyclopediaOpen" class="px-5 pb-5">
+          <StockPatterns />
         </div>
-        <StockPatterns />
       </div>
     </div>
 
     <!-- Footer -->
     <div class="mt-10 text-center opacity-20">
-      <p class="text-[9px] font-bold uppercase tracking-[0.3em]">{{ stockApi.apiSource.value === 'yahoo' ? 'Chart via Yahoo Finance' : 'Data via RapidAPI IDX' }}</p>
+      <p class="text-[9px] font-bold uppercase tracking-[0.3em]">{{ stockApi.apiSource.value === 'zpi' ? 'Data via ZPI TradingView' : stockApi.apiSource.value === 'yahoo' ? 'Chart via Yahoo Finance' : 'Data via RapidAPI IDX' }}</p>
     </div>
   </div>
 </template>
@@ -200,6 +212,9 @@ useSeoMeta({
 
 const { isDark } = useColorMode()
 const stockApi = useStockApi()
+const route = useRoute()
+const router = useRouter()
+let realTimeInterval: any = null
 
 // === PIN Authentication ===
 const isPinVerified = ref(false)
@@ -213,11 +228,31 @@ function checkPin() {
     isPinVerified.value = true
     pinError.value = false
     showPinModal.value = false
+    encyclopediaOpen.value = false // Auto collapse encyclopedia for better UX
+    if (import.meta.client) localStorage.setItem('figo_stock_pin', CORRECT_PIN)
   } else {
     pinError.value = true
     pinInput.value = ''
   }
 }
+
+onMounted(() => {
+  if (import.meta.client) {
+    const savedPin = localStorage.getItem('figo_stock_pin')
+    if (savedPin === CORRECT_PIN) {
+      isPinVerified.value = true
+      encyclopediaOpen.value = false
+      if (route.query.symbol) {
+        onSelectStock({ symbol: route.query.symbol as string })
+      }
+    }
+  }
+})
+
+// Cleanup interval
+onBeforeUnmount(() => {
+  if (realTimeInterval) clearInterval(realTimeInterval)
+})
 
 function handlePinInput() {
   pinError.value = false
@@ -241,6 +276,7 @@ const insightData = ref<any>(null)
 const moversData = ref<any>(null)
 const moversTab = ref('gainers')
 const moversOpen = ref(false) // Default collapsed untuk hemat API
+const encyclopediaOpen = ref(true) // by default true for public, verified will close it in onMounted or checkPing
 const tradingPlan = ref<any>(null)
 const currentChartParams = ref({ interval: '1d', range: '3mo' })
 
@@ -259,6 +295,8 @@ async function onSelectStock(stock: any) {
 
   selectedSymbol.value = symbol.toUpperCase()
   globalError.value = ''
+  
+  router.replace({ query: { symbol: selectedSymbol.value } })
 
   // Reset state agar komponen lain me-reset tampilan menjadi "Locked/Fetch"
   chartData.value = []
@@ -268,21 +306,28 @@ async function onSelectStock(stock: any) {
   tradingPlan.value = null
 
   // HANYA fetch Overview secara otomatis untuk menghemat limit (1 req)
-  // Komponen lain baru di-fetch setelah user mengklik tombol "Tampilkan Data"
   await loadStockInfo(selectedSymbol.value)
+  
+  // Real-time Polling 100% like TradingView
+  if (realTimeInterval) clearInterval(realTimeInterval)
+  realTimeInterval = setInterval(() => {
+    if (document.visibilityState === 'visible' && selectedSymbol.value) {
+       loadStockInfo(selectedSymbol.value, true)
+       // Refresh chart silently if it's already loaded (tidak me-reset array ke kosong biar ga kedip)
+       if (chartData.value.length > 0) {
+           loadChart(selectedSymbol.value, currentChartParams.value, true)
+       }
+    }
+  }, 10000) // 10s is responsive enough for realtime stock OHLC chart feeling!
 }
 
 // Fetch: Info emiten — dual API support
-async function loadStockInfo(symbol: string) {
+async function loadStockInfo(symbol: string, quiet: boolean = false) {
+  if (!quiet) 
   loadingInfo.value = true
   try {
-    if (stockApi.apiSource.value === 'yahoo') {
-      const data = await $fetch('/api/stock/yahoo-info', { params: { symbol } })
-      stockInfo.value = data
-    } else {
-      const data = await $fetch('/api/stock/info', { params: { symbol } })
-      stockInfo.value = data
-    }
+    const data = await stockApi.getStockInfo(symbol)
+    stockInfo.value = data
   } catch (err: any) {
     globalError.value = err?.data?.statusMessage || 'Failed to load stock info'
   } finally {
@@ -290,33 +335,44 @@ async function loadStockInfo(symbol: string) {
   }
 }
 
-// Toggle API dan refresh data saham yang aktif
+
+
+// Fetch: Chart OHLCV — dual API support (Yahoo Finance default)
 function toggleApi() {
   stockApi.toggleApiSource()
-  // Jika ada saham yang dipilih, refresh datanya
   if (selectedSymbol.value) {
-    loadStockInfo(selectedSymbol.value)
-    loadChart(selectedSymbol.value, { interval: '1d', range: '3mo' })
+    onSelectStock({ symbol: selectedSymbol.value })
+  } else {
+    loadMovers(moversTab.value)
   }
 }
 
-// Fetch: Chart OHLCV — dual API support (Yahoo Finance default)
-async function loadChart(symbol: string, params: { interval: string; range: string }) {
-  loadingChart.value = true
+async function loadChart(symbol: string, params: { interval: string; range: string }, quiet: boolean = false) {
+  if (!quiet) loadingChart.value = true
   try {
+    const limitMap: Record<string, number> = { '1d': 2, '5d': 5, '1mo': 21, '3mo': 63, '1y': 252, '5y': 1260 }
+    let limit = limitMap[params.range] || 100
+    
+    // Intraday logic: we need many more candles than just standard daily counts
+    if (params.interval.endsWith('m') || params.interval.endsWith('h')) {
+      if (params.range === '1d') limit = 100
+      else if (params.range === '5d') limit = 300
+      else limit = 500
+    }
+    // Boost ZPI default specifically to allow chart scrolling (like real TradingView)
+    if (stockApi.apiSource.value === 'zpi') {
+      limit = Math.max(limit, 300) // Always pull a healthy amount (minimum 300 candles) for ZPI so charts look dense
+    }
+    
+    const data = await stockApi.getChart(symbol, { ...params, limit })
+    
     if (stockApi.apiSource.value === 'yahoo') {
-      const data = await $fetch<any>('/api/stock/yahoo-chart', {
-        params: { symbol, interval: params.interval, range: params.range }
-      })
-      // StockChart akan sort chronologically sendiri
       if (Array.isArray(data?.data)) chartData.value = data.data
       else if (Array.isArray(data)) chartData.value = data
       else chartData.value = []
+    } else if (stockApi.apiSource.value === 'zpi') {
+      chartData.value = Array.isArray(data) ? data : []
     } else {
-      // RapidAPI IDX — hanya daily, convert range/interval ke limit
-      const limitMap: Record<string, number> = { '1d': 2, '5d': 5, '1mo': 21, '3mo': 63, '1y': 252, '5y': 1260 }
-      const limit = limitMap[params.range] || 63
-      const data = await $fetch<any>('/api/stock/chart', { params: { symbol, limit } })
       const chartbit = data?.data?.data?.chartbit || data?.data?.chartbit || data?.chartbit
       if (Array.isArray(chartbit)) chartData.value = chartbit
       else if (Array.isArray(data)) chartData.value = data
@@ -335,7 +391,7 @@ async function loadChart(symbol: string, params: { interval: string; range: stri
 async function loadTechnical(symbol: string) {
   loadingTechnical.value = true
   try {
-    const data = await $fetch('/api/stock/technical', { params: { symbol } })
+    const data = await stockApi.getTechnical(symbol)
     technicalData.value = data
   } catch (err: any) {
     console.error('Technical error:', err)
@@ -348,7 +404,7 @@ async function loadTechnical(symbol: string) {
 async function loadBandarmology(symbol: string) {
   loadingBandarmology.value = true
   try {
-    const data = await $fetch('/api/stock/bandarmology', { params: { symbol } })
+    const data = await stockApi.getBandarmology(symbol)
     bandarmologyData.value = data
   } catch (err: any) {
     console.error('Bandarmology error:', err)
@@ -361,7 +417,7 @@ async function loadBandarmology(symbol: string) {
 async function loadInsights(symbol: string) {
   loadingInsights.value = true
   try {
-    const data = await $fetch('/api/stock/insights', { params: { symbol } })
+    const data = await stockApi.getInsights(symbol)
     insightData.value = data
   } catch (err: any) {
     console.error('Insights error:', err)
@@ -374,7 +430,7 @@ async function loadInsights(symbol: string) {
 async function loadMovers(type: string) {
   loadingMovers.value = true
   try {
-    const data = await $fetch('/api/stock/movers', { params: { type } })
+    const data = await stockApi.getMovers(type as 'gainers' | 'losers' | 'volume')
     moversData.value = data
   } catch (err: any) {
     console.error('Movers error:', err)

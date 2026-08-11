@@ -597,7 +597,7 @@ async function runAIAction(actionId: string) {
   hasTransparentResult.value = false
 
   const labels: Record<string, string> = {
-    'remove-bg': 'Removing Background...',
+    'remove-bg': 'Removing Background... (1-3 min on CPU)',
     'upscale-2x': 'Upscaling 2×...',
     'upscale-4x': 'Upscaling 4×...',
     'enhance': 'Enhancing...',
@@ -634,12 +634,44 @@ async function runAIAction(actionId: string) {
     const formData = new FormData()
     formData.append('image', originalFileBlob, 'image.jpg')
 
-    const response = await $fetch.raw(endpoint + queryParams, {
-      method: 'POST',
-      body: formData,
-    })
-
-    const result = response._data as any
+    // remove-bg pakai SSE agar tidak CF 524 timeout (inference ~3 menit)
+    let result: any
+    if (actionId === 'remove-bg') {
+      result = await new Promise((resolve, reject) => {
+        fetch(endpoint, { method: 'POST', body: formData })
+          .then(res => {
+            const reader = res.body!.getReader()
+            const decoder = new TextDecoder()
+            let buf = ''
+            const pump = () => reader.read().then(({ done, value }) => {
+              if (done) return reject(new Error('SSE stream closed without result'))
+              buf += decoder.decode(value, { stream: true })
+              const lines = buf.split('\n')
+              buf = lines.pop() ?? ''
+              for (const line of lines) {
+                if (line.startsWith('event: done')) continue
+                if (line.startsWith('event: error')) continue
+                if (line.startsWith('data: ')) {
+                  try {
+                    const parsed = JSON.parse(line.slice(6))
+                    if (parsed.error) return reject(new Error(parsed.error))
+                    return resolve(parsed)
+                  } catch {}
+                }
+              }
+              pump()
+            }).catch(reject)
+            pump()
+          })
+          .catch(reject)
+      })
+    } else {
+      const response = await $fetch.raw(endpoint + queryParams, {
+        method: 'POST',
+        body: formData,
+      })
+      result = response._data as any
+    }
 
     if (!result?.success) {
       throw new Error(result?.error || 'Unknown error from AI worker')

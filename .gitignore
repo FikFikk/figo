@@ -31,3 +31,11 @@ backend-go/figo-download-api
 
 # Download temp files
 .downloads
+# AI Studio
+.ai-venv/
+backend-go/ai_worker.py
+core
+fix.py
+fix_patterns.py
+fix_type.py
+update_patterns.py

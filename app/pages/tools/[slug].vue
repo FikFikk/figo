@@ -1,147 +1,174 @@
 <template>
-  <!-- Conditional layout: full screen untuk stream, normal untuk tools lainnya -->
+  <!-- Full-screen layout untuk stream -->
   <div v-if="activeTool === 'stream'" class="min-h-screen">
-    <!-- Full screen tanpa sidebar untuk bioskop -->
     <ToolsStreamPlayer />
   </div>
-  <div v-else class="pt-24 pb-20 px-6 md:px-8 max-w-7xl mx-auto min-h-screen">
-    <div class="flex flex-col lg:flex-row gap-8">
-      
-      <!-- Mobile Navigation (Sticky) -->
-      <div class="lg:hidden sticky top-[72px] z-30 -mx-6 px-6 py-3 bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-black/5 dark:border-white/5 mb-6 overflow-x-auto no-scrollbar">
-        <div class="flex items-center gap-2 min-w-max">
-          <NuxtLink
-            v-for="tool in availableTools"
-            :key="tool.id"
-            :to="tool.external || `/tools/${tool.slug}`"
-            class="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap"
-            :style="activeTool === tool.id ? 'transform: scale(1.05)' : ''"
-            :class="activeTool === tool.id 
-              ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
-              : (isDark ? 'bg-white/5 text-gray-400' : 'bg-white text-slate-500 border border-slate-100')"
-          >
-            <span class="material-symbols-outlined text-base">{{ tool.icon }}</span>
-            {{ tool.name }}
-          </NuxtLink>
-        </div>
-      </div>
 
-      <!-- Desktop Sidebar -->
-      <aside class="hidden lg:block lg:w-72 flex-shrink-0 border-r border-black/5 dark:border-white/5 pr-8">
-        <div class="sticky top-28">
-          <div class="mb-10">
-            <div class="inline-block px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase mb-4"
-              :class="isDark ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-primary-fixed text-on-primary-fixed'"
-            >
-              Toolkit v1.2
-            </div>
-            <h1 class="text-3xl font-headline font-black tracking-tight" :class="isDark ? 'text-white' : 'text-slate-900'">
-              Developer Tools
-            </h1>
+  <div v-else class="tools-root pt-20 min-h-screen" :class="isDark ? 'bg-[#0f1117]' : 'bg-slate-50'">
+
+    <!-- ══════════════════════════════════════════
+         MOBILE: Sticky Pill Nav
+    ══════════════════════════════════════════ -->
+    <div class="lg:hidden sticky top-[64px] z-30 border-b"
+      :class="isDark ? 'bg-[#0f1117]/90 border-white/5' : 'bg-slate-50/90 border-black/5'"
+      style="backdrop-filter: blur(16px)"
+    >
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar px-4 py-3">
+        <NuxtLink
+          v-for="tool in availableTools"
+          :key="tool.id"
+          :to="tool.external || `/tools/${tool.slug}`"
+          class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[11px] font-bold transition-all duration-200"
+          :class="activeTool === tool.id
+            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+            : (isDark ? 'bg-white/5 text-slate-400 hover:bg-white/10' : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300')"
+        >
+          <span class="material-symbols-outlined" style="font-size:14px">{{ tool.icon }}</span>
+          {{ tool.name }}
+        </NuxtLink>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         DESKTOP LAYOUT: Sidebar + Content
+    ══════════════════════════════════════════ -->
+    <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pb-24">
+      <div class="flex gap-6 lg:gap-8 items-start">
+
+        <!-- ── Sidebar ──────────────────────────── -->
+        <aside
+          class="hidden lg:flex flex-col w-60 xl:w-64 flex-shrink-0 sticky top-24 self-start"
+          style="max-height: calc(100vh - 6rem); overflow-y: auto"
+        >
+          <!-- Header -->
+          <div class="mb-6 pt-6">
+            <p class="text-[10px] font-black uppercase tracking-[0.18em] mb-1"
+              :class="isDark ? 'text-indigo-400' : 'text-indigo-500'"
+            >Toolkit v1.2</p>
+            <h1 class="text-xl font-black tracking-tight"
+              :class="isDark ? 'text-white' : 'text-slate-900'"
+            >Developer<br>Tools</h1>
           </div>
 
-          <!-- Tool List (Desktop) -->
-          <nav class="space-y-1.5">
-            <NuxtLink 
+          <!-- Tool List -->
+          <nav class="space-y-0.5 flex-1">
+            <NuxtLink
               v-for="tool in availableTools"
               :key="tool.id"
               :to="tool.external || `/tools/${tool.slug}`"
-              class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden"
-              :class="activeTool === tool.id 
-                ? (isDark ? 'bg-primary/20 text-white border border-primary/30' : 'bg-primary text-white shadow-lg shadow-primary/20')
-                : (isDark ? 'text-gray-500 hover:text-gray-300 hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100')"
+              class="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 group"
+              :class="activeTool === tool.id
+                ? (isDark
+                    ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/20'
+                    : 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20')
+                : (isDark
+                    ? 'text-slate-500 hover:text-slate-200 hover:bg-white/5'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100')"
             >
-              <div v-if="activeTool === tool.id && !isDark" class="absolute left-0 top-0 bottom-0 w-1.5 bg-white/20"></div>
-              <span class="material-symbols-outlined text-xl transition-transform duration-300 group-hover:scale-110">
-                {{ tool.icon }}
-              </span>
-              <span class="font-headline font-bold text-sm">{{ tool.name }}</span>
+              <span
+                class="material-symbols-outlined transition-transform duration-200 group-hover:scale-110 flex-shrink-0"
+                style="font-size:18px"
+              >{{ tool.icon }}</span>
+              <span class="truncate">{{ tool.name }}</span>
+
+              <!-- Active indicator dot -->
+              <span
+                v-if="activeTool === tool.id"
+                class="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
+                :class="isDark ? 'bg-indigo-400' : 'bg-white/70'"
+              />
             </NuxtLink>
           </nav>
 
-          <!-- Soon Section (Desktop Sidebar) -->
-          <div class="mt-12 space-y-4">
-            <p class="px-4 text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Incoming Tools</p>
-            <div class="space-y-1">
-              <div 
-                v-for="tool in soonTools" 
-                :key="tool.name"
-                class="flex items-center gap-3 px-4 py-2 opacity-25 grayscale cursor-default"
+          <!-- Divider -->
+          <div class="my-4 border-t" :class="isDark ? 'border-white/5' : 'border-slate-100'" />
+
+          <!-- Coming Soon -->
+          <div>
+            <p class="px-3 text-[9px] font-black uppercase tracking-[0.2em] mb-2"
+              :class="isDark ? 'text-slate-600' : 'text-slate-300'"
+            >Coming Soon</p>
+            <div
+              v-for="tool in soonTools"
+              :key="tool.name"
+              class="flex items-center gap-3 px-3 py-2 rounded-2xl opacity-30 cursor-default select-none"
+            >
+              <span class="material-symbols-outlined" style="font-size:16px">{{ tool.icon }}</span>
+              <span class="text-xs font-semibold">{{ tool.name }}</span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- ── Main Content ─────────────────────── -->
+        <main class="flex-1 min-w-0 pt-6">
+
+          <!-- Breadcrumb -->
+          <div class="flex items-center gap-2 mb-5 text-xs"
+            :class="isDark ? 'text-slate-600' : 'text-slate-400'"
+          >
+            <NuxtLink to="/" class="hover:text-indigo-500 transition-colors">Home</NuxtLink>
+            <span class="material-symbols-outlined" style="font-size:14px">chevron_right</span>
+            <span>Tools</span>
+            <span class="material-symbols-outlined" style="font-size:14px">chevron_right</span>
+            <span :class="isDark ? 'text-slate-300' : 'text-slate-700'" class="font-semibold">
+              {{ currentToolName }}
+            </span>
+          </div>
+
+          <!-- Tool Content with Transition -->
+          <Transition
+            mode="out-in"
+            enter-active-class="transition duration-250 ease-out"
+            enter-from-class="opacity-0 translate-y-3"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition duration-150 ease-in"
+            leave-from-class="opacity-100 translate-y-0"
+            leave-to-class="opacity-0 translate-y-2"
+          >
+            <div :key="activeTool">
+              <div v-if="activeTool === 'safety'"><ToolsLinkSafety /></div>
+              <div v-else-if="activeTool === 'color'"><ToolsColorGenerator /></div>
+              <div v-else-if="activeTool === 'metadata'"><ToolsFileMetadata /></div>
+              <div v-else-if="activeTool === 'generator'"><ToolsSecureGenerator /></div>
+              <div v-else-if="activeTool === 'qr'"><ToolsQrEngine /></div>
+              <div v-else-if="activeTool === 'forex'"><ToolsForexResearch /></div>
+              <div v-else-if="activeTool === 'hls-player'"><ToolsStreamingPlayer /></div>
+              <!-- Fallback -->
+              <div v-else class="rounded-2xl border p-16 text-center"
+                :class="isDark ? 'border-white/5 bg-white/3' : 'border-slate-100 bg-white'"
               >
-                <span class="material-symbols-outlined text-lg">{{ tool.icon }}</span>
-                <span class="text-xs font-bold">{{ tool.name }}</span>
+                <span class="material-symbols-outlined text-5xl mb-4 block opacity-20"
+                  :class="isDark ? 'text-indigo-400' : 'text-indigo-500'"
+                >auto_fix_high</span>
+                <h2 class="text-base font-bold mb-1"
+                  :class="isDark ? 'text-slate-300' : 'text-slate-700'"
+                >Pilih Tool</h2>
+                <p class="text-xs opacity-40 max-w-xs mx-auto">
+                  Pilih tool dari sidebar untuk memulai.
+                </p>
               </div>
             </div>
-          </div>
-        </div>
-      </aside>
+          </Transition>
 
-      <!-- Main Content Area -->
-      <main class="flex-1 min-w-0">
-        <Transition
-          mode="out-in"
-          enter-active-class="transition duration-300 ease-out"
-          enter-from-class="transform translate-y-4 opacity-0"
-          enter-to-class="transform translate-y-0 opacity-100"
-          leave-active-class="transition duration-200 ease-in"
-          leave-from-class="transform translate-y-0 opacity-100"
-          leave-to-class="transform translate-y-4 opacity-0"
-        >
-          <!-- Tool Components -->
-          <div :key="activeTool">
-            <div v-if="activeTool === 'safety'">
-              <ToolsLinkSafety />
-            </div>
-            <div v-else-if="activeTool === 'color'">
-              <ToolsColorGenerator />
-            </div>
-            <div v-else-if="activeTool === 'metadata'">
-              <ToolsFileMetadata />
-            </div>
-            <div v-else-if="activeTool === 'generator'">
-              <ToolsSecureGenerator />
-            </div>
-            <div v-else-if="activeTool === 'qr'">
-              <ToolsQrEngine />
-            </div>
-            <div v-else-if="activeTool === 'forex'">
-              <ToolsForexResearch />
-            </div>
-            <!-- Stream sudah di-render di luar kondisional layout -->
-            <div v-else-if="activeTool === 'hls-player'">
-              <ToolsStreamingPlayer />
-            </div>
-            
-            <!-- Default Welcome (unlikely but safe) -->
-            <div v-else class="glass-panel rounded-3xl p-12 text-center" :class="isDark ? 'border border-white/5' : 'border border-slate-100'">
-              <span class="material-symbols-outlined text-6xl text-primary opacity-20 mb-6 block">auto_fix_high</span>
-              <h2 class="text-xl font-headline font-bold mb-2">Select a Tool</h2>
-              <p class="text-sm opacity-50 max-w-xs mx-auto">Choose a tool from the sidebar to start your development workflow.</p>
+          <!-- Footer strip -->
+          <div class="mt-10 flex items-center justify-between"
+            :class="isDark ? 'text-slate-700' : 'text-slate-300'"
+          >
+            <span class="text-[10px] font-bold uppercase tracking-widest">FiGo Forge Collective</span>
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined" style="font-size:14px">terminal</span>
+              <span class="material-symbols-outlined" style="font-size:14px">code</span>
+              <span class="material-symbols-outlined" style="font-size:14px">api</span>
             </div>
           </div>
-        </Transition>
+        </main>
 
-        <!-- Tool Footer / Info -->
-        <div class="mt-8 px-4 flex items-center justify-between opacity-30">
-          <p class="text-[10px] font-bold uppercase tracking-widest">FiGo Forge Collective</p>
-          <div class="flex gap-4">
-            <span class="material-symbols-outlined text-sm">terminal</span>
-            <span class="material-symbols-outlined text-sm">code</span>
-            <span class="material-symbols-outlined text-sm">api</span>
-          </div>
-        </div>
-      </main>
-
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-/**
- * Tools Page - Dynamic URL routing per tool
- * URL: /tools/[slug] → resolves to tool component
- */
-// SEO dinamis berdasarkan tool yang aktif
 const toolSeoMap: Record<string, { title: string; description: string }> = {
   'color-palette': {
     title: 'Color Palette Generator Online Gratis — FiGo Tools',
@@ -194,7 +221,6 @@ useSeoMeta({
 
 const { isDark } = useColorMode()
 
-// Mapping slug → tool id
 const slugToId: Record<string, string> = {
   'color-palette': 'color',
   'link-safety': 'safety',
@@ -206,48 +232,43 @@ const slugToId: Record<string, string> = {
   'hls-player': 'hls-player',
 }
 
-// Configuration for active tools (with URL slug)
 const availableTools = [
-  { id: 'calendar', slug: 'calendar', name: 'Calendar 2026', icon: 'calendar_month', external: '/kalender' },
-  { id: 'editor', slug: 'editor', name: 'AI Image Editor', icon: 'photo_filter', external: '/editor' },
-  { id: 'recipes', slug: 'recipes', name: 'Resep Makanan', icon: 'restaurant', external: '/recipes' },
-  { id: 'nutrition', slug: 'nutrition', name: 'Nutrition Facts', icon: 'nutrition', external: '/foods' },
-  { id: 'color', slug: 'color-palette', name: 'Color Palette', icon: 'palette' },
-  { id: 'safety', slug: 'link-safety', name: 'Link Safety', icon: 'shield_lock' },
-  { id: 'metadata', slug: 'file-metadata', name: 'File Metadata', icon: 'analytics' },
-  { id: 'generator', slug: 'secure-generator', name: 'Secure Generator', icon: 'vpn_key' },
-  { id: 'qr', slug: 'qr-engine', name: 'QR Engine', icon: 'qr_code_2' },
-  { id: 'forex', slug: 'forex-research', name: 'Forex Research', icon: 'monitoring' },
-  { id: 'stream', slug: 'stream', name: 'Bioskop', icon: 'movie' },
+  { id: 'calendar',   slug: 'calendar',          name: 'Calendar 2026',    icon: 'calendar_month', external: '/kalender' },
+  { id: 'editor',     slug: 'editor',             name: 'AI Image Editor',  icon: 'photo_filter',   external: '/editor' },
+  { id: 'recipes',    slug: 'recipes',            name: 'Resep Makanan',    icon: 'restaurant',     external: '/recipes' },
+  { id: 'nutrition',  slug: 'nutrition',          name: 'Nutrition Facts',  icon: 'nutrition',      external: '/foods' },
+  { id: 'color',      slug: 'color-palette',      name: 'Color Palette',    icon: 'palette' },
+  { id: 'safety',     slug: 'link-safety',        name: 'Link Safety',      icon: 'shield_lock' },
+  { id: 'metadata',   slug: 'file-metadata',      name: 'File Metadata',    icon: 'analytics' },
+  { id: 'generator',  slug: 'secure-generator',   name: 'Secure Generator', icon: 'vpn_key' },
+  { id: 'qr',         slug: 'qr-engine',          name: 'QR Engine',        icon: 'qr_code_2' },
+  { id: 'forex',      slug: 'forex-research',     name: 'Forex Research',   icon: 'monitoring' },
+  { id: 'stream',     slug: 'stream',             name: 'Bioskop',          icon: 'movie' },
 ]
 
-// Resolve active tool dari slug di URL
 const activeTool = computed(() => {
   const slug = route.params.slug as string
   return slugToId[slug] || 'color'
 })
 
-// Configuration for upcoming tools
+const currentToolName = computed(() => {
+  return availableTools.find(t => t.id === activeTool.value)?.name ?? 'Tools'
+})
+
 const soonTools = [
   { name: 'Base64 Stream', icon: 'text_format' },
 ]
 </script>
 
 <style scoped>
-.glass-panel {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.tools-root {
+  transition: background-color 0.2s ease;
 }
 
-/* Custom scrollbar for sticky sidebar if content overflows */
-aside ::-webkit-scrollbar {
-  width: 4px;
-}
-aside ::-webkit-scrollbar-track {
-  background: transparent;
-}
-aside ::-webkit-scrollbar-thumb {
-  background: rgba(var(--primary-rgb), 0.1);
-  border-radius: 10px;
-}
+/* Hide sidebar scrollbar */
+aside::-webkit-scrollbar { width: 0; }
+
+/* Mobile no-scrollbar */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

@@ -1,0 +1,19 @@
+{
+  "buku_referensi": "Serat Cabolek",
+  "tokoh": "Raden Ngabehi Yasadipura I",
+  "kategori_akademik": "Sejarah Hukum & Hakikat Tasawuf",
+  "arsip_pengetahuan": [
+    {
+      "id_bab": "PUPUH_ASMARADANA_MUKADIMAH",
+      "tema_utama": "Ajaran Syekh Mutamakin",
+      "teori_akademik": "Wahdatul Wujud vs Syariat Formal",
+      "penjabaran_detail": "Buku ini mengisahkan tokoh Haji Mutamakin (Syekh Mutamakin) dari Desa Cabolek, Tuban (kemudian menetap di Kajen, Pati). Ia mengajarkan ilmu Tasawuf Hakikat (mistisisme esoterik) yang mengesampingkan ritual syariat formal, memicu kemarahan para ulama tradisionalis di bawah pimpinan Ketib Anom Kudus.\n\nSimbolisme ekstrem Mutamakin terlihat saat ia menamai dua ekor anjing peliharaannya 'Abdul Qahar' dan 'Kamaruddin' (mengambil nama penghulu keraton dan bupati), sebagai bentuk kritik terhadap ulama-ulama yang mengejar keduniawian, mengibaratkan nafsu dunia layaknya sifat anjing."
+    },
+    {
+      "id_bab": "PUPUH_PANGKUR_PENGADILAN",
+      "tema_utama": "Peradilan di Keraton Kartasura",
+      "teori_akademik": "Otoritas Kerajaan dalam Ortodoksi Agama",
+      "penjabaran_detail": "Polemik ini dibawa ke pengadilan keraton Kartasura (era Pakubuwana II). Ketib Anom mendesak agar Mutamakin dihukum bakar hidup-hidup (seperti Syekh Siti Jenar pada era Demak). Namun, berkat ketenangan Mutamakin dan simpati dari petinggi keraton, ia akhirnya diampuni oleh Raja. Kisah ini adalah monumen penting pergeseran dari eksekusi mati penganut Wahdatul Wujud (era lama) menuju toleransi mistisisme di Mataram era baru."
+    }
+  ]
+}
