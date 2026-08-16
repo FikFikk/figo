@@ -7,9 +7,15 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "android:add": "cap add android",
+    "android:sync": "cap sync android",
+    "android:open": "cap open android",
+    "android:run": "cap run android",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "@types/qrcode": "^1.5.6",
@@ -33,6 +39,7 @@
     "youtube-dl-exec": "^3.1.4"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
     "@types/archiver": "^7.0.0",
     "@types/color-namer": "^1.3.3",
     "@types/spark-md5": "^3.0.5",

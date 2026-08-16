@@ -1,5 +1,5 @@
 <template>
-  <div class="calendar-month-card rounded-3xl p-5 border transition-all duration-300 relative"
+  <div class="calendar-month-card h-full rounded-3xl p-5 border transition-all duration-300 relative"
     :class="isDark ? 'bg-white/[0.03] border-white/5 hover:border-white/10' : 'bg-white border-slate-100 shadow-sm hover:shadow-lg'"
   >
     <div class="flex items-center justify-between mb-4">
@@ -19,28 +19,25 @@
 
     <!-- Grid tanggal -->
     <div class="grid grid-cols-7 gap-1">
-      <!-- Slot kosong awal bulan -->
-      <div v-for="empty in firstDayOffset" :key="'empty-' + empty" class="aspect-square"></div>
-      
       <!-- Tanggal -->
       <div 
-        v-for="day in daysInMonth" 
-        :key="day"
-        @click="$emit('select-date', new Date(year, month, day))"
+        v-for="cell in calendarCells"
+        :key="cell.key"
+        @click="$emit('select-date', cell.date)"
         class="day-cell relative aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-bold transition-all cursor-pointer group"
-        :class="getDayClasses(day)"
+        :class="getDayClasses(cell)"
       >
-        <span class="z-10 leading-none">{{ day }}</span>
+        <span class="z-10 leading-none">{{ cell.day }}</span>
         
         <!-- Pasaran kecil di bawah angka (desktop only) -->
         <span class="hidden sm:block text-[6px] font-bold opacity-30 mt-0.5 z-10 leading-none">
-          {{ dayCache[day - 1]?.pasaran?.substring(0, 3) }}
+          {{ cell.data.pasaran.substring(0, 3) }}
         </span>
         
         <!-- Holiday dot indicator -->
-        <div v-if="dayCache[day - 1]?.holidays?.length" 
+        <div v-if="cell.data.holidays.length"
           class="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full"
-          :class="dayCache[day - 1]?.holidays.some(h => h.type === 'national') ? 'bg-red-500' : 'bg-orange-400'"
+          :class="cell.data.holidays.some(h => h.type === 'national') ? 'bg-red-500' : 'bg-orange-400'"
         ></div>
 
         <!-- Tooltip (desktop only, no backdrop-blur) -->
@@ -50,13 +47,13 @@
           <div class="space-y-2">
             <!-- Nama hari libur / tanggal -->
             <div class="border-b border-white/10 pb-2">
-              <template v-if="dayCache[day - 1]?.holidays?.length">
-                <p v-for="h in dayCache[day - 1]?.holidays" :key="h.name" class="text-[11px] font-black leading-tight text-red-400 mb-0.5">
+              <template v-if="cell.data.holidays.length">
+                <p v-for="h in cell.data.holidays" :key="h.name" class="text-[11px] font-black leading-tight text-red-400 mb-0.5">
                   {{ h.name }}
                 </p>
               </template>
-              <p class="text-[10px] font-bold leading-tight" :class="dayCache[day - 1]?.holidays?.length ? 'opacity-50 mt-1' : 'opacity-70'">
-                {{ dayCache[day - 1]?.info?.masehi }}
+              <p class="text-[10px] font-bold leading-tight" :class="cell.data.holidays.length ? 'opacity-50 mt-1' : 'opacity-70'">
+                {{ cell.data.info.masehi }}
               </p>
             </div>
             
@@ -64,20 +61,20 @@
             <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[9px]">
               <div>
                 <span class="opacity-40 uppercase tracking-tight block">Pasaran</span>
-                <span class="font-bold text-[10px]">{{ dayCache[day - 1]?.pasaran }}</span>
+                <span class="font-bold text-[10px]">{{ cell.data.pasaran }}</span>
               </div>
               <div>
                 <span class="opacity-40 uppercase tracking-tight block">Wuku</span>
-                <span class="font-bold text-[10px]">{{ dayCache[day - 1]?.info?.wuku }}</span>
+                <span class="font-bold text-[10px]">{{ cell.data.info.wuku }}</span>
               </div>
               <div>
                 <span class="opacity-40 uppercase tracking-tight block">Neptu</span>
-                <span class="font-bold text-[10px]">{{ dayCache[day - 1]?.info?.neptu }}</span>
+                <span class="font-bold text-[10px]">{{ cell.data.info.neptu }}</span>
               </div>
               <div>
                 <span class="opacity-40 uppercase tracking-tight block">Pancasuda</span>
-                <span class="font-bold text-[10px]" :class="getPancasudaColor(dayCache[day - 1]?.info?.pancasuda?.name)">
-                  {{ dayCache[day - 1]?.info?.pancasuda?.name }}
+                <span class="font-bold text-[10px]" :class="getPancasudaColor(cell.data.info.pancasuda?.name)">
+                  {{ cell.data.info.pancasuda?.name }}
                 </span>
               </div>
             </div>
@@ -86,12 +83,12 @@
             <div class="pt-1.5 border-t border-white/10 grid grid-cols-2 gap-x-2 w-full">
               <div>
                 <span class="opacity-40 uppercase tracking-tight text-[8px] block mb-0.5">Tanggal Jawa</span>
-                <span class="font-bold text-[9px] block">{{ dayCache[day - 1]?.info?.tanggalJawa }}</span>
-                <span class="text-[7.5px] opacity-50 block leading-tight mt-0.5">Th. {{ dayCache[day - 1]?.info?.tahunJawa }}</span>
+                <span class="font-bold text-[9px] block">{{ cell.data.info.tanggalJawa }}</span>
+                <span class="text-[7.5px] opacity-50 block leading-tight mt-0.5">Th. {{ cell.data.info.tahunJawa }}</span>
               </div>
               <div class="pl-2 border-l border-white/5">
                 <span class="opacity-40 uppercase tracking-tight text-[8px] block mb-0.5">Hijriah</span>
-                <span class="font-bold text-[10px] block">{{ dayCache[day - 1]?.info?.hijriShort }}</span>
+                <span class="font-bold text-[10px] block">{{ cell.data.info.hijriShort }}</span>
               </div>
             </div>
           </div>
@@ -168,6 +165,54 @@ const dayCache = computed<DayCache[]>(() => {
   return cache
 })
 
+interface CalendarCell {
+  key: string
+  date: Date
+  day: number
+  isCurrentMonth: boolean
+  data: DayCache
+}
+
+/** Lengkapi minggu pertama/terakhir tanpa memaksakan semua bulan menjadi 6 baris. */
+const calendarCells = computed<CalendarCell[]>(() => {
+  const cells: CalendarCell[] = []
+  const firstDate = new Date(props.year, props.month, 1)
+  const firstDayOffset = firstDate.getDay()
+  const currentMonthDays = new Date(props.year, props.month + 1, 0).getDate()
+  const visibleCellCount = Math.ceil((firstDayOffset + currentMonthDays) / 7) * 7
+  const gridStart = new Date(props.year, props.month, 1 - firstDayOffset)
+  const gridEnd = new Date(gridStart)
+  gridEnd.setDate(gridStart.getDate() + visibleCellCount - 1)
+  const holidaysByDate = new Map<string, Holiday[]>()
+
+  for (let year = gridStart.getFullYear(); year <= gridEnd.getFullYear(); year++) {
+    for (const holiday of getHolidays(year)) {
+      if (!holidaysByDate.has(holiday.date)) holidaysByDate.set(holiday.date, [])
+      holidaysByDate.get(holiday.date)!.push(holiday)
+    }
+  }
+
+  for (let index = 0; index < visibleCellCount; index++) {
+    const date = new Date(gridStart)
+    date.setDate(gridStart.getDate() + index)
+    const dateStr = formatToLocalDate(date)
+    const holidays = holidaysByDate.get(dateStr) ?? []
+    cells.push({
+      key: dateStr,
+      date,
+      day: date.getDate(),
+      isCurrentMonth: date.getMonth() === props.month && date.getFullYear() === props.year,
+      data: {
+        pasaran: getJavanesePasaran(date),
+        holidays,
+        info: getFullDateInfo(date),
+      },
+    })
+  }
+
+  return cells
+})
+
 /** Warna Pancasuda untuk visual cue */
 function getPancasudaColor(name?: string): string {
   switch (name) {
@@ -181,16 +226,22 @@ function getPancasudaColor(name?: string): string {
   }
 }
 
-function getDayClasses(day: number) {
-  const dateObj = new Date(props.year, props.month, day)
+function getDayClasses(cell: CalendarCell) {
+  const dateObj = cell.date
   const isToday = new Date().toDateString() === dateObj.toDateString()
-  const cached = dayCache.value[day - 1]
   const isSunday = dateObj.getDay() === 0
 
-  const hasNational = cached?.holidays?.some(h => h.type === 'national')
-  const hasJointLeave = cached?.holidays?.some(h => h.type === 'joint_leave')
+  const hasNational = cell.data.holidays.some(h => h.type === 'national')
+  const hasJointLeave = cell.data.holidays.some(h => h.type === 'joint_leave')
 
   const classes: string[] = []
+
+  if (!cell.isCurrentMonth) {
+    classes.push(isDark.value
+      ? 'text-white/20 hover:text-white/45 hover:bg-white/5'
+      : 'text-slate-300 hover:text-slate-500 hover:bg-slate-50')
+    return classes.join(' ')
+  }
   
   if (isToday) {
     classes.push(isDark.value ? 'bg-primary text-white ring-2 ring-primary/30' : 'bg-primary text-white shadow-md shadow-primary/30')

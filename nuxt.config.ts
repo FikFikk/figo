@@ -136,6 +136,13 @@ export default defineNuxtConfig({
       ],
       shortcuts: [
         {
+          name: "Kalender Indonesia",
+          short_name: "Kalender",
+          description: "Kalender Indonesia, Hijriah, Jawa, weton, dan hari libur",
+          url: "/kalender",
+          icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+        },
+        {
           name: "Download",
           short_name: "Download",
           description: "Download Video, Audio, & File",

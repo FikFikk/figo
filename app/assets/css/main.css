@@ -57,6 +57,12 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Keep keyboard navigation visible across the landing page and tools. */
+:focus-visible {
+  outline: 2px solid #0058be;
+  outline-offset: 3px;
+}
+
 /* Default to dark */
 html {
   color-scheme: dark;

@@ -1,18 +1,18 @@
 <template>
   <section id="hero" class="relative min-h-screen flex flex-col items-center justify-center px-6 hero-grid overflow-hidden pt-24 pb-32 md:pb-48">
     <!-- 3D Wireframe Mesh Background -->
-    <canvas ref="meshCanvas" class="absolute inset-0 z-0 w-full h-full opacity-60 pointer-events-none"></canvas>
+    <canvas ref="meshCanvas" aria-hidden="true" class="absolute inset-0 z-0 w-full h-full opacity-60 pointer-events-none"></canvas>
 
     <!-- Background Orbs -->
-    <div class="absolute top-20 right-[10%] w-96 h-96 rounded-full floating-orb opacity-50"
+    <div aria-hidden="true" class="absolute top-20 right-[10%] w-96 h-96 rounded-full floating-orb opacity-50"
       :class="isDark ? 'bg-primary/15' : 'bg-primary/20'"
     ></div>
-    <div class="absolute bottom-20 left-[5%] w-[500px] h-[500px] rounded-full floating-orb"
+    <div aria-hidden="true" class="absolute bottom-20 left-[5%] w-[500px] h-[500px] rounded-full floating-orb"
       :class="isDark ? 'bg-tertiary/8' : 'bg-tertiary/10'"
     ></div>
 
-    <div class="max-w-5xl w-full mx-auto text-center space-y-8 relative z-10">
-      <h1 class="font-headline font-extrabold text-5xl sm:text-6xl md:text-8xl tracking-tighter leading-[1.1]"
+    <div class="max-w-5xl w-full mx-auto text-center space-y-7 md:space-y-8 relative z-10">
+      <h1 class="font-headline font-extrabold text-5xl sm:text-6xl md:text-8xl tracking-tighter leading-[1.05]"
         :class="isDark ? 'text-white' : 'text-slate-900'"
       >
         The <span class="text-primary">Fi</span>Go Engine
@@ -25,6 +25,16 @@
         <br class="hidden md:block" />
         <span :class="isDark ? 'font-medium text-white' : 'font-medium text-slate-900'">No account. No fee. No nonsense.</span>
       </p>
+
+      <div class="flex items-center justify-center pt-1">
+        <NuxtLink
+          to="/tools"
+          class="min-h-11 px-5 py-2.5 rounded-2xl border border-primary/30 text-primary font-headline font-bold text-sm hover:bg-primary/10 hover:-translate-y-0.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+        >
+          Explore tools
+          <span class="material-symbols-outlined text-lg align-middle ml-1">arrow_downward</span>
+        </NuxtLink>
+      </div>
     </div>
 
     <!-- Scroll indicator -->
@@ -196,4 +206,3 @@ onUnmounted(() => {
 <style scoped>
 /* fix */
 </style>
-

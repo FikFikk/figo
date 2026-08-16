@@ -1,7 +1,7 @@
 <template>
   <div
     ref="cardRef"
-    class="glass-panel p-8 md:p-10 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] group hover:shadow-[0_12px_40px_rgba(0,88,190,0.08)] transition-all duration-500 flex flex-col justify-between min-h-[360px] md:min-h-[400px]"
+    class="glass-panel p-6 md:p-8 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] group hover:shadow-[0_12px_40px_rgba(0,88,190,0.08)] transition-all duration-500 flex flex-col justify-between min-h-[300px] md:min-h-[340px]"
     :class="[
       isDark ? 'border border-white/8 hover:border-white/15' : 'border border-white/50',
       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
@@ -10,18 +10,18 @@
   >
     <div>
       <div
-        class="w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 transition-transform duration-300"
+        class="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center mb-5 md:mb-6 group-hover:scale-105 transition-transform duration-300"
         :class="iconBgClass"
       >
-        <span class="material-symbols-outlined text-3xl md:text-4xl" :class="iconColorClass">{{ icon }}</span>
+        <span class="material-symbols-outlined text-2xl md:text-3xl" :class="iconColorClass">{{ icon }}</span>
       </div>
-      <h3 class="text-2xl md:text-3xl font-headline font-bold mb-3 md:mb-4"
+      <h3 class="text-xl md:text-2xl font-headline font-bold mb-3"
         :class="isDark ? 'text-white' : 'text-slate-900'"
       >{{ title }}</h3>
-      <p class="leading-relaxed text-sm md:text-base" :class="isDark ? 'text-gray-400' : 'text-secondary'">{{ description }}</p>
+      <p class="leading-relaxed text-sm" :class="isDark ? 'text-gray-400' : 'text-secondary'">{{ description }}</p>
     </div>
     <button
-      class="mt-6 md:mt-8 flex items-center gap-2 text-primary font-bold group/btn text-sm md:text-base"
+      class="mt-6 min-h-11 w-fit px-3 -ml-3 rounded-lg flex items-center gap-2 text-primary font-bold group/btn text-sm md:text-base hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
       @click="$emit('action')"
     >
       {{ actionLabel }}
@@ -72,4 +72,3 @@ onMounted(() => {
 <style scoped>
 /* fix */
 </style>
-

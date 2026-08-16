@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FiGo</string>
+    <string name="title_activity_main">FiGo</string>
+    <string name="package_name">id.my.fikfikk.figo</string>
+    <string name="custom_url_scheme">id.my.fikfikk.figo</string>
+    <string name="calendar_widget_name">FiGo Calendar</string>
+    <string name="calendar_widget_description">Tanggal hari ini dan pasaran Jawa dari FiGo</string>
+</resources>

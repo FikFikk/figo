@@ -68,6 +68,31 @@
       >
         Tahun Hijriah {{ hijriYearRange }}
       </p>
+
+      <div v-if="isEstimatedHolidayYear"
+        class="mt-5 mx-auto max-w-2xl flex items-start gap-3 px-4 py-3 rounded-2xl border text-left"
+        :class="isDark
+          ? 'bg-amber-500/[0.06] border-amber-400/15 text-amber-100/65'
+          : 'bg-amber-50 border-amber-200/70 text-amber-800'"
+      >
+        <span class="material-symbols-outlined text-lg mt-0.5 flex-shrink-0" :class="isDark ? 'text-amber-400/70' : 'text-amber-600'">info</span>
+        <p class="text-[11px] sm:text-xs leading-relaxed">
+          Jadwal hari libur dan cuti bersama {{ year }} masih berupa estimasi berdasarkan perhitungan kalender dan pola tahun sebelumnya, bukan ketetapan resmi SKB Tiga Menteri. Data kalender akan diperbarui setelah SKB resmi tersedia.
+        </p>
+      </div>
+
+      <div v-if="canInstall || showIosHint" class="mt-3 flex justify-center">
+        <button v-if="canInstall" @click="install"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all hover:-translate-y-0.5"
+          :class="isDark ? 'bg-primary/15 text-primary-fixed-dim hover:bg-primary/25' : 'bg-primary/10 text-primary hover:bg-primary/15'"
+        >
+          <span class="material-symbols-outlined text-base">install_mobile</span>
+          Pasang FiGo di layar utama
+        </button>
+        <p v-else class="text-[11px] opacity-60">
+          Untuk memasang FiGo di iPhone: buka menu Share, lalu pilih <strong>Add to Home Screen</strong>.
+        </p>
+      </div>
     </div>
 
     <!-- 12 Months Grid -->
@@ -141,6 +166,7 @@ const props = defineProps<{
 const emit = defineEmits(['update:year'])
 
 const { isDark } = useColorMode()
+const { canInstall, showIosHint, install } = usePwaInstall()
 
 const isModalOpen = ref(false)
 const selectedDate = ref<Date | null>(null)
@@ -164,6 +190,9 @@ const isLeapYear = computed(() => {
   const y = props.year
   return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0
 })
+
+/** Tahun setelah data resmi terakhir masih menggunakan hasil estimasi. */
+const isEstimatedHolidayYear = computed(() => props.year >= 2027)
 
 /** Total libur nasional */
 const totalHolidays = computed(() => {

@@ -4,21 +4,24 @@
     <StatsCounter />
 
     <!-- Feature Bento Grid -->
-    <section id="tools" class="py-20 md:py-32 px-6 md:px-8 max-w-7xl mx-auto">
-      <div class="text-center mb-12 md:mb-16">
-        <div class="inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6"
+    <section id="tools" class="py-16 md:py-24 px-6 md:px-8 max-w-7xl mx-auto">
+      <div class="max-w-3xl mb-10 md:mb-12">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-md text-[11px] font-bold tracking-[0.16em] uppercase mb-4"
           :class="isDark ? 'bg-primary/15 text-primary' : 'bg-primary-fixed text-on-primary-fixed'"
         >
           Core Engine
         </div>
-        <h2 class="text-3xl md:text-5xl font-headline font-extrabold tracking-tight"
+        <h2 class="text-3xl md:text-5xl font-headline font-extrabold tracking-tight mb-3"
           :class="isDark ? 'text-white' : 'text-slate-900'"
         >
-          The Processing Suite
+          Start with a file task
         </h2>
+        <p class="max-w-2xl text-sm md:text-base leading-relaxed" :class="isDark ? 'text-gray-400' : 'text-secondary'">
+          The fastest path to convert, compress, download, or explore FiGo tools.
+        </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 max-w-7xl mx-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 max-w-7xl mx-auto">
         <ToolCard
           v-for="(tool, idx) in coreTools"
           :key="tool.title"
@@ -35,12 +38,12 @@
     </section>
 
     <!-- Ecosystem Section -->
-    <section class="py-24 px-6 md:px-8 max-w-7xl mx-auto border-t border-black/5 dark:border-white/5 relative overflow-hidden">
+    <section class="py-16 md:py-20 px-6 md:px-8 max-w-7xl mx-auto border-t border-black/5 dark:border-white/5 relative overflow-hidden">
       <!-- Subtle Background Glow -->
       <div class="absolute -top-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
       
-      <div class="mb-14 relative z-10">
-        <div class="inline-block px-4 py-1.5 rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase mb-5"
+      <div class="mb-10 relative z-10">
+        <div class="inline-flex px-3 py-1 rounded-md text-[10px] font-black tracking-[0.18em] uppercase mb-4"
           :class="isDark ? 'bg-tertiary/15 text-tertiary border border-tertiary/20' : 'bg-slate-100 text-slate-500'"
         >
           Ecosystem Hub
@@ -48,9 +51,9 @@
         <h2 class="text-3xl md:text-5xl font-headline font-black tracking-tight mb-4"
           :class="isDark ? 'text-white' : 'text-slate-900'"
         >
-          Lifestyle & Creative
+          More ways to use FiGo
         </h2>
-        <p class="text-secondary max-w-2xl text-base md:text-lg leading-relaxed">Sophisticated tools designed to integrate seamlessly into your daily high-performance workflow.</p>
+        <p class="text-secondary max-w-2xl text-sm md:text-base leading-relaxed">Explore focused tools for planning, creative work, research, and everyday utilities.</p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
@@ -58,37 +61,47 @@
           v-for="tool in ecosystemTools" 
           :key="tool.title"
           @click="router.push(tool.route)"
-          class="group relative p-8 rounded-2xl border border-black/[0.03] dark:border-white/[0.03] bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm hover:bg-white dark:hover:bg-slate-900 transition-all duration-500 cursor-pointer hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-2 overflow-hidden"
+          class="group relative p-6 rounded-2xl border border-black/[0.03] dark:border-white/[0.03] bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm hover:bg-white dark:hover:bg-slate-900 transition-all duration-300 cursor-pointer hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 overflow-hidden"
         >
           <!-- Hover Accent Gradient -->
           <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-          <div class="w-14 h-14 rounded-md mb-6 flex items-center justify-center text-3xl shadow-sm transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3" :class="tool.bg">
+          <div class="w-12 h-12 rounded-lg mb-5 flex items-center justify-center text-2xl shadow-sm transition-transform duration-300 group-hover:scale-105" :class="tool.bg">
             <span class="material-symbols-outlined">{{ tool.icon }}</span>
           </div>
-          <h3 class="font-headline font-black text-xl mb-2 transition-colors duration-300" :class="isDark ? 'text-white group-hover:text-primary' : 'text-slate-900 group-hover:text-primary'">{{ tool.title }}</h3>
+          <h3 class="font-headline font-black text-lg mb-2 transition-colors duration-300" :class="isDark ? 'text-white group-hover:text-primary' : 'text-slate-900 group-hover:text-primary'">{{ tool.title }}</h3>
           <p class="text-sm text-secondary leading-relaxed line-clamp-2 opacity-80">{{ tool.description }}</p>
           
-          <div class="mt-6 flex items-center text-[10px] font-black uppercase tracking-[0.2em] text-primary translate-x-[-10px] opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500">
+          <div class="mt-5 flex items-center text-[10px] font-black uppercase tracking-[0.18em] text-primary transition-all duration-300">
             Open Module <span class="material-symbols-outlined text-sm ml-2">north_east</span>
           </div>
         </div>
       </div>
 
       <!-- Mini Utilities Grid -->
-      <div class="mt-20 relative z-10">
-        <p class="text-center text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-8">Integrated Utilities</p>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div class="mt-16 md:mt-20 relative z-10">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-7">
+          <div>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-2">Quick tools</p>
+            <h3 class="font-headline text-xl md:text-2xl font-black" :class="isDark ? 'text-white' : 'text-slate-900'">Small tasks, done in seconds</h3>
+          </div>
+          <p class="text-sm text-secondary max-w-md">Useful utilities that run directly from your browser whenever you need them.</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
           <NuxtLink 
             v-for="tool in miniTools" 
             :key="tool.name"
             :to="tool.route"
-            class="flex items-center gap-4 p-5 rounded-2xl border border-black/[0.03] dark:border-white/[0.03] bg-black/[0.01] dark:bg-white/[0.01] hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/20 transition-all duration-300 group"
+            class="group min-h-[112px] p-4 rounded-2xl border border-black/[0.05] dark:border-white/[0.06] bg-white/50 dark:bg-white/[0.02] hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/25 hover:-translate-y-0.5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <div class="w-10 h-10 rounded-md bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all">
+            <div class="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all mb-3">
               <span class="material-symbols-outlined text-xl opacity-40 group-hover:text-primary group-hover:opacity-100 transition-all">{{ tool.icon }}</span>
             </div>
-            <span class="text-[11px] font-black uppercase tracking-widest opacity-50 group-hover:opacity-100 group-hover:text-primary transition-colors">{{ tool.name }}</span>
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <span class="text-xs font-black tracking-tight group-hover:text-primary transition-colors">{{ tool.name }}</span>
+              <span class="material-symbols-outlined text-sm text-primary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all">arrow_forward</span>
+            </div>
+            <p class="text-[11px] leading-relaxed text-secondary">{{ tool.description }}</p>
           </NuxtLink>
         </div>
       </div>
@@ -204,11 +217,11 @@ const ecosystemTools = [
 ]
 
 const miniTools = [
-  { name: 'Color Palette', icon: 'palette', route: '/tools/color-palette' },
-  { name: 'Link Safety', icon: 'shield_lock', route: '/tools/link-safety' },
-  { name: 'File Metadata', icon: 'analytics', route: '/tools/file-metadata' },
-  { name: 'Secure Pass', icon: 'vpn_key', route: '/tools/secure-generator' },
-  { name: 'QR Engine', icon: 'qr_code_2', route: '/tools/qr-engine' },
+  { name: 'Color Palette', description: 'Find matching colors.', icon: 'palette', route: '/tools/color-palette' },
+  { name: 'Link Safety', description: 'Check a link before opening.', icon: 'shield_lock', route: '/tools/link-safety' },
+  { name: 'File Metadata', description: 'Inspect hidden file details.', icon: 'analytics', route: '/tools/file-metadata' },
+  { name: 'Secure Password', description: 'Create a stronger password.', icon: 'vpn_key', route: '/tools/secure-generator' },
+  { name: 'QR Generator', description: 'Turn text or links into QR.', icon: 'qr_code_2', route: '/tools/qr-engine' },
 ]
 
 function handleToolAction(toolName: string) {

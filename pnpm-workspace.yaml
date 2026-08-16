@@ -1,0 +1,8 @@
+allowBuilds:
+  '@parcel/watcher': false
+  es5-ext: true
+  esbuild: true
+  exifreader: true
+  ffmpeg-static: true
+  sharp: true
+  youtube-dl-exec: true
