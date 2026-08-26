@@ -3,6 +3,7 @@ import { DEFAULT_READER_SETTINGS } from '~/app/types/articles'
 
 const KEYS = {
   pins: 'figo_pinned_articles',
+  sort: 'figo_art_sort',
   progress: 'figo_article_progress_map',
   settings: 'figo_reader_settings',
   highlights: 'figo_article_highlights',
@@ -29,6 +30,8 @@ export function useArticleStorage() {
   return {
     loadPins: () => readJson<string[]>(KEYS.pins, []),
     savePins: (pins: string[]) => writeJson(KEYS.pins, pins),
+    loadSort: () => readJson<string>(KEYS.sort, 'new_old'),
+    saveSort: (sort: string) => writeJson(KEYS.sort, sort),
     loadProgress: () => readJson<Record<string, ReadingProgress>>(KEYS.progress, {}),
     saveProgress: (progress: Record<string, ReadingProgress>) => writeJson(KEYS.progress, progress),
     loadSettings: () => ({
