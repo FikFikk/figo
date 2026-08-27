@@ -49,7 +49,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ArticleHighlight, ReaderSettings } from '~/types/articles'
+import ReaderOutline from '~/components/articles/ReaderOutline.vue'
+import ReaderSettings from '~/components/articles/ReaderSettings.vue'
+import type { ArticleHighlight, ReaderSettings as ReaderSettingsType } from '~/types/articles'
 
 defineProps<{
   title: string
@@ -61,7 +63,7 @@ defineProps<{
   progressPercent: number
   outline: Array<{ page: number; title: string }>
   highlights: ArticleHighlight[]
-  settings: ReaderSettings
+  settings: ReaderSettingsType
 }>()
 const emit = defineEmits<{ 'previous-page': []; 'next-page': []; 'go-to-page': [page: number]; 'go-to-highlight': [highlight: ArticleHighlight]; 'update:settings': [settings: ReaderSettings]; 'reset-settings': [] }>()
 const showOutline = ref(false)

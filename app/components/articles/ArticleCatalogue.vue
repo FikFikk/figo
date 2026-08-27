@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+import ArticleCard from '~/components/articles/ArticleCard.vue'
 import type { ArticleSummary, ReadingProgress } from '~/types/articles'
 
 defineProps<{

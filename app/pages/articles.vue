@@ -20,8 +20,36 @@
       <div v-if="loading" class="grid min-h-64 place-items-center" role="status"><div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300"><span class="size-4 animate-pulse rounded-full bg-emerald-600" />Memuat arsip…</div></div>
 
       <template v-else-if="!selectedDoc">
-        <section class="mb-8 rounded-2xl border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-900/30"><div class="max-w-4xl"><h2 class="font-serif text-2xl font-semibold text-slate-950 dark:text-white">Telusuri koleksi</h2><p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Gunakan pencarian, kategori, atau daftar simpanan untuk menemukan bacaan.</p><ArticleFilters class="mt-5" :categories="categories" :search-query="catalogue.searchQuery.value" :selected-category="catalogue.selectedCategory.value" :sort-mode="catalogue.sortMode.value" :result-count="catalogue.filteredDocuments.value.length" @update:search-query="catalogue.searchQuery.value = $event" @update:selected-category="catalogue.selectedCategory.value = $event" @update:sort-mode="catalogue.sortMode.value = $event" @reset="catalogue.resetFilters" /></div></section>
-        <ArticleCatalogue :articles="catalogue.paginatedDocuments.value" :pinned-ids="pinnedIds" :progress="progress" :page="catalogue.currentGridPage.value" :total-pages="catalogue.totalGridPages.value" @toggle-pin="togglePin" @update:page="goToCataloguePage" @previous-page="catalogue.prevGridPage" @next-page="catalogue.nextGridPage" @reset="catalogue.resetFilters" />
+        <section class="mb-8 rounded-2xl border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-900/30">
+          <div class="max-w-4xl">
+            <h2 class="font-serif text-2xl font-semibold text-slate-950 dark:text-white">Telusuri koleksi</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Gunakan pencarian, kategori, atau daftar simpanan untuk menemukan bacaan.</p>
+            <ArticleFilters
+              class="mt-5"
+              :categories="categories"
+              :search-query="searchQuery"
+              :selected-category="selectedCategory"
+              :sort-mode="sortMode"
+              :result-count="filteredDocuments.length"
+              @update:search-query="searchQuery = $event"
+              @update:selected-category="selectedCategory = $event"
+              @update:sort-mode="sortMode = $event"
+              @reset="resetFilters"
+            />
+          </div>
+        </section>
+        <ArticleCatalogue
+          :articles="paginatedDocuments"
+          :pinned-ids="pinnedIds"
+          :progress="progress"
+          :page="currentGridPage"
+          :total-pages="totalGridPages"
+          @toggle-pin="togglePin"
+          @update:page="goToCataloguePage"
+          @previous-page="prevGridPage"
+          @next-page="nextGridPage"
+          @reset="resetFilters"
+        />
       </template>
 
       <ArticleReader
@@ -58,6 +86,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ArticleFilters from '~/components/articles/ArticleFilters.vue'
+import ArticleCatalogue from '~/components/articles/ArticleCatalogue.vue'
+import ArticleReader from '~/components/articles/ArticleReader.vue'
 import { ARTICLE_DOCUMENTS } from '~/data/articleDocuments'
 import { useArticleCatalogue } from '~/composables/useArticleCatalogue'
 import { useArticleReading } from '~/composables/useArticleReading'
@@ -75,7 +106,20 @@ const currentPage = ref(1)
 const loading = ref(false)
 const pinnedIds = ref<string[]>([])
 const categories = ['Semua', 'Filsafat & Sastra', 'Babad & Sejarah', 'Suluk & Tasawuf', 'Artikel Kajian']
-const catalogue = useArticleCatalogue(documents, pinnedIds)
+const {
+  searchQuery,
+  selectedCategory,
+  sortMode,
+  currentGridPage,
+  cataloguePage,
+  filteredDocuments,
+  paginatedDocuments,
+  totalGridPages,
+  resetFilters,
+  nextGridPage,
+  prevGridPage,
+} = useArticleCatalogue(documents, pinnedIds)
+
 const totalPages = computed(() => selectedDoc.value?.data?.arsip_pengetahuan?.length || 0)
 const currentSection = computed(() => selectedDoc.value?.data?.arsip_pengetahuan?.[currentPage.value - 1] || null)
 const { readerSettings, progress, docHighlights, loadReaderState, attachProgressTracking, detachProgressTracking, calculateProgress, resetReaderSettings, saveHighlight, removeHighlight } = useArticleReading(selectedDoc, currentPage, totalPages)
@@ -128,7 +172,7 @@ const togglePin = (id: string) => {
   pinnedIds.value = pinnedIds.value.includes(id) ? pinnedIds.value.filter((item) => item !== id) : [...pinnedIds.value, id]
   storage.savePins(pinnedIds.value)
 }
-const goToCataloguePage = (page: number) => { catalogue.currentGridPage.value = page; window.scrollTo({ top: 0, behavior: 'smooth' }) }
+const goToCataloguePage = (page: number) => { currentGridPage.value = page; window.scrollTo({ top: 0, behavior: 'smooth' }) }
 const scrollReaderTop = () => nextTick(() => document.querySelector('#baca-top')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
 const goToPage = (page: number) => { currentPage.value = Math.min(totalPages.value, Math.max(1, page)); scrollReaderTop() }
 const nextPage = () => goToPage(currentPage.value + 1)
@@ -181,7 +225,7 @@ const jumpToHighlight = (highlight: ArticleHighlight) => {
 
 onMounted(async () => {
   pinnedIds.value = storage.loadPins()
-  catalogue.sortMode.value = storage.loadSort()
+  sortMode.value = storage.loadSort()
   loadReaderState()
   attachProgressTracking()
   document.addEventListener('selectionchange', handleTextSelection)
@@ -190,7 +234,7 @@ onMounted(async () => {
 onUnmounted(() => { detachProgressTracking(); document.removeEventListener('selectionchange', handleTextSelection) })
 watch(() => route.query.id, openFromRoute)
 watch([selectedDoc, currentPage], () => { if (selectedDoc.value) replaceReaderQuery() })
-watch(() => catalogue.sortMode.value, (sort) => storage.saveSort(sort))
+watch(sortMode, (sort) => storage.saveSort(sort))
 watch(currentPage, () => setTimeout(calculateProgress, 300))
 </script>
 
