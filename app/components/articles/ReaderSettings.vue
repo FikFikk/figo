@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ReaderSettings as Settings } from '~/app/types/articles'
+import type { ReaderSettings as Settings } from '~/types/articles'
 
 const props = defineProps<{ settings: Settings }>()
 const emit = defineEmits<{ 'update:settings': [settings: Settings]; reset: [] }>()

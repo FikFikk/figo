@@ -58,11 +58,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ARTICLE_DOCUMENTS } from '~/app/data/articleDocuments'
-import { useArticleCatalogue } from '~/app/composables/useArticleCatalogue'
-import { useArticleReading } from '~/app/composables/useArticleReading'
-import { useArticleStorage } from '~/app/composables/useArticleStorage'
-import type { ArticleData, ArticleHighlight, ArticleSummary } from '~/app/types/articles'
+import { ARTICLE_DOCUMENTS } from '~/data/articleDocuments'
+import { useArticleCatalogue } from '~/composables/useArticleCatalogue'
+import { useArticleReading } from '~/composables/useArticleReading'
+import { useArticleStorage } from '~/composables/useArticleStorage'
+import type { ArticleData, ArticleHighlight, ArticleSummary } from '~/types/articles'
 
 type SelectedArticle = ArticleSummary
 

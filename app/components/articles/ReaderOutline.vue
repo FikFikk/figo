@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ArticleHighlight } from '~/app/types/articles'
+import type { ArticleHighlight } from '~/types/articles'
 
 defineProps<{
   items: Array<{ page: number; title: string }>

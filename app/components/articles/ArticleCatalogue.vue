@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ArticleSummary, ReadingProgress } from '~/app/types/articles'
+import type { ArticleSummary, ReadingProgress } from '~/types/articles'
 
 defineProps<{
   articles: ArticleSummary[]

@@ -1,5 +1,5 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import type { ArticleSummary } from '~/app/types/articles'
+import type { ArticleSummary } from '~/types/articles'
 
 const PAGE_SIZE = 9
 const DEFAULT_CATEGORY = 'Semua'

@@ -1,4 +1,4 @@
-import type { ArticleSummary } from '~/app/types/articles'
+import type { ArticleSummary } from '~/types/articles'
 
 export const ARTICLE_DOCUMENTS: ArticleSummary[] = [
   {

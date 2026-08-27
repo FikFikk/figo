@@ -49,7 +49,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ArticleHighlight, ReaderSettings } from '~/app/types/articles'
+import type { ArticleHighlight, ReaderSettings } from '~/types/articles'
 
 defineProps<{
   title: string

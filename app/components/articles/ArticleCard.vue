@@ -44,7 +44,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ArticleSummary, ReadingProgress } from '~/app/types/articles'
+import type { ArticleSummary, ReadingProgress } from '~/types/articles'
 
 const props = defineProps<{
   article: ArticleSummary

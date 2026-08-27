@@ -1,5 +1,5 @@
-import type { ArticleHighlight, ReaderSettings, ReadingProgress } from '~/app/types/articles'
-import { DEFAULT_READER_SETTINGS } from '~/app/types/articles'
+import type { ArticleHighlight, ReaderSettings, ReadingProgress } from '~/types/articles'
+import { DEFAULT_READER_SETTINGS } from '~/types/articles'
 
 const KEYS = {
   pins: 'figo_pinned_articles',

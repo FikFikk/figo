@@ -1,7 +1,7 @@
 import { computed, onUnmounted, ref, watch, type Ref } from 'vue'
-import type { ArticleHighlight, ArticleSummary, ReaderSettings, ReadingProgress } from '~/app/types/articles'
-import { DEFAULT_READER_SETTINGS } from '~/app/types/articles'
-import { useArticleStorage } from '~/app/composables/useArticleStorage'
+import type { ArticleHighlight, ArticleSummary, ReaderSettings, ReadingProgress } from '~/types/articles'
+import { DEFAULT_READER_SETTINGS } from '~/types/articles'
+import { useArticleStorage } from '~/composables/useArticleStorage'
 
 export function useArticleReading(
   selectedDoc: Ref<ArticleSummary | null>,
