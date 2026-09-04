@@ -787,6 +787,14 @@ function downloadTwitterMedia(mediaUrl: string, type: string, username?: string,
 
   increment()
 }
+
+// Bersihkan polling background saat pengguna berpindah halaman
+onUnmounted(() => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+  }
+})
 </script>
 
 <style scoped>

@@ -8,6 +8,33 @@ export default defineNuxtConfig({
     port: 5000
   },
 
+  // Pengaturan eksperimental untuk navigasi instan dan ekstraksi payload ringan
+  experimental: {
+    viewTransition: true,
+    payloadExtraction: true,
+  },
+
+  // Aturan caching, prerendering rute, dan header keamanan global
+  routeRules: {
+    '/**': {
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+      },
+    },
+    '/_nuxt/**': {
+      headers: {
+        'cache-control': 'public, max-age=31536000, immutable',
+      },
+    },
+    '/': { prerender: true },
+    '/tools': { prerender: true },
+    '/tools/**': { isr: 3600 },
+    '/kalender/**': { isr: 86400 },
+  },
+
   // Konfigurasi server-only (tidak pernah dikirim ke client).
   // Set lewat env: NUXT_STREAM_PIN dan NUXT_STREAM_SECRET
   runtimeConfig: {
@@ -18,6 +45,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    compressPublicAssets: true,
     rollupConfig: {
       output: {
         plugins: [
@@ -106,6 +134,9 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap' },
       ],
     },
     pageTransition: { name: 'page', mode: 'out-in' },
@@ -181,7 +212,7 @@ export default defineNuxtConfig({
       periodicSyncForUpdates: 3600
     },
     devOptions: {
-      enabled: true,
+      enabled: false,
       type: 'module'
     }
   },

@@ -83,6 +83,26 @@ function extractRootDomain(hostname: string): string {
   return parts.slice(-2).join('.')
 }
 
+// Memvalidasi apakah host mengarah ke IP privat, loopback, atau metadata lokal (proteksi SSRF)
+function isPrivateHost(hostname: string): boolean {
+  const lower = hostname.toLowerCase()
+  if (lower === 'localhost' || lower === '127.0.0.1' || lower === '0.0.0.0' || lower === '::1') return true
+  if (lower.endsWith('.local') || lower.endsWith('.internal') || lower.endsWith('.localhost')) return true
+  
+  const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/
+  const match = lower.match(ipv4Regex)
+  if (match) {
+    const octets = match.slice(1, 5).map(Number)
+    if (octets[0] === 10) return true
+    if (octets[0] === 127) return true
+    if (octets[0] === 169 && octets[1] === 254) return true
+    if (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) return true
+    if (octets[0] === 192 && octets[1] === 168) return true
+    if (octets[0] === 0) return true
+  }
+  return false
+}
+
 // ==================
 // ANALYSIS FUNCTIONS
 // ==================
@@ -585,6 +605,12 @@ export default defineEventHandler(async (event) => {
   }
 
   const hostname = parsedUrl.hostname.replace(/^www\./, '')
+
+  // Proteksi SSRF: Cegah pemindaian port dan host lokal/internal
+  if (isPrivateHost(hostname)) {
+    throw createError({ statusCode: 400, message: 'URL mengarah ke jaringan privat/lokal dan tidak diizinkan.' })
+  }
+
   const allThreats: ThreatFinding[] = []
 
   // 1. SSL check

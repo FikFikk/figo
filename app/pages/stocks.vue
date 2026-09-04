@@ -489,4 +489,12 @@ function onMoversTabChange(type: string) {
   moversData.value = null
   loadMovers(type)
 }
+
+// Bersihkan interval polling latar belakang saat pengguna meninggalkan halaman
+onUnmounted(() => {
+  if (realTimeInterval) {
+    clearInterval(realTimeInterval)
+    realTimeInterval = null
+  }
+})
 </script>

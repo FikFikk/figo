@@ -91,4 +91,14 @@
 | Response | HTTP 200 + JSON `{foods: Food[], total: number, page: number, ...}` |
 | Notes | Proxy ke HuggingFace OpenFoodFacts dataset. Melakukan transformasi data nutrisi dan mapping image URL ke OpenFoodFacts CDN. |
 
+| Field             | Detail                                                                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Method + Endpoint | POST /api/check-link                                                                                                                                                           |
+| Auth Required     | No (Public API)                                                                                                                                                                 |
+| Headers           | `Content-Type: application/json`                                                                                                                                                |
+| Query Params      | N/A                                                                                                                                                                             |
+| Request Body      | `url`: string (wajib, URL yang akan dianalisis)                                                                                                                                 |
+| Response          | HTTP 200 + JSON `{url: string, finalUrl: string, status: number, ssl: boolean, redirected: boolean, threats: ThreatFinding[], score: number, level: string, summary: string, ...}` |
+| Notes             | Analisis ancaman phishing, typosquatting, reputasi domain, SSL, dan DNS. Memiliki proteksi SSRF: menolak URL privat, loopback (127.0.0.1/localhost), dan metadata cloud.       |
+
 No scheduled tasks (cron jobs) configured.

@@ -2,9 +2,7 @@
    FiGo — Ethereal Flux Design System
    Light + Dark theme, glassmorphism, minimal
    ======================================= */
-
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
-
+/* Font Material Symbols dimuat secara non-blocking via head.link dengan preconnect di nuxt.config.ts */
 /* Material Symbols */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
@@ -90,13 +88,13 @@ html.light {
 .dark ::-webkit-scrollbar-thumb { background: #3a3f52; }
 .dark ::-webkit-scrollbar-thumb:hover { background: #5a5f7a; }
 
-/* Page transitions */
+/* Transisi halaman instan dan halus (snappy & non-lagging) */
 .page-enter-active,
 .page-leave-active {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.page-enter-from { opacity: 0; transform: translateY(10px); }
-.page-leave-to { opacity: 0; transform: translateY(-10px); }
+.page-enter-from { opacity: 0; transform: translateY(4px); }
+.page-leave-to { opacity: 0; transform: translateY(-4px); }
 
 /* Matrix canvas */
 .matrix-canvas {

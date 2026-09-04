@@ -54,19 +54,25 @@ const meshCanvas = ref<HTMLCanvasElement | null>(null)
 let watchdogInterval: ReturnType<typeof setInterval> | null = null
 let rafId: number = 0
 let destroyed = false
+let isVisible = true
+let resizeHandler: (() => void) | null = null
+let observer: IntersectionObserver | null = null
 
 // =============================================
-// 3D WIREFRAME MESH — Optimized + Always Smooth
+// 3D WIREFRAME MESH — Dioptimasi & Efisien GPU/CPU
 // =============================================
 function initWireframeMesh() {
-  const canvas = meshCanvas.value!
-  const ctx = canvas.getContext('2d', { alpha: true })!
+  const canvas = meshCanvas.value
+  if (!canvas) return
+  const ctx = canvas.getContext('2d', { alpha: true })
+  if (!ctx) return
 
   let dpr = 1
   let W = 0
   let H = 0
 
   function resize() {
+    if (!canvas) return
     dpr = window.devicePixelRatio || 1
     W = canvas.offsetWidth
     H = canvas.offsetHeight
@@ -76,9 +82,10 @@ function initWireframeMesh() {
   }
   
   resize()
-  window.addEventListener('resize', resize)
+  resizeHandler = resize
+  window.addEventListener('resize', resizeHandler, { passive: true })
 
-  // Mesh parameters
+  // Parameter mesh
   const COLS = 50
   const ROWS = 25
   const SP = 14
@@ -93,24 +100,22 @@ function initWireframeMesh() {
   let lastRafTime = 0
 
   function draw() {
-    if (destroyed) return
+    if (destroyed || !isVisible) return
     const t = (performance.now() - startTime) * 0.0008
     const rx = 0.55, ry = t * 0.1 + 0.2
     const cRx = Math.cos(rx), sRx = Math.sin(rx), cRy = Math.cos(ry), sRy = Math.sin(ry)
 
-    // Generate points: Complex multi-harmonic fluid waves
+    // Perhitungan kalkulasi titik gelombang organik
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const u = (c - halfC) * SP
         const v = (r - halfR) * SP
 
-        // Pure Organic Waves
         const py = Math.sin(u * 0.015 + t * 1.2) * 45
                  + Math.cos(v * 0.025 + t * 0.8) * 35
                  + Math.sin((u + v) * 0.01 + t * 1.5) * 20
         const pz = v + Math.sin(u * 0.02 + t) * 20
 
-        // Final 3D Transformation
         const y1 = py * cRx - pz * sRx
         const z1 = py * sRx + pz * cRx
         const x2 = u * cRy + z1 * sRy
@@ -126,9 +131,8 @@ function initWireframeMesh() {
 
     ctx.clearRect(0, 0, W, H)
 
-    // Vibrant 'Emerald Matrix' theme for Dark Mode
     const dark = isDark.value
-    const c1 = dark ? '0, 255, 136' : '0, 88, 190' // Emerald vs Blue
+    const c1 = dark ? '0, 255, 136' : '0, 88, 190'
     const c2 = dark ? '180, 255, 220' : '0, 180, 160'
 
     const drawBatch = (type: 'h' | 'v' | 'd', alpha: number, weight: number) => {
@@ -153,12 +157,12 @@ function initWireframeMesh() {
       ctx.stroke()
     }
 
-    // Layered Depth Rendering
+    // Gambar layer garis kedalaman
     drawBatch('h', 0.25, 0.8)
     drawBatch('v', 0.2, 0.6)
     drawBatch('d', 0.08, 0.4)
 
-    // Node Highlights (Glows & Pulsing)
+    // Highlight node berdenyut
     for (let r = 0; r < ROWS; r += 3) {
       for (let c = 0; c < COLS; c += 4) {
         const idx = r * COLS + c
@@ -181,15 +185,33 @@ function initWireframeMesh() {
     rafId = requestAnimationFrame(draw)
   }
 
+  // Mulai animasi jika elemen terlihat
   rafId = requestAnimationFrame(draw)
 
+  // Watchdog pemulihan frame saat tab kembali aktif
   watchdogInterval = setInterval(() => {
-    if (destroyed) return
-    if (performance.now() - lastRafTime > 50) {
+    if (destroyed || !isVisible) return
+    if (performance.now() - lastRafTime > 80) {
       cancelAnimationFrame(rafId)
       rafId = requestAnimationFrame(draw)
     }
-  }, 30)
+  }, 100)
+
+  // Jeda render otomatis saat hero section berada di luar viewport
+  if (typeof IntersectionObserver !== 'undefined' && canvas) {
+    observer = new IntersectionObserver((entries) => {
+      const entry = entries[0]
+      if (entry) {
+        isVisible = entry.isIntersecting
+        if (isVisible && !destroyed) {
+          lastRafTime = performance.now()
+          cancelAnimationFrame(rafId)
+          rafId = requestAnimationFrame(draw)
+        }
+      }
+    }, { threshold: 0.05 })
+    observer.observe(canvas)
+  }
 }
 
 onMounted(() => {
@@ -198,7 +220,19 @@ onMounted(() => {
 
 onUnmounted(() => {
   destroyed = true
-  if (watchdogInterval) clearInterval(watchdogInterval)
+  isVisible = false
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler)
+    resizeHandler = null
+  }
+  if (watchdogInterval) {
+    clearInterval(watchdogInterval)
+    watchdogInterval = null
+  }
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
   cancelAnimationFrame(rafId)
 })
 </script>
