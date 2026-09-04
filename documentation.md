@@ -49,7 +49,7 @@ graph TD
 | JSON-LD WebSite | `app/app.vue`                                           | Schema.org WebSite + SearchAction untuk sitelinks            |
 | JSON-LD WebApp  | `app/pages/index.vue`                                   | Schema.org WebApplication untuk rich results                 |
 | JSON-LD FAQ     | `app/pages/download.vue`, `compress.vue`, `convert.vue` | FAQPage schema untuk featured snippets                       |
-| Sitemap         | `public/sitemap.xml`                                    | Semua halaman publik dengan priority dan changefreq          |
+| Sitemap         | `public/sitemap.xml`                                    | Semua halaman publik dengan priority dan changefreq (termasuk katalog `/tools`) |
 | Robots          | `public/robots.txt`                                     | Allow all, Disallow /api/, Sitemap reference                 |
 | Per-Page SEO    | Semua `pages/*.vue`                                     | useSeoMeta() dengan keyword-rich title & description         |
 | Dynamic SEO     | `pages/tools/[slug].vue`                                | SEO meta berubah berdasarkan slug aktif                      |

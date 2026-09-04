@@ -61,6 +61,13 @@
     <priority>0.65</priority>
   </url>
 
+  <!-- Tools Catalog -->
+  <url>
+    <loc>https://go.fikfikk.my.id/tools</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
   <!-- Mini Tools -->
   <url>
     <loc>https://go.fikfikk.my.id/tools/color-palette</loc>
