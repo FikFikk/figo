@@ -48,12 +48,14 @@
         </div>
         <button
           class="px-6 py-3 rounded-xs font-headline font-black text-xs uppercase tracking-wider transition-all border flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-          :class="isDark 
-            ? 'bg-white text-neutral-950 border-white hover:bg-neutral-200' 
-            : 'bg-neutral-950 text-white border-neutral-950 hover:bg-neutral-800'"
+          :class="[
+            isDark 
+              ? 'bg-white text-neutral-950 border-white hover:bg-neutral-200' 
+              : 'bg-neutral-950 text-white border-neutral-950 hover:bg-neutral-800',
+            (!url.trim() || isLoading) ? 'opacity-50 cursor-not-allowed' : ''
+          ]"
           @click="fetchInfo"
           :disabled="!url.trim() || isLoading"
-          :class="{ 'opacity-50 cursor-not-allowed': !url.trim() || isLoading }"
         >
           <span v-if="isLoading" class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
           <span v-else class="material-symbols-outlined text-sm">search</span>
