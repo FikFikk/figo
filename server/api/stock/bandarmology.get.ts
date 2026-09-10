@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Parameter symbol diperlukan' })
   }
 
-  const sym = symbol.trim().toUpperCase()
+  const sym = symbol.trim().toUpperCase().replace(/^IDX:/i, '').replace(/\.JK$/i, '')
 
   return cachedFetch(`stock:bandarmology:${sym}`, CACHE_TTL.MEDIUM, async () => {
     // Fetch akumulasi dan smart money secara paralel

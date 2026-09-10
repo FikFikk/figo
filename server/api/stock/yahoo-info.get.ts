@@ -10,8 +10,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Parameter symbol diperlukan' })
   }
 
-  const sym = symbol.trim().toUpperCase()
-  const yahooSymbol = sym.endsWith('.JK') ? sym : `${sym}.JK`
+  const cleanSym = symbol.trim().toUpperCase().replace(/^IDX:/i, '').replace(/\.JK$/i, '')
+  const sym = cleanSym
+  const yahooSymbol = `${cleanSym}.JK`
   const cacheKey = `yahoo:info:${yahooSymbol}`
 
   return cachedFetch(cacheKey, CACHE_TTL.REALTIME, async () => {

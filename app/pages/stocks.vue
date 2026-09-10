@@ -321,10 +321,12 @@ const loadingInsights = ref(false)
 const loadingMovers = ref(false)
 
 async function onSelectStock(stock: any) {
-  const symbol = stock.symbol || stock.code || ''
+  let symbol = stock.symbol || stock.code || ''
   if (!symbol) return
 
-  selectedSymbol.value = symbol.toUpperCase()
+  // Clean symbol to pure ticker format (e.g. FUTR, BBCA)
+  symbol = symbol.trim().toUpperCase().replace(/^IDX:/i, '').replace(/\.JK$/i, '')
+  selectedSymbol.value = symbol
   globalError.value = ''
   
   router.replace({ query: { symbol: selectedSymbol.value } })

@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Parameter symbol diperlukan' })
   }
 
-  const sym = symbol.trim().toUpperCase()
+  const sym = symbol.trim().toUpperCase().replace(/^IDX:/i, '').replace(/\.JK$/i, '')
 
   return cachedFetch(`stock:technical:${sym}`, CACHE_TTL.MEDIUM, async () => {
     return fetchWithRetry(`${IDX_BASE_URL}/api/analysis/technical/${sym}`, {

@@ -17,9 +17,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Parameter symbol diperlukan' })
   }
 
-  const sym = symbol.trim().toUpperCase()
+  const cleanSym = symbol.trim().toUpperCase().replace(/^IDX:/i, '').replace(/\.JK$/i, '')
+  const sym = cleanSym
   // Tambah suffix .JK untuk saham Indonesia di Yahoo Finance
-  const yahooSymbol = sym.endsWith('.JK') ? sym : `${sym}.JK`
+  const yahooSymbol = `${cleanSym}.JK`
   const intv = interval || '1d'
   const rng = range || '3mo'
 
