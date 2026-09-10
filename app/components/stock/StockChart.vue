@@ -1,36 +1,36 @@
 <template>
-  <div class="rounded-md border overflow-hidden transition-colors"
+  <div class="border overflow-hidden transition-all duration-200"
     :class="[
-      isFullscreen ? 'fixed inset-0 z-[99999] w-screen h-screen flex flex-col p-2 sm:p-4 bg-[#090b10] rounded-none border-none' : 'relative',
-      isDark ? 'bg-[#0d1117] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'
+      isFullscreen ? 'fixed inset-0 z-[99999] w-screen h-screen flex flex-col p-2 sm:p-4 bg-[#08090d] rounded-none border-none' : 'relative rounded-2xl',
+      isDark ? 'bg-[#0d0f17]/90 border-white/[0.08] shadow-2xl' : 'bg-white border-slate-200 shadow-sm'
     ]"
   >
-    <!-- Swiss Terminal Header -->
+    <!-- Linear Terminal Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 border-b"
-      :class="isDark ? 'border-neutral-800' : 'border-neutral-200'"
+      :class="isDark ? 'border-white/[0.06]' : 'border-slate-100'"
     >
       <div class="flex items-center gap-2.5 shrink-0">
-        <span class="px-2 py-0.5 rounded-xs text-[9px] font-mono font-bold uppercase tracking-widest border"
-          :class="isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-neutral-100 border-neutral-300 text-neutral-700'"
+        <span class="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase tracking-widest border"
+          :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'"
         >
-          SYS.01 // OHLCV
+          OHLCV TERMINAL
         </span>
-        <h3 class="font-headline font-black text-sm uppercase tracking-tight" :class="isDark ? 'text-white' : 'text-neutral-900'">
-          Chart Terminal
+        <h3 class="font-headline font-bold text-sm uppercase tracking-tight" :class="isDark ? 'text-white' : 'text-slate-900'">
+          Interactive Chart
         </h3>
-        <span v-if="data?.length" class="text-[10px] font-mono text-neutral-400 hidden md:inline">
-          // 1 CANDLE = {{ activeCandle }}
+        <span v-if="data?.length" class="text-[10px] font-mono opacity-50 hidden md:inline">
+          // {{ activeCandle }} per candle
         </span>
       </div>
 
       <!-- Timeframe Selector -->
       <div class="flex w-full sm:w-auto flex-wrap items-center justify-between sm:justify-end gap-1.5 font-mono text-[10px]">
-        <div class="flex flex-wrap items-center gap-1">
+        <div class="flex flex-wrap items-center gap-1 p-1 rounded-xl border" :class="isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-slate-100/70 border-slate-200/60'">
           <button v-for="p in periods" :key="p.interval" @click="changePeriod(p.interval)"
-            class="px-2.5 py-1 rounded-md uppercase font-bold tracking-wider transition-all border cursor-pointer"
+            class="px-2.5 py-1 rounded-lg uppercase font-bold tracking-wider transition-all cursor-pointer"
             :class="activePeriod === p.interval
-              ? (isDark ? 'bg-white text-neutral-950 border-white font-black' : 'bg-neutral-950 text-white border-neutral-950 font-black')
-              : (isDark ? 'bg-neutral-900/80 text-neutral-400 border-neutral-800 hover:border-neutral-600' : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:border-neutral-400')"
+              ? (isDark ? 'bg-white text-slate-950 font-black shadow-xs' : 'bg-slate-900 text-white font-black shadow-xs')
+              : (isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-600 hover:text-slate-950 hover:bg-white/60')"
           >
             {{ p.label }}
           </button>
@@ -98,57 +98,57 @@
         </template>
       </div>
 
-      <!-- Type Toggle, Pattern Analyzer & Fullscreen (Swiss Modular Toolbar) -->
-      <div v-if="data?.length" class="absolute bottom-3 right-3 flex items-center backdrop-blur-md rounded-md p-1 z-30 border shadow-md font-mono text-[10px]"
-        :class="isDark ? 'bg-neutral-900/95 border-neutral-700' : 'bg-white/95 border-neutral-300'"
+      <!-- Type Toggle, Pattern Analyzer, Zoom & Fullscreen Toolbar (Linear Minimalist Bar) -->
+      <div v-if="data?.length" class="absolute bottom-3 right-3 flex items-center backdrop-blur-xl rounded-xl p-1 z-30 border shadow-2xl font-mono text-[10px]"
+        :class="isDark ? 'bg-[#0a0c14]/90 border-white/[0.12] text-slate-200' : 'bg-white/95 border-slate-200 text-slate-800 shadow-slate-300/40'"
       >
         <!-- Pola Button -->
-        <button @click="analyzeChartPatterns" class="h-6 px-2.5 flex items-center justify-center gap-1.5 rounded-xs transition-all border border-transparent font-bold cursor-pointer" 
-           :class="isAnalyzingPattern ? 'animate-pulse text-purple-400' : detectedPatterns.length ? 'bg-purple-600 text-white' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'"
+        <button @click="analyzeChartPatterns" class="h-6 px-2.5 flex items-center justify-center gap-1.5 rounded-lg transition-all border border-transparent font-semibold cursor-pointer" 
+           :class="isAnalyzingPattern ? 'animate-pulse text-purple-400' : detectedPatterns.length ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'"
            title="Deteksi Pola Chart & Price Action Otomatis">
            <span class="material-symbols-outlined text-[14px]">draw</span>
            <span class="text-[9px] font-bold uppercase tracking-wider">{{ detectedPatterns.length ? 'POLA AKTIF' : 'DETEKSI POLA' }}</span>
         </button>
-        <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
+        <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-white/[0.08]' : 'bg-slate-200'"></div>
 
         <!-- Candle / Line Toggle -->
-        <button @click="chartType = 'candle'" class="w-6 h-6 flex items-center justify-center rounded-xs transition-all cursor-pointer"
-          :class="chartType === 'candle' ? (isDark ? 'bg-white text-neutral-950 font-bold shadow-xs' : 'bg-neutral-950 text-white font-bold shadow-xs') : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
+        <button @click="chartType = 'candle'" class="w-6 h-6 flex items-center justify-center rounded-lg transition-all cursor-pointer"
+          :class="chartType === 'candle' ? (isDark ? 'bg-white text-slate-950 font-bold shadow-xs' : 'bg-slate-900 text-white font-bold shadow-xs') : 'text-slate-400 hover:text-white'"
           title="Tampilan Candlestick"
         >
           <span class="material-symbols-outlined text-[15px]">candlestick_chart</span>
         </button>
-        <button @click="chartType = 'line'" class="w-6 h-6 flex items-center justify-center rounded-xs transition-all cursor-pointer"
-          :class="chartType === 'line' ? (isDark ? 'bg-white text-neutral-950 font-bold shadow-xs' : 'bg-neutral-950 text-white font-bold shadow-xs') : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
+        <button @click="chartType = 'line'" class="w-6 h-6 flex items-center justify-center rounded-lg transition-all cursor-pointer"
+          :class="chartType === 'line' ? (isDark ? 'bg-white text-slate-950 font-bold shadow-xs' : 'bg-slate-900 text-white font-bold shadow-xs') : 'text-slate-400 hover:text-white'"
           title="Tampilan Line Chart"
         >
           <span class="material-symbols-outlined text-[15px]">show_chart</span>
         </button>
 
-        <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
+        <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-white/[0.08]' : 'bg-slate-200'"></div>
 
         <!-- Zoom In / Zoom Out / Reset Controls -->
-        <button @click="zoomIn" class="w-6 h-6 flex items-center justify-center rounded-xs transition-all text-neutral-400 hover:text-neutral-900 dark:hover:text-white cursor-pointer"
+        <button @click="zoomIn" class="w-6 h-6 flex items-center justify-center rounded-lg transition-all text-slate-400 hover:text-white cursor-pointer"
           title="Zoom In (Perbesar Candle)"
         >
           <span class="material-symbols-outlined text-[15px]">zoom_in</span>
         </button>
-        <button @click="zoomOut" class="w-6 h-6 flex items-center justify-center rounded-xs transition-all text-neutral-400 hover:text-neutral-900 dark:hover:text-white cursor-pointer"
+        <button @click="zoomOut" class="w-6 h-6 flex items-center justify-center rounded-lg transition-all text-slate-400 hover:text-white cursor-pointer"
           title="Zoom Out (Perkecil / Tampilkan Lebih Banyak)"
         >
           <span class="material-symbols-outlined text-[15px]">zoom_out</span>
         </button>
-        <button @click="resetZoom" class="w-6 h-6 flex items-center justify-center rounded-xs transition-all text-neutral-400 hover:text-neutral-900 dark:hover:text-white cursor-pointer"
+        <button @click="resetZoom" class="w-6 h-6 flex items-center justify-center rounded-lg transition-all text-slate-400 hover:text-white cursor-pointer"
           title="Reset Zoom Normal"
         >
           <span class="material-symbols-outlined text-[14px]">restart_alt</span>
         </button>
 
-        <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
+        <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-white/[0.08]' : 'bg-slate-200'"></div>
 
         <!-- Fullscreen Landscape Toggle Button -->
-        <button @click="toggleFullscreen" class="h-6 px-2 flex items-center justify-center gap-1 rounded-xs transition-all font-bold cursor-pointer"
-          :class="isFullscreen ? 'bg-amber-500 text-black font-black' : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
+        <button @click="toggleFullscreen" class="h-6 px-2 flex items-center justify-center gap-1 rounded-lg transition-all font-semibold cursor-pointer"
+          :class="isFullscreen ? 'bg-amber-500 text-black font-black' : 'text-slate-400 hover:text-white'"
           :title="isFullscreen ? 'Keluar Fullscreen (Esc)' : 'TradingView Fullscreen Landscape'"
         >
           <span class="material-symbols-outlined text-[15px]">{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</span>
@@ -198,49 +198,49 @@
       </Transition>
     </div>
 
-    <!-- Interactive Swiss Pattern Diagnostic Card (Penjelasan Gamblang Pola) -->
-    <div v-if="primaryPattern && !isFullscreen" class="p-4 border-t font-mono transition-all"
+    <!-- Interactive Pattern Diagnostic Card (Linear Minimalist Card) -->
+    <div v-if="primaryPattern && !isFullscreen" class="p-5 border-t font-sans transition-all"
       :class="primaryPattern.category === 'BULLISH'
-        ? (isDark ? 'bg-emerald-500/10 border-emerald-500/30 text-white' : 'bg-emerald-50 border-emerald-300 text-neutral-900')
+        ? (isDark ? 'bg-emerald-500/[0.04] border-emerald-500/20 text-slate-100' : 'bg-emerald-50/70 border-emerald-200 text-slate-900')
         : primaryPattern.category === 'BEARISH'
-        ? (isDark ? 'bg-red-500/10 border-red-500/30 text-white' : 'bg-red-50 border-red-300 text-neutral-900')
-        : (isDark ? 'bg-amber-500/10 border-amber-500/30 text-white' : 'bg-amber-50 border-amber-300 text-neutral-900')"
+        ? (isDark ? 'bg-rose-500/[0.04] border-rose-500/20 text-slate-100' : 'bg-rose-50/70 border-rose-200 text-slate-900')
+        : (isDark ? 'bg-amber-500/[0.04] border-amber-500/20 text-slate-100' : 'bg-amber-50/70 border-amber-200 text-slate-900')"
     >
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
         <div class="flex items-center gap-2">
-          <span class="px-2 py-0.5 rounded-xs text-[9px] font-bold uppercase tracking-widest border"
+          <span class="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase tracking-wider border"
             :class="primaryPattern.category === 'BULLISH' 
-              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' 
+              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
               : primaryPattern.category === 'BEARISH' 
-              ? 'bg-red-500/20 text-red-400 border-red-500/40' 
-              : 'bg-amber-500/20 text-amber-400 border-amber-500/40'"
+              ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' 
+              : 'bg-amber-500/20 text-amber-400 border-amber-500/30'"
           >
-            [ POLA TERDETEKSI ]
+            Deteksi Pola
           </span>
-          <h4 class="font-black text-xs sm:text-sm uppercase tracking-wide"
-            :class="primaryPattern.category === 'BULLISH' ? 'text-emerald-500' : primaryPattern.category === 'BEARISH' ? 'text-red-500' : 'text-amber-500'"
+          <h4 class="font-bold text-sm uppercase tracking-tight"
+            :class="primaryPattern.category === 'BULLISH' ? 'text-emerald-400' : primaryPattern.category === 'BEARISH' ? 'text-rose-400' : 'text-amber-400'"
           >
             {{ primaryPattern.label }}
           </h4>
         </div>
-        <span class="text-[10px] font-bold opacity-70">CONFIDENCE: {{ primaryPattern.confidence }}%</span>
+        <span class="text-xs font-mono font-semibold opacity-75">Confidence: {{ primaryPattern.confidence }}%</span>
       </div>
 
-      <p class="text-xs leading-relaxed font-sans opacity-90 mb-3">{{ primaryPattern.description }}</p>
+      <p class="text-xs leading-relaxed opacity-85 mb-3">{{ primaryPattern.description }}</p>
 
       <!-- Action Plan & Key Levels -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2.5 border-t text-[10px]" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
-        <div v-if="primaryPattern.neckline" class="p-2 border rounded-xs" :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'">
-          <span class="opacity-50 text-[8px] uppercase block">GARIS KONFIRMASI (NECKLINE)</span>
-          <strong class="font-bold tabular-nums">Rp {{ fmt(primaryPattern.neckline) }}</strong>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3 border-t text-xs font-mono" :class="isDark ? 'border-white/[0.06]' : 'border-slate-200/80'">
+        <div v-if="primaryPattern.neckline" class="p-2.5 border rounded-xl" :class="isDark ? 'bg-black/30 border-white/[0.08]' : 'bg-white border-slate-200 shadow-2xs'">
+          <span class="opacity-50 text-[9px] uppercase tracking-wider block font-sans">Garis Konfirmasi (Neckline)</span>
+          <strong class="font-bold tabular-nums text-sm">Rp {{ fmt(primaryPattern.neckline) }}</strong>
         </div>
-        <div v-if="primaryPattern.target" class="p-2 border rounded-xs" :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'">
-          <span class="opacity-50 text-[8px] uppercase block">TARGET PROYEKSI POLA</span>
-          <strong class="font-bold tabular-nums" :class="primaryPattern.category === 'BULLISH' ? 'text-emerald-500' : 'text-red-500'">Rp {{ fmt(primaryPattern.target) }}</strong>
+        <div v-if="primaryPattern.target" class="p-2.5 border rounded-xl" :class="isDark ? 'bg-black/30 border-white/[0.08]' : 'bg-white border-slate-200 shadow-2xs'">
+          <span class="opacity-50 text-[9px] uppercase tracking-wider block font-sans">Target Proyeksi Pola</span>
+          <strong class="font-bold tabular-nums text-sm" :class="primaryPattern.category === 'BULLISH' ? 'text-emerald-400' : 'text-rose-400'">Rp {{ fmt(primaryPattern.target) }}</strong>
         </div>
-        <div class="p-2 border rounded-xs" :class="[primaryPattern.neckline && primaryPattern.target ? '' : 'sm:col-span-2', isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200']">
-          <span class="opacity-50 text-[8px] uppercase block">REKOMENDASI TRADING</span>
-          <p class="font-bold text-[10px] leading-tight text-primary">{{ primaryPattern.actionAdvice }}</p>
+        <div class="p-2.5 border rounded-xl" :class="[primaryPattern.neckline && primaryPattern.target ? '' : 'sm:col-span-2', isDark ? 'bg-black/30 border-white/[0.08]' : 'bg-white border-slate-200 shadow-2xs']">
+          <span class="opacity-50 text-[9px] uppercase tracking-wider block font-sans">Rekomendasi Tindakan</span>
+          <p class="font-medium text-xs leading-tight text-primary font-sans mt-0.5">{{ primaryPattern.actionAdvice }}</p>
         </div>
       </div>
     </div>

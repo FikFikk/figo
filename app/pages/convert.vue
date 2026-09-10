@@ -1,39 +1,39 @@
 <template>
-  <div class="pt-20 pb-20 px-4 sm:px-6 md:px-8 max-w-4xl mx-auto min-h-screen font-mono">
-    <!-- Swiss Header -->
+  <div class="pt-20 pb-20 px-4 sm:px-6 md:px-8 max-w-4xl mx-auto min-h-screen">
+    <!-- Header -->
     <div class="text-center mb-10">
-      <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xs text-[10px] font-bold uppercase tracking-widest border mb-4"
-        :class="isDark ? 'bg-neutral-900 border-neutral-800 text-emerald-400' : 'bg-neutral-100 border-neutral-300 text-neutral-800'">
-        <span class="material-symbols-outlined text-[13px]">transform</span>
-        <span>SYS.03 // FILE CONVERTER</span>
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide border mb-4"
+        :class="isDark ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-primary/5 border-primary/20 text-primary'">
+        <span class="material-symbols-outlined text-[15px]">transform</span>
+        <span>Universal File Converter</span>
       </div>
-      <h1 class="text-2xl md:text-4xl font-headline font-black uppercase tracking-tight mb-2"
-        :class="isDark ? 'text-white' : 'text-neutral-900'">UNIVERSAL CONVERTER</h1>
-      <p class="text-xs md:text-sm font-sans max-w-lg mx-auto opacity-70">
-        Deteksi otomatis format file audio, video, dokumen, dan gambar dengan engine komputasi presisi.
+      <h1 class="text-3xl md:text-5xl font-headline font-extrabold tracking-tight mb-3"
+        :class="isDark ? 'text-white' : 'text-slate-900'">Convert Any File</h1>
+      <p class="text-sm md:text-base max-w-lg mx-auto opacity-75 leading-relaxed">
+        Smart file detection — upload images, videos, audio, or documents and convert them in seconds.
       </p>
     </div>
 
     <!-- Supported Formats Badge Grid (tampil saat idle) -->
     <div v-if="status === 'idle' && files.length === 0" class="mb-6">
-      <p class="text-center text-[9px] font-bold uppercase tracking-widest mb-2.5 opacity-50">SUPPORTED FORMATS</p>
+      <p class="text-center text-[10px] font-bold uppercase tracking-widest mb-3 opacity-50 font-mono">Supported Input Formats</p>
       <div class="flex flex-wrap justify-center gap-1.5">
         <div v-for="fmt in allSupportedInputs" :key="fmt.ext"
-          class="flex items-center gap-1 px-2.5 py-1 rounded-xs text-[10px] font-bold uppercase tracking-wider border"
-          :class="isDark ? 'bg-neutral-900/60 text-neutral-300 border-neutral-800' : 'bg-white text-neutral-700 border-neutral-200 shadow-2xs'">
-          <span class="material-symbols-outlined text-xs" :class="fmt.color">{{ fmt.icon }}</span>
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold border"
+          :class="isDark ? 'bg-white/[0.03] text-slate-300 border-white/[0.06]' : 'bg-white text-slate-700 border-slate-200 shadow-2xs'">
+          <span class="material-symbols-outlined text-sm" :class="fmt.color">{{ fmt.icon }}</span>
           {{ fmt.ext }}
         </div>
       </div>
     </div>
 
-    <!-- Upload Zone (Swiss Modular Dropzone) -->
+    <!-- Upload Zone (Linear Minimalist Dropzone) -->
     <div
       v-if="status === 'idle' && files.length === 0"
-      class="rounded-md p-8 md:p-12 text-center cursor-pointer transition-all border group relative"
+      class="rounded-2xl p-8 md:p-12 text-center cursor-pointer transition-all duration-200 border group relative"
       :class="[
-        isDark ? 'bg-[#0d1117] border-neutral-800 hover:border-neutral-600' : 'bg-white border-neutral-300 hover:border-neutral-500 shadow-xs',
-        isDragging ? '!border-emerald-500 bg-emerald-500/5' : ''
+        isDark ? 'bg-[#0d0f17]/80 border-white/[0.08] hover:border-primary/50 shadow-2xl' : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm',
+        isDragging ? '!border-primary bg-primary/5 scale-[1.01]' : ''
       ]"
       @dragover.prevent="isDragging = true"
       @dragleave="isDragging = false"
@@ -42,15 +42,17 @@
     >
       <input ref="fileInput" type="file" class="hidden" multiple @change="handleFileSelect" />
       <div class="mb-3">
-        <span class="material-symbols-outlined text-4xl transition-transform duration-200 group-hover:scale-105"
-          :class="isDragging ? 'text-emerald-500' : (isDark ? 'text-neutral-500' : 'text-neutral-400')"
-        >upload_file</span>
+        <div class="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center border transition-transform duration-200 group-hover:scale-105"
+          :class="isDark ? 'bg-white/[0.03] border-white/[0.08] text-primary' : 'bg-slate-50 border-slate-200 text-primary'"
+        >
+          <span class="material-symbols-outlined text-3xl">upload_file</span>
+        </div>
       </div>
-      <p class="font-headline font-black text-sm md:text-base uppercase tracking-wider mb-1" :class="isDark ? 'text-white' : 'text-neutral-900'">
-        {{ isDragging ? '[ DROP FILES HERE ]' : 'DRAG & DROP FILES ATAU KLIK UNTUK MEMILIH' }}
+      <p class="font-headline font-bold text-base md:text-lg mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">
+        {{ isDragging ? 'Drop files here!' : 'Drag & drop files here' }}
       </p>
-      <p class="text-xs font-sans opacity-60">
-        Mendukung konversi instan multi-file • Maksimal 50MB per file
+      <p class="text-xs opacity-60">
+        or <span class="text-primary font-semibold">click to browse</span> • Max 50MB per file
       </p>
     </div>
 

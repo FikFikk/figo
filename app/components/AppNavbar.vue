@@ -1,56 +1,64 @@
 <template>
-  <!-- Swiss Precision Top Navigation Header -->
-  <nav class="fixed top-0 w-full z-50 backdrop-blur-md transition-colors duration-200 border-b font-mono"
-    :class="isDark ? 'bg-[#090b10]/90 border-neutral-800 text-white' : 'bg-white/95 border-neutral-200 text-neutral-900 shadow-xs'"
+  <!-- Linear / Vercel Dark Minimalist Navigation Header -->
+  <nav class="fixed top-0 w-full z-50 backdrop-blur-xl transition-colors duration-200 border-b"
+    :class="isDark ? 'bg-[#08090d]/85 border-white/[0.08] text-slate-100' : 'bg-white/85 border-slate-200/80 text-slate-900 shadow-xs'"
   >
     <div class="flex justify-between items-center px-4 sm:px-6 md:px-8 py-3 max-w-7xl mx-auto">
-      <!-- Swiss Brand Logo -->
-      <div class="flex items-center gap-2.5">
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
         <NuxtLink to="/" class="flex items-center gap-2 group">
-          <span class="px-2 py-0.5 text-xs font-black tracking-widest uppercase border transition-colors"
-            :class="isDark ? 'bg-white text-neutral-950 border-white group-hover:bg-neutral-200' : 'bg-neutral-950 text-white border-neutral-950 group-hover:bg-neutral-800'"
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs transition-all shadow-sm"
+            :class="isDark ? 'bg-gradient-to-br from-primary to-blue-600 text-white shadow-primary/20 group-hover:shadow-primary/40' : 'bg-slate-900 text-white group-hover:bg-slate-800'"
           >
-            FIGO
+            F
+          </div>
+          <span class="font-headline font-black text-sm tracking-tight" :class="isDark ? 'text-white' : 'text-slate-900'">
+            Fi<span class="text-primary">Go</span>
           </span>
-          <span class="text-[10px] font-bold tracking-wider opacity-60 hidden sm:inline">
-            // SYS.26
+          <span class="px-1.5 py-0.5 rounded-md text-[9px] font-mono font-semibold tracking-wide border hidden sm:inline"
+            :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'"
+          >
+            v2.6
           </span>
         </NuxtLink>
       </div>
 
-      <!-- Desktop Nav Links (Swiss Modular Grid) -->
-      <div class="hidden md:flex items-center space-x-1">
+      <!-- Desktop Nav Links (Linear Minimalist Pills) -->
+      <div class="hidden md:flex items-center p-1 rounded-xl border backdrop-blur-md"
+        :class="isDark ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-100/80 border-slate-200/60'"
+      >
         <NuxtLink
           v-for="link in navLinks"
           :key="link.to"
           :to="link.to"
-          class="px-3 py-1.5 rounded-xs text-xs font-bold uppercase tracking-wider transition-all border"
+          class="px-3.5 py-1.5 rounded-lg text-xs font-medium tracking-tight transition-all relative flex items-center gap-1.5"
           :class="isActive(link.to)
-            ? (isDark ? 'bg-white text-neutral-950 border-white font-black' : 'bg-neutral-950 text-white border-neutral-950 font-black')
-            : (isDark ? 'text-neutral-400 border-transparent hover:text-white hover:border-neutral-800 hover:bg-neutral-900/50' : 'text-neutral-600 border-transparent hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-100')"
+            ? (isDark ? 'bg-white/[0.1] text-white font-semibold shadow-xs' : 'bg-white text-slate-900 font-semibold shadow-xs')
+            : (isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.04]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60')"
         >
-          {{ link.label }}
+          <span class="material-symbols-outlined text-[15px] opacity-70">{{ link.icon }}</span>
+          <span>{{ link.label }}</span>
         </NuxtLink>
       </div>
 
-      <!-- Header Controls: Support + Theme Toggle + CTA -->
+      <!-- Header Controls: Support + Theme Toggle + Launch CTA -->
       <div class="flex items-center gap-2">
         <!-- Support Button -->
         <button
-          class="px-3 py-1.5 rounded-xs text-xs font-bold uppercase tracking-wider transition-all border flex items-center gap-1.5 cursor-pointer"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all border flex items-center gap-1.5 cursor-pointer"
           :class="isDark 
-            ? 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700' 
-            : 'bg-neutral-100 border-neutral-300 text-neutral-700 hover:text-neutral-950 hover:border-neutral-400'"
+            ? 'bg-white/[0.04] border-white/[0.08] text-slate-300 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15]' 
+            : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 shadow-xs'"
           @click="open()"
         >
-          <span class="material-symbols-outlined text-[15px] text-red-500 animate-pulse">favorite</span>
-          <span class="hidden sm:inline">SUPPORT</span>
+          <span class="material-symbols-outlined text-[14px] text-rose-500 fill-current animate-pulse">favorite</span>
+          <span class="hidden sm:inline">Support</span>
         </button>
 
         <!-- Theme Toggle Button -->
         <button
-          class="w-8 h-8 rounded-xs flex items-center justify-center transition-all border cursor-pointer"
-          :class="isDark ? 'bg-neutral-900 border-neutral-800 text-yellow-400 hover:border-neutral-700' : 'bg-neutral-100 border-neutral-300 text-neutral-700 hover:border-neutral-400'"
+          class="w-8 h-8 rounded-lg flex items-center justify-center transition-all border cursor-pointer"
+          :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-amber-400 hover:bg-white/[0.08]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs'"
           @click="toggle"
           :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
         >
@@ -60,159 +68,156 @@
         <!-- Get Started / Tools CTA -->
         <NuxtLink
           to="/tools"
-          class="px-3.5 py-1.5 rounded-xs text-xs font-black uppercase tracking-wider transition-all border hidden sm:flex items-center gap-1"
+          class="px-3.5 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all border hidden sm:flex items-center gap-1 shadow-sm"
           :class="isDark
-            ? 'bg-white text-neutral-950 border-white hover:bg-neutral-200'
-            : 'bg-neutral-950 text-white border-neutral-950 hover:bg-neutral-800'"
+            ? 'bg-gradient-to-r from-primary to-blue-600 text-white border-primary/40 hover:brightness-110 shadow-primary/20'
+            : 'bg-slate-900 text-white border-slate-800 hover:bg-slate-800 shadow-slate-900/10'"
         >
-          <span>TOOLS</span>
+          <span>Tools</span>
           <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
         </NuxtLink>
       </div>
     </div>
   </nav>
 
-  <!-- Mobile Bottom Navigation (Swiss Modular Hairline Grid) -->
-  <nav class="md:hidden fixed bottom-0 left-0 w-full z-[60] border-t backdrop-blur-md transition-colors duration-200 pb-safe font-mono"
-    :class="isDark ? 'bg-[#090b10]/95 border-neutral-800' : 'bg-white/95 border-neutral-200 shadow-lg'"
+  <!-- Mobile Bottom Navigation (Linear Floating Dock) -->
+  <nav class="md:hidden fixed bottom-3 left-4 right-4 z-[60] backdrop-blur-2xl rounded-2xl border transition-all duration-200 shadow-2xl p-1"
+    :class="isDark ? 'bg-[#0d0f17]/90 border-white/[0.12] shadow-black/80' : 'bg-white/90 border-slate-200/90 shadow-slate-400/20'"
   >
-    <div class="grid grid-cols-5 divide-x" :class="isDark ? 'divide-neutral-800/80' : 'divide-neutral-200'">
+    <div class="grid grid-cols-5 gap-1">
       <NuxtLink
         v-for="link in navLinks"
         :key="link.to"
         :to="link.to"
-        class="flex flex-col items-center justify-center py-2.5 px-1 transition-all"
+        class="flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all"
         :class="isActive(link.to) 
-          ? (isDark ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-950 font-black')
-          : (isDark ? 'text-neutral-500 hover:text-neutral-300' : 'text-neutral-400 hover:text-neutral-900')"
+          ? (isDark ? 'bg-primary/20 text-primary font-bold shadow-xs' : 'bg-primary/10 text-primary font-bold shadow-xs')
+          : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900')"
       >
-        <span class="material-symbols-outlined text-[18px] mb-0.5" 
-          :class="isActive(link.to) ? 'text-emerald-500' : ''"
+        <span class="material-symbols-outlined text-[19px] mb-0.5" 
+          :class="isActive(link.to) ? 'text-primary' : ''"
         >
           {{ link.icon }}
         </span>
-        <span class="text-[9px] font-bold uppercase tracking-tight truncate max-w-full">{{ link.label }}</span>
+        <span class="text-[9.5px] tracking-tight truncate max-w-full font-sans">{{ link.label }}</span>
       </NuxtLink>
     </div>
   </nav>
 
-  <!-- Support Modal (Swiss Modular Ledger) -->
+  <!-- Support Modal (Linear / Vercel Minimalist Card) -->
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="isOpen" 
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs font-mono"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
         @click.self="close()"
       >
         <div 
-          class="relative w-full max-w-sm p-5 rounded-xs shadow-2xl transition-all border"
-          :class="isDark ? 'bg-[#090b10] border-neutral-700 text-white' : 'bg-white border-neutral-300 text-neutral-900'"
+          class="relative w-full max-w-sm p-6 rounded-2xl shadow-2xl transition-all border"
+          :class="isDark ? 'bg-[#0d0f17] border-white/[0.1] text-slate-100' : 'bg-white border-slate-200 text-slate-900'"
         >
           <!-- Close Button -->
           <button 
             @click="close()"
-            class="absolute top-3.5 right-3.5 w-7 h-7 rounded-xs border flex items-center justify-center transition-all cursor-pointer"
-            :class="isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-600' : 'bg-neutral-100 border-neutral-300 text-neutral-600 hover:text-neutral-950'"
+            class="absolute top-4 right-4 w-8 h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer"
+            :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.08]' : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'"
           >
             <span class="material-symbols-outlined text-sm">close</span>
           </button>
 
           <!-- Modal Header -->
-          <div class="mb-4">
-            <div class="flex items-center gap-2 mb-1">
-              <span class="px-1.5 py-0.5 text-[9px] font-bold uppercase bg-red-500/20 text-red-400 border border-red-500/40 rounded-xs">
-                [ DONATION ]
-              </span>
-              <h3 class="font-headline text-sm font-black uppercase tracking-wider">SUPPORT FIGO</h3>
+          <div class="mb-4 text-center">
+            <div class="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center bg-rose-500/10 border border-rose-500/20 text-rose-500">
+              <span class="material-symbols-outlined text-xl animate-pulse">favorite</span>
             </div>
-            <p class="text-[11px] opacity-70 font-sans leading-tight">
-              Bantu operasional server &amp; pengembangan tools presisi tinggi.
+            <h3 class="font-headline text-base font-bold tracking-tight">Support FiGo Ecosystem</h3>
+            <p class="text-xs opacity-70 mt-1 leading-relaxed">
+              Bantu operasional server, kuota AI &amp; pemeliharaan tools publik.
             </p>
           </div>
 
-          <!-- Tabs (Swiss Bordered Selector) -->
-          <div class="grid grid-cols-2 gap-1 p-1 border rounded-xs mb-3" :class="isDark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-neutral-100 border-neutral-200'">
+          <!-- Tabs (Linear Segmented Selector) -->
+          <div class="grid grid-cols-2 gap-1 p-1 border rounded-xl mb-3" :class="isDark ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-100 border-slate-200'">
             <button 
               v-for="tab in supportTabs"
               :key="tab.id"
               @click="activeTab = tab.id"
-              class="py-1.5 px-2 text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer rounded-xs"
+              class="py-2 px-3 text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 cursor-pointer rounded-lg"
               :class="activeTab === tab.id 
-                ? (isDark ? 'bg-white text-neutral-950 font-black shadow-xs' : 'bg-neutral-950 text-white font-black shadow-xs') 
-                : (isDark ? 'text-neutral-400 hover:text-white' : 'text-neutral-600 hover:text-neutral-950')"
+                ? (isDark ? 'bg-white/[0.12] text-white shadow-xs' : 'bg-white text-slate-900 shadow-xs') 
+                : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900')"
             >
-              <span class="material-symbols-outlined text-[13px]">{{ tab.icon }}</span>
+              <span class="material-symbols-outlined text-sm">{{ tab.icon }}</span>
               {{ tab.name }}
             </button>
           </div>
           
-          <p class="text-[10px] min-h-[28px] opacity-80 font-sans mb-3 text-center leading-tight">
+          <p class="text-[11px] min-h-[28px] opacity-75 text-center leading-tight mb-3">
             {{ currentTab.description }}
           </p>
 
-          <!-- QR Code Container (Swiss Hairline Frame) -->
-          <div class="flex justify-center py-2 mb-3">
+          <!-- QR Code Container -->
+          <div class="flex justify-center py-1 mb-4">
             <div 
-              class="p-3 rounded-xs bg-white border flex flex-col items-center justify-center shadow-sm"
-              :class="activeTab === 'trakteer' ? 'border-[#FF3850]' : 'border-neutral-300'"
+              class="p-3.5 rounded-xl bg-white border border-slate-200 shadow-lg flex flex-col items-center justify-center"
             >
               <img 
                 :src="qrUrl" 
                 :alt="currentTab.name + ' QR Code'" 
-                class="w-44 h-44"
+                class="w-44 h-44 rounded-lg"
                 loading="lazy"
               />
-              <span class="text-[8px] text-neutral-500 font-bold tracking-widest uppercase mt-1.5 font-mono">
-                [ SCAN TO DONATE ]
+              <span class="text-[9px] text-slate-400 font-mono font-semibold tracking-wider uppercase mt-1.5">
+                Scan via E-Wallet / Bank
               </span>
             </div>
           </div>
 
           <!-- Actions -->
-          <div class="flex flex-col gap-1.5">
+          <div class="flex flex-col gap-2">
             <a 
               :target="_blank"
               :href="donationUrl"
               rel="noopener noreferrer"
-              class="w-full py-2 rounded-xs text-xs font-bold uppercase tracking-wider text-center flex items-center justify-center gap-1.5 text-white transition-all border cursor-pointer"
+              class="w-full py-2.5 rounded-xl text-xs font-bold tracking-tight text-center flex items-center justify-center gap-1.5 text-white transition-all shadow-md cursor-pointer"
               :class="activeTab === 'trakteer' 
-                ? 'bg-[#FF3850] hover:bg-[#e02e44] border-[#FF3850]' 
-                : 'bg-[#FF5E5B] hover:bg-[#e64c49] border-[#FF5E5B]'"
+                ? 'bg-gradient-to-r from-[#FF3850] to-[#ff5d72] hover:brightness-105 shadow-[#FF3850]/20' 
+                : 'bg-gradient-to-r from-[#FF5E5B] to-[#ff8481] hover:brightness-105 shadow-[#FF5E5B]/20'"
             >
-              <span class="material-symbols-outlined text-[14px]">open_in_new</span>
-              BUKA {{ currentTab.name }}
+              <span class="material-symbols-outlined text-sm">open_in_new</span>
+              Buka Halaman {{ currentTab.name }}
             </a>
             
             <button 
               @click="copyDonationLink"
-              class="w-full py-2 rounded-xs text-xs font-bold uppercase tracking-wider border transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              class="w-full py-2 rounded-xl text-xs font-semibold tracking-tight border transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               :class="isDark 
-                ? 'border-neutral-800 hover:bg-neutral-900 text-neutral-300 hover:text-white' 
-                : 'border-neutral-300 hover:bg-neutral-100 text-neutral-700'"
+                ? 'border-white/[0.08] hover:bg-white/[0.04] text-slate-300 hover:text-white' 
+                : 'border-slate-200 hover:bg-slate-50 text-slate-700'"
             >
-              <span class="material-symbols-outlined text-[14px]">{{ isCopied ? 'done' : 'content_copy' }}</span>
-              {{ isCopied ? 'TAUTAN DISALIN!' : `SALIN TAUTAN ${currentTab.name}` }}
+              <span class="material-symbols-outlined text-sm">{{ isCopied ? 'done' : 'content_copy' }}</span>
+              {{ isCopied ? 'Tautan Berhasil Disalin!' : `Salin Tautan ${currentTab.name}` }}
             </button>
           </div>
 
-          <!-- Creator Portfolio Footer -->
-          <div class="mt-3 pt-3 border-t" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
+          <!-- Creator Portfolio -->
+          <div class="mt-4 pt-3 border-t" :class="isDark ? 'border-white/[0.08]' : 'border-slate-100'">
             <a 
               href="https://fikfikk.my.id/" 
               target="_blank" 
               rel="noopener noreferrer"
-              class="flex items-center justify-between p-2 rounded-xs border transition-all"
+              class="flex items-center justify-between p-2 rounded-xl border transition-all"
               :class="isDark 
-                ? 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700 text-white' 
-                : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300 text-neutral-900'"
+                ? 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06] text-slate-200' 
+                : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-800'"
             >
               <div class="flex items-center gap-2 text-left">
-                <span class="material-symbols-outlined text-[16px] text-emerald-500">terminal</span>
+                <span class="material-symbols-outlined text-base text-primary">person</span>
                 <div>
-                  <p class="text-[8px] opacity-50 font-bold uppercase tracking-wider leading-none mb-0.5">CREATOR</p>
-                  <p class="text-[11px] font-bold">fikfikk.my.id</p>
+                  <p class="text-[9px] opacity-60 uppercase font-mono tracking-wider leading-none mb-0.5">Creator</p>
+                  <p class="text-xs font-bold">fikfikk.my.id</p>
                 </div>
               </div>
-              <span class="material-symbols-outlined text-[14px] opacity-50">arrow_forward</span>
+              <span class="material-symbols-outlined text-sm opacity-50">arrow_forward</span>
             </a>
           </div>
 
@@ -247,14 +252,14 @@ const supportTabs = [
     id: 'trakteer',
     name: 'Trakteer',
     url: 'https://trakteer.id/8glcaxeiv6nrtxa4ykur/tip?open=true',
-    description: 'Dukung melalui e-wallet Indonesia (GoPay, OVO, Dana, LinkAja, atau QRIS) via Trakteer.',
+    description: 'Dukung via QRIS, GoPay, OVO, Dana, LinkAja, atau ShopeePay.',
     icon: 'payments'
   },
   {
     id: 'kofi',
     name: 'Ko-fi',
     url: 'https://ko-fi.com/fikfikk',
-    description: 'Support globally using Credit Card, PayPal, or Google Pay via Ko-fi.',
+    description: 'Support globally using PayPal, Card, or Google Pay.',
     icon: 'coffee'
   }
 ]
@@ -265,7 +270,7 @@ const currentTab = computed(() => supportTabs.find(t => t.id === activeTab.value
 const donationUrl = computed(() => currentTab.value.url)
 
 const qrUrl = computed(() => {
-  const dark = encodeURIComponent('#090b10')
+  const dark = encodeURIComponent('#08090d')
   const light = encodeURIComponent('#ffffff')
   return `/api/tools/qr?text=${encodeURIComponent(donationUrl.value)}&size=300&format=svg&dark=${dark}&light=${light}&margin=2`
 })

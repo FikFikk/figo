@@ -1,42 +1,42 @@
 <template>
-  <div class="rounded-md border p-5 md:p-6 transition-colors font-mono" :class="isDark ? 'bg-[#0d1117] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'">
-    <!-- Swiss Terminal Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-5 border-b gap-3" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
+  <div class="rounded-2xl border p-5 md:p-6 transition-all duration-200 font-sans" :class="isDark ? 'bg-[#0d0f17]/90 border-white/[0.08] text-slate-100 shadow-2xl' : 'bg-white border-slate-200 text-slate-900 shadow-sm'">
+    <!-- Linear Terminal Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-5 border-b gap-3" :class="isDark ? 'border-white/[0.06]' : 'border-slate-100'">
       <div class="flex items-center gap-2.5">
-        <span class="px-2 py-0.5 rounded-xs text-[9px] font-mono font-bold uppercase tracking-widest border"
-          :class="isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-neutral-100 border-neutral-300 text-neutral-700'"
+        <span class="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase tracking-widest border"
+          :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'"
         >
-          SYS.02 // MULTI-HORIZON QUANT
+          QUANT ENGINE
         </span>
-        <h3 class="font-headline font-black text-sm uppercase tracking-tight" :class="isDark ? 'text-white' : 'text-neutral-900'">
+        <h3 class="font-headline font-bold text-sm uppercase tracking-tight" :class="isDark ? 'text-white' : 'text-slate-900'">
           Smart Trading Plan
         </h3>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded-xs border"
+        <span class="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border"
           :class="isDark ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-purple-50 text-purple-600 border-purple-200'">
-          AI CONFLUENCE ENGINE
+          AI Confluence Model
         </span>
       </div>
     </div>
 
     <!-- Empty State -->
-    <div v-if="!data?.length && !loading" class="flex flex-col items-center justify-center py-10 text-center">
-      <div class="w-12 h-12 rounded-md border flex items-center justify-center mb-3" :class="isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'">
+    <div v-if="!data?.length && !loading" class="flex flex-col items-center justify-center py-10 text-center font-mono">
+      <div class="w-12 h-12 rounded-xl border flex items-center justify-center mb-3" :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'">
         <span class="material-symbols-outlined text-xl">analytics</span>
       </div>
-      <p class="text-[11px] opacity-60 mb-3 max-w-[240px] uppercase">TAMPILKAN CHART TERLEBIH DAHULU UNTUK MEMUAT DATA KALKULASI AI.</p>
+      <p class="text-xs opacity-60 mb-3 max-w-[280px]">PILIH EMITEN UNTUK MEMUAT DATA KALKULASI QUANT AI.</p>
     </div>
 
     <!-- Locked State -->
     <div v-else-if="!isAnalyzed" class="flex flex-col items-center justify-center py-6 text-center">
-      <div class="w-12 h-12 rounded-md border flex items-center justify-center mb-3" :class="isDark ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'bg-purple-50 border-purple-200 text-purple-600'">
+      <div class="w-12 h-12 rounded-xl border flex items-center justify-center mb-3" :class="isDark ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'bg-purple-50 border-purple-200 text-purple-600'">
         <span class="material-symbols-outlined text-xl">smart_toy</span>
       </div>
-      <h4 class="font-bold text-xs uppercase tracking-wider mb-1" :class="isDark ? 'text-white' : 'text-neutral-900'">QUANT STRATEGY ENGINE</h4>
-      <p class="text-[11px] opacity-60 mb-4 max-w-[280px]">Multi-horizon quant algorithms: Scalping Harian, Swing Trading, &amp; Value Investing.</p>
-      <button @click="analyzeData" class="px-6 py-2.5 rounded-md text-xs font-mono font-bold uppercase tracking-wider transition-all border"
-        :class="isDark ? 'bg-white text-neutral-950 border-white hover:bg-neutral-200' : 'bg-neutral-950 text-white border-neutral-950 hover:bg-neutral-800'"
+      <h4 class="font-bold text-sm uppercase tracking-tight mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">QUANT STRATEGY ENGINE</h4>
+      <p class="text-xs opacity-60 mb-4 max-w-[280px]">Multi-horizon quant algorithms: Scalping Harian, Swing Trading, &amp; Value Investing.</p>
+      <button @click="analyzeData" class="px-6 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all border cursor-pointer shadow-sm"
+        :class="isDark ? 'bg-white text-slate-950 border-white hover:bg-slate-200' : 'bg-slate-900 text-white border-slate-900 hover:bg-slate-800'"
       >
         Jalankan Kalkulasi
       </button>
@@ -44,39 +44,39 @@
 
     <!-- Loading -->
     <div v-else-if="loading || isAnalyzing" class="animate-pulse space-y-3 py-2">
-      <div class="h-16 border" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-100 border-neutral-200'"></div>
-      <div class="h-16 border" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-100 border-neutral-200'"></div>
+      <div class="h-16 rounded-xl border" :class="isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-slate-100 border-slate-200'"></div>
+      <div class="h-16 rounded-xl border" :class="isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-slate-100 border-slate-200'"></div>
     </div>
 
     <!-- Content -->
     <div v-else-if="plan" class="space-y-6">
 
-      <!-- Horizon Switcher: Scalping vs Swing vs Investing (Swiss Segmented Grid) -->
-      <div class="grid grid-cols-3 divide-x border font-mono text-[11px] rounded-md overflow-hidden"
-        :class="isDark ? 'bg-neutral-950 border-neutral-800 divide-neutral-800' : 'bg-neutral-50 border-neutral-200 divide-neutral-200'"
+      <!-- Horizon Switcher: Scalping vs Swing vs Investing (Linear Segmented Selector) -->
+      <div class="grid grid-cols-3 gap-1 p-1 border font-mono text-[11px] rounded-xl overflow-hidden"
+        :class="isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-slate-100/70 border-slate-200/60'"
       >
-        <button @click="activeHorizon = 'scalp'" class="py-2.5 px-2 flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center"
+        <button @click="activeHorizon = 'scalp'" class="py-2.5 px-2 rounded-lg flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center cursor-pointer"
           :class="activeHorizon === 'scalp' 
-            ? (isDark ? 'bg-neutral-900 text-emerald-400 border-b-2 border-b-emerald-500 font-black' : 'bg-white text-emerald-700 border-b-2 border-b-emerald-600 shadow-xs font-black') 
-            : 'opacity-60 hover:opacity-100 hover:bg-neutral-900/30'"
+            ? (isDark ? 'bg-emerald-500/20 text-emerald-400 font-black shadow-xs' : 'bg-white text-emerald-700 shadow-xs font-black') 
+            : 'opacity-60 hover:opacity-100 hover:bg-white/[0.04]'"
         >
           <span class="material-symbols-outlined text-sm text-emerald-500">bolt</span>
           <span>SCALPING (1D)</span>
         </button>
 
-        <button @click="activeHorizon = 'swing'" class="py-2.5 px-2 flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center"
+        <button @click="activeHorizon = 'swing'" class="py-2.5 px-2 rounded-lg flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center cursor-pointer"
           :class="activeHorizon === 'swing' 
-            ? (isDark ? 'bg-neutral-900 text-blue-400 border-b-2 border-b-blue-500 font-black' : 'bg-white text-blue-700 border-b-2 border-b-blue-600 shadow-xs font-black') 
-            : 'opacity-60 hover:opacity-100 hover:bg-neutral-900/30'"
+            ? (isDark ? 'bg-blue-500/20 text-blue-400 font-black shadow-xs' : 'bg-white text-blue-700 shadow-xs font-black') 
+            : 'opacity-60 hover:opacity-100 hover:bg-white/[0.04]'"
         >
           <span class="material-symbols-outlined text-sm text-blue-500">waves</span>
           <span>SWING (1-2W)</span>
         </button>
 
-        <button @click="activeHorizon = 'invest'" class="py-2.5 px-2 flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center"
+        <button @click="activeHorizon = 'invest'" class="py-2.5 px-2 rounded-lg flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center cursor-pointer"
           :class="activeHorizon === 'invest' 
-            ? (isDark ? 'bg-neutral-900 text-purple-400 border-b-2 border-b-purple-500 font-black' : 'bg-white text-purple-700 border-b-2 border-b-purple-600 shadow-xs font-black') 
-            : 'opacity-60 hover:opacity-100 hover:bg-neutral-900/30'"
+            ? (isDark ? 'bg-purple-500/20 text-purple-400 font-black shadow-xs' : 'bg-white text-purple-700 shadow-xs font-black') 
+            : 'opacity-60 hover:opacity-100 hover:bg-white/[0.04]'"
         >
           <span class="material-symbols-outlined text-sm text-purple-500">account_balance</span>
           <span>INVEST (1-3Y)</span>
@@ -90,12 +90,12 @@
         <div class="space-y-4">
           
           <!-- Horizon Header Banner -->
-          <div class="p-4 border rounded-md" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
+          <div class="p-4 border rounded-xl" :class="isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-slate-50 border-slate-200'">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-[10px] font-bold uppercase tracking-widest text-primary">
-                {{ activeHorizon === 'scalp' ? 'HORIZON // 01 · FAST INTRADAY SCALP' : activeHorizon === 'swing' ? 'HORIZON // 02 · MOMENTUM SWING TRADE' : 'HORIZON // 03 · LONG-TERM VALUE INVESTING' }}
+              <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
+                {{ activeHorizon === 'scalp' ? 'HORIZON 01 // INTRADAY SCALP' : activeHorizon === 'swing' ? 'HORIZON 02 // SWING TRADE' : 'HORIZON 03 // VALUE INVESTING' }}
               </span>
-              <span class="text-xs font-black px-2 py-0.5 border rounded-sm"
+              <span class="text-xs font-bold font-mono px-2.5 py-0.5 border rounded-md"
                 :class="horizonData.badgeClass"
               >
                 {{ horizonData.verdict }}

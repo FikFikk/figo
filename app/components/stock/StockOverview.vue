@@ -1,34 +1,34 @@
 <template>
-  <div v-if="info" class="border transition-all duration-200 rounded-md overflow-hidden font-mono"
-    :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'"
+  <div v-if="info" class="border transition-all duration-200 rounded-2xl overflow-hidden font-mono"
+    :class="isDark ? 'bg-[#0d0f17]/90 border-white/[0.08] text-slate-100 shadow-2xl' : 'bg-white border-slate-200 text-slate-900 shadow-sm'"
   >
     <!-- Top Technical System Badge & Multi-Horizon Summary -->
     <div class="px-5 py-2.5 border-b flex flex-wrap items-center justify-between gap-2 text-[10px]"
-      :class="isDark ? 'bg-neutral-900/60 border-neutral-800 text-neutral-400' : 'bg-neutral-50 border-neutral-200 text-neutral-600'"
+      :class="isDark ? 'bg-white/[0.02] border-white/[0.06] text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-600'"
     >
       <div class="flex items-center gap-3">
-        <span class="font-bold text-primary flex items-center gap-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          REALTIME STOCKBIT + QUANT ENGINE
+        <span class="font-bold text-primary flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          REALTIME STOCK QUANT ENGINE
         </span>
-        <span class="hidden sm:inline opacity-40">|</span>
-        <span class="hidden sm:inline">{{ stockData?.sector || 'EQUITIES' }}</span>
+        <span class="hidden sm:inline opacity-30">/</span>
+        <span class="hidden sm:inline opacity-70">{{ stockData?.sector || 'EQUITIES' }}</span>
       </div>
 
       <!-- 3-Horizon Quick Verdict Badges -->
       <div class="flex items-center gap-1.5 font-bold text-[9px]">
-        <span class="px-2 py-0.5 border"
-          :class="changePct >= 0 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' : 'bg-red-500/10 text-red-500 border-red-500/30'"
+        <span class="px-2.5 py-0.5 rounded-md border"
+          :class="changePct >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'"
         >
           ⚡ SCALP: {{ changePct >= 0 ? 'MOMENTUM UP' : 'PULLBACK' }}
         </span>
-        <span class="px-2 py-0.5 border"
-          :class="isDark ? 'bg-neutral-900 text-blue-400 border-blue-500/30' : 'bg-blue-50 text-blue-700 border-blue-200'"
+        <span class="px-2.5 py-0.5 rounded-md border"
+          :class="isDark ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-700 border-blue-200'"
         >
           🌊 SWING: ACCUMULATE
         </span>
-        <span class="px-2 py-0.5 border"
-          :class="isDark ? 'bg-neutral-900 text-neutral-300 border-neutral-700' : 'bg-neutral-100 text-neutral-800 border-neutral-300'"
+        <span class="px-2.5 py-0.5 rounded-md border"
+          :class="isDark ? 'bg-white/[0.04] text-slate-300 border-white/[0.08]' : 'bg-slate-100 text-slate-700 border-slate-200'"
         >
           🏛️ INVEST: HOLD
         </span>
@@ -37,12 +37,12 @@
 
     <!-- Header: Ticker, Name, Price, and Status -->
     <div class="p-5 md:p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4"
-      :class="isDark ? 'border-neutral-800' : 'border-neutral-200'"
+      :class="isDark ? 'border-white/[0.06]' : 'border-slate-100'"
     >
       <!-- Left: Logo & Company -->
       <div class="flex items-start md:items-center gap-3.5 min-w-0">
-        <div class="w-12 h-12 flex items-center justify-center flex-shrink-0 bg-neutral-100 dark:bg-neutral-900 border rounded-md"
-          :class="isDark ? 'border-neutral-700' : 'border-neutral-200'"
+        <div class="w-12 h-12 flex items-center justify-center shrink-0 bg-white dark:bg-slate-900 border rounded-xl overflow-hidden shadow-xs"
+          :class="isDark ? 'border-white/[0.1]' : 'border-slate-200'"
         >
           <img 
             v-if="!logoError"
@@ -51,7 +51,7 @@
             class="w-full h-full object-contain p-1.5"
             @error="logoError = true"
           />
-          <span v-else class="font-mono font-black text-sm uppercase" :class="isDark ? 'text-white' : 'text-neutral-900'">
+          <span v-else class="font-mono font-black text-sm uppercase" :class="isDark ? 'text-white' : 'text-slate-900'">
             {{ symbol.replace('.JK', '').substring(0, 3) }}
           </span>
         </div>
@@ -59,14 +59,14 @@
         <div class="min-w-0">
           <div class="flex items-center gap-2 mb-0.5">
             <h2 class="font-mono font-black text-2xl md:text-3xl tracking-tight uppercase"
-              :class="isDark ? 'text-white' : 'text-neutral-900'"
+              :class="isDark ? 'text-white' : 'text-slate-900'"
             >{{ symbol }}</h2>
             <span v-if="stockData?.sector" 
-              class="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest border rounded-xs"
-              :class="isDark ? 'bg-neutral-800 border-neutral-700 text-neutral-300' : 'bg-neutral-100 border-neutral-300 text-neutral-700'"
+              class="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest border rounded-md"
+              :class="isDark ? 'bg-white/[0.05] border-white/[0.1] text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'"
             >{{ stockData.sector }}</span>
           </div>
-          <p class="text-xs truncate font-sans opacity-70" :class="isDark ? 'text-neutral-400' : 'text-neutral-600'">
+          <p class="text-xs truncate font-sans opacity-70" :class="isDark ? 'text-slate-400' : 'text-slate-600'">
             {{ stockData?.name || stockData?.company || 'Equities / Stock' }}
           </p>
         </div>
@@ -74,17 +74,17 @@
 
       <!-- Right: Main Price Display & Day Range Bar -->
       <div class="flex flex-col md:items-end justify-center border-t md:border-t-0 pt-3 md:pt-0"
-        :class="isDark ? 'border-neutral-800/80' : 'border-neutral-100'"
+        :class="isDark ? 'border-white/[0.06]' : 'border-slate-100'"
       >
         <div class="flex items-baseline md:justify-end gap-3">
           <p class="font-mono font-black text-3xl md:text-4xl tracking-tight tabular-nums"
-            :class="isDark ? 'text-white' : 'text-neutral-900'"
+            :class="isDark ? 'text-white' : 'text-slate-900'"
           >{{ formatPrice(currentPrice) }}</p>
 
-          <span class="px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider uppercase border rounded-xs flex items-center gap-1"
+          <span class="px-2.5 py-1 text-[11px] font-mono font-bold tracking-wider uppercase border rounded-lg flex items-center gap-1 shadow-xs"
             :class="changeValue >= 0 
-              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
-              : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'"
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+              : 'bg-rose-500/10 text-rose-400 border-rose-500/20'"
           >
             <span class="material-symbols-outlined text-xs">{{ changeValue >= 0 ? 'arrow_upward' : 'arrow_downward' }}</span>
             {{ changeValue >= 0 ? '+' : '' }}{{ formatPrice(changeValue) }} ({{ changeValue >= 0 ? '+' : '' }}{{ changePct.toFixed(2) }}%)
@@ -93,20 +93,23 @@
 
         <!-- Day Low / High Range Bar (Stockbit Style) -->
         <div v-if="dayLow && dayHigh" class="w-full md:w-56 mt-2 text-[9px] font-mono">
-          <div class="flex justify-between items-center opacity-60 mb-0.5">
+          <div class="flex justify-between items-center opacity-60 mb-1">
             <span>L: {{ formatPrice(dayLow) }}</span>
             <span>H: {{ formatPrice(dayHigh) }}</span>
           </div>
-          <div class="h-1.5 w-full bg-neutral-200 dark:bg-neutral-800 rounded-xs overflow-hidden relative">
-            <div class="h-full bg-primary" :style="{ width: `${dayRangePct}%` }"></div>
+          <div class="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden relative">
+            <div 
+              class="absolute top-0 bottom-0 bg-gradient-to-r from-emerald-500 via-primary to-blue-500 rounded-full"
+              :style="{ left: '0%', width: Math.min(100, Math.max(0, ((currentPrice - dayLow) / (dayHigh - dayLow || 1)) * 100)) + '%' }"
+            ></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Stats Grid: Swiss Modular Table -->
+    <!-- Stats Grid: Linear / Vercel Stats -->
     <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0"
-      :class="isDark ? 'divide-neutral-800 bg-neutral-950/40' : 'divide-neutral-200 bg-neutral-50/50'"
+      :class="isDark ? 'divide-white/[0.06] bg-white/[0.01]' : 'divide-slate-100 bg-slate-50/50'"
     >
       <div v-for="stat in stats" :key="stat.label" class="p-3.5 md:p-4">
         <p class="text-[9px] font-mono uppercase tracking-[0.2em] opacity-50 mb-1">
