@@ -169,7 +169,7 @@
             >
               <div>
                 <p class="text-[9.5px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest flex items-center gap-1 mb-1">
-                  <span class="material-symbols-outlined text-xs">gpp_bad</span> [ 04 // CUT LOSS &amp; R:R ]
+                  <span class="material-symbols-outlined text-xs">gavel</span> [ 04 // CUT LOSS &amp; R:R ]
                 </p>
                 <div class="flex items-center justify-between mt-1">
                   <span class="text-[10px] opacity-70 font-medium">SL:</span>
@@ -179,6 +179,76 @@
                   <span class="text-[10px] opacity-70 font-medium">R:R:</span>
                   <span class="text-xs font-black text-emerald-500 tabular-nums">1 : {{ horizonData.rrr }}</span>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panduan Eksekusi Orang Awam & Trader (Super Actionable) -->
+          <div class="p-4 border rounded-md font-mono" :class="isDark ? 'bg-neutral-900/60 border-neutral-700 text-white' : 'bg-neutral-50 border-neutral-300 text-neutral-900 shadow-xs'">
+            <div class="flex items-center gap-2 pb-2 mb-3 border-b" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
+              <span class="material-symbols-outlined text-emerald-500 text-base">recommend</span>
+              <span class="text-xs font-black uppercase tracking-wider">PANDUAN LANGKAH EKSEKUSI TRADER</span>
+            </div>
+
+            <div class="space-y-2.5 text-xs font-sans">
+              <!-- Step 1: Entry -->
+              <div class="flex items-start gap-2">
+                <span class="w-5 h-5 rounded-sm bg-emerald-500/20 text-emerald-500 border border-emerald-500/40 font-mono font-bold text-[10px] flex items-center justify-center shrink-0">1</span>
+                <div>
+                  <p class="font-bold text-emerald-600 dark:text-emerald-400">TITIK MASUK / OPEN POSISI</p>
+                  <p class="text-[11px] opacity-80">Pasang antrean beli di kisaran harga <strong class="font-mono text-xs">Rp {{ formatPrice(horizonData.buyPrice) }}</strong>. Hindari kejar harga jika sudah naik di atas <strong class="font-mono text-xs">Rp {{ formatPrice(horizonData.waitPrice) }}</strong>.</p>
+                </div>
+              </div>
+
+              <!-- Step 2: Take Profit -->
+              <div class="flex items-start gap-2">
+                <span class="w-5 h-5 rounded-sm bg-blue-500/20 text-blue-500 border border-blue-500/40 font-mono font-bold text-[10px] flex items-center justify-center shrink-0">2</span>
+                <div>
+                  <p class="font-bold text-blue-600 dark:text-blue-400">TARGET AMBIL UNTUNG (TAKE PROFIT)</p>
+                  <p class="text-[11px] opacity-80">
+                    Jual 50% lot saat harga mencapai <strong class="font-mono text-xs">Rp {{ formatPrice(horizonData.tp1) }} ({{ horizonData.tp1Gain }})</strong> untuk amankan cuan, dan pasang <em>trailing stop</em> untuk sisa 50% lot menuju target <strong class="font-mono text-xs">Rp {{ formatPrice(horizonData.tp2) }} ({{ horizonData.tp2Gain }})</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Step 3: Cut Loss -->
+              <div class="flex items-start gap-2">
+                <span class="w-5 h-5 rounded-sm bg-red-500/20 text-red-500 border border-red-500/40 font-mono font-bold text-[10px] flex items-center justify-center shrink-0">3</span>
+                <div>
+                  <p class="font-bold text-red-600 dark:text-red-400">BATAS DISIPLIN CUT LOSS</p>
+                  <p class="text-[11px] opacity-80">
+                    Jika harga jebol ke bawah <strong class="font-mono text-xs">&lt; Rp {{ formatPrice(horizonData.sl) }} ({{ horizonData.slLoss }})</strong>, wajib langsung jual/cut loss untuk melindungi modal dari resiko penurunan lebih dalam.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Step 4: Jam & Durasi -->
+              <div class="flex items-start gap-2">
+                <span class="w-5 h-5 rounded-sm bg-purple-500/20 text-purple-500 border border-purple-500/40 font-mono font-bold text-[10px] flex items-center justify-center shrink-0">4</span>
+                <div>
+                  <p class="font-bold text-purple-600 dark:text-purple-400">DURASI &amp; WAKTU TRADING</p>
+                  <p class="text-[11px] opacity-80">
+                    <span v-if="activeHorizon === 'scalp'"><strong>Scalping Harian:</strong> Open posisi terbaik jam 09:00 - 10:30 WIB saat likuiditas pagi tinggi, dan <strong>WAJIB TUTUP / JUAL sebelum jam 15:50 WIB</strong> sore (tidak menginapkan posisi).</span>
+                    <span v-else-if="activeHorizon === 'swing'"><strong>Swing Trade:</strong> Tahan posisi 3 - 10 hari bursa hingga target resistance atau trailing stop tersentuh.</span>
+                    <span v-else><strong>Value Investing:</strong> Akumulasi bertahap (DCA) setiap bulan pada area valuasi diskon intrinsic value.</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Simulasi Kas Riil Pemula -->
+            <div class="mt-3 pt-2.5 border-t text-[10px] font-mono grid grid-cols-3 gap-2 text-center" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
+              <div class="p-2 border rounded-sm" :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'">
+                <p class="opacity-50 text-[8px] uppercase">CONTOH MODAL (10 LOT)</p>
+                <p class="font-bold tabular-nums">Rp {{ formatPrice(currentPrice * 1000) }}</p>
+              </div>
+              <div class="p-2 border rounded-sm bg-emerald-500/10 border-emerald-500/30 text-emerald-500">
+                <p class="opacity-70 text-[8px] uppercase">ESTIMASI CUAN TP1</p>
+                <p class="font-black tabular-nums">+Rp {{ formatPrice(Math.max(0, Math.round((horizonData.tp1 - currentPrice) * 1000))) }}</p>
+              </div>
+              <div class="p-2 border rounded-sm bg-red-500/10 border-red-500/30 text-red-500">
+                <p class="opacity-70 text-[8px] uppercase">RESIKO MAX LOSS</p>
+                <p class="font-black tabular-nums">-Rp {{ formatPrice(Math.max(0, Math.round((currentPrice - horizonData.sl) * 1000))) }}</p>
               </div>
             </div>
           </div>

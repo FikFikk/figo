@@ -4,8 +4,8 @@
  * State apiSource disimpan secara global agar konsisten antar komponen
  */
 
-// State global: sumber API yang aktif (persisten antar komponen)
-const apiSource = ref<'zpi' | 'yahoo' | 'rapidapi'>('zpi')
+// State global: sumber API yang aktif (persisten antar komponen) — Default: TradingView (ZPI), opsi kedua: Yahoo Finance (RapidAPI dinonaktifkan karena rate-limit)
+const apiSource = ref<'zpi' | 'yahoo'>('zpi')
 
 interface UseStockApiReturn {
   // Loading & error state
@@ -13,7 +13,7 @@ interface UseStockApiReturn {
   error: Ref<string>
 
   // API Source toggle
-  apiSource: Ref<'zpi' | 'yahoo' | 'rapidapi'>
+  apiSource: Ref<'zpi' | 'yahoo'>
   toggleApiSource: () => void
 
   // Fungsi fetch
@@ -50,11 +50,9 @@ export function useStockApi(): UseStockApiReturn {
     }
   }
 
-  // Toggle antara Yahoo Finance dan RapidAPI IDX
+  // Toggle antara TradingView (ZPI) dan Yahoo Finance
   function toggleApiSource() {
-    if (apiSource.value === 'zpi') apiSource.value = 'yahoo';
-    else if (apiSource.value === 'yahoo') apiSource.value = 'rapidapi';
-    else apiSource.value = 'zpi';
+    apiSource.value = apiSource.value === 'zpi' ? 'yahoo' : 'zpi'
   }
 
   // Cari saham berdasarkan keyword — gunakan API yang aktif
