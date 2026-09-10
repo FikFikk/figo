@@ -1,39 +1,39 @@
 <template>
-  <div class="pt-24 pb-20 px-6 md:px-8 max-w-4xl mx-auto min-h-screen">
-    <!-- Header -->
-    <div class="text-center mb-12">
-      <div class="inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6"
-        :class="isDark ? 'bg-tertiary/15 text-tertiary' : 'bg-purple-50 text-tertiary'">
-        <span class="material-symbols-outlined text-sm align-middle mr-1">layers</span>
-        File Compressor
+  <div class="pt-20 pb-20 px-4 sm:px-6 md:px-8 max-w-4xl mx-auto min-h-screen font-mono">
+    <!-- Swiss Header -->
+    <div class="text-center mb-10">
+      <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xs text-[10px] font-bold uppercase tracking-widest border mb-4"
+        :class="isDark ? 'bg-neutral-900 border-neutral-800 text-purple-400' : 'bg-neutral-100 border-neutral-300 text-neutral-800'">
+        <span class="material-symbols-outlined text-[13px]">layers</span>
+        <span>SYS.05 // COMPRESSION SUITE</span>
       </div>
-      <h1 class="text-3xl md:text-5xl font-headline font-extrabold tracking-tight mb-4"
-        :class="isDark ? 'text-white' : 'text-slate-900'">Compress &amp; Optimize</h1>
-      <p class="text-base md:text-lg max-w-xl mx-auto" :class="isDark ? 'text-gray-400' : 'text-secondary'">
-        Reduce file sizes up to 80% without losing quality. Smart compression per file type.
+      <h1 class="text-2xl md:text-4xl font-headline font-black uppercase tracking-tight mb-2"
+        :class="isDark ? 'text-white' : 'text-neutral-900'">OPTIMIZE &amp; COMPRESS</h1>
+      <p class="text-xs md:text-sm font-sans max-w-lg mx-auto opacity-70">
+        Kompresi cerdas multi-file untuk mereduksi ukuran file hingga 80% dengan mempertahankan kualitas visual maksimal.
       </p>
     </div>
 
     <!-- Supported Formats Grid -->
     <div v-if="status === 'idle' && files.length === 0" class="mb-6">
-      <p class="text-center text-[10px] font-bold uppercase tracking-widest mb-3" :class="isDark ? 'text-gray-600' : 'text-slate-400'">Supported Formats</p>
-      <div class="flex flex-wrap justify-center gap-2">
+      <p class="text-center text-[9px] font-bold uppercase tracking-widest mb-2.5 opacity-50">SUPPORTED FORMATS</p>
+      <div class="flex flex-wrap justify-center gap-1.5">
         <div v-for="fmt in supportedFormats" :key="fmt.ext"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-          :class="isDark ? 'bg-white/5 text-gray-400 border border-white/5' : 'bg-slate-50 text-slate-500 border border-slate-100'">
+          class="flex items-center gap-1 px-2.5 py-1 rounded-xs text-[10px] font-bold uppercase tracking-wider border"
+          :class="isDark ? 'bg-neutral-900/60 text-neutral-300 border-neutral-800' : 'bg-white text-neutral-700 border-neutral-200 shadow-2xs'">
           <span class="material-symbols-outlined text-xs" :class="fmt.color">{{ fmt.icon }}</span>
           {{ fmt.ext }}
         </div>
       </div>
     </div>
 
-    <!-- Upload Zone -->
+    <!-- Upload Zone (Swiss Modular Dropzone) -->
     <div
       v-if="status === 'idle' && files.length === 0"
-      class="glass-panel rounded-2xl p-8 md:p-12 text-center cursor-pointer transition-all duration-300 group"
+      class="rounded-md p-8 md:p-12 text-center cursor-pointer transition-all border group relative"
       :class="[
-        isDark ? 'border-2 border-dashed border-white/10 hover:border-tertiary/40' : 'border-2 border-dashed border-slate-200 hover:border-tertiary/40',
-        isDragging ? '!border-tertiary bg-tertiary/5 scale-[1.01]' : ''
+        isDark ? 'bg-[#0d1117] border-neutral-800 hover:border-neutral-600' : 'bg-white border-neutral-300 hover:border-neutral-500 shadow-xs',
+        isDragging ? '!border-purple-500 bg-purple-500/5' : ''
       ]"
       @dragover.prevent="isDragging = true"
       @dragleave="isDragging = false"
@@ -41,15 +41,15 @@
       @click="triggerInput"
     >
       <input ref="fileInput" type="file" class="hidden" multiple @change="handleFileSelect" />
-      <div class="mb-4">
-        <span class="material-symbols-outlined text-5xl transition-transform duration-300 group-hover:scale-110"
-          :class="isDragging ? 'text-tertiary' : (isDark ? 'text-gray-500' : 'text-slate-400')">compress</span>
+      <div class="mb-3">
+        <span class="material-symbols-outlined text-4xl transition-transform duration-200 group-hover:scale-105"
+          :class="isDragging ? 'text-purple-500' : (isDark ? 'text-neutral-500' : 'text-neutral-400')">compress</span>
       </div>
-      <p class="font-headline font-bold text-lg mb-2" :class="isDark ? 'text-white' : 'text-slate-900'">
-        {{ isDragging ? 'Drop files here!' : 'Drag & drop files to compress' }}
+      <p class="font-headline font-black text-sm md:text-base uppercase tracking-wider mb-1" :class="isDark ? 'text-white' : 'text-neutral-900'">
+        {{ isDragging ? '[ DROP FILES HERE ]' : 'DRAG & DROP FILES UNTUK DIKOMPRESI' }}
       </p>
-      <p class="text-sm" :class="isDark ? 'text-gray-500' : 'text-slate-400'">
-        or <span class="text-tertiary font-medium">click to browse</span> • Max 50MB per file
+      <p class="text-xs font-sans opacity-60">
+        Pilih beberapa gambar/dokumen sekaligus • Maksimal 50MB per file
       </p>
     </div>
 

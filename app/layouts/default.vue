@@ -3,8 +3,8 @@ const { isDark } = useColorMode()
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col transition-colors duration-300 pb-20 md:pb-0"
-    :class="isDark ? 'bg-[#0f1117] text-gray-100' : 'bg-surface text-on-surface'"
+  <div class="min-h-screen flex flex-col transition-colors duration-200 pb-20 md:pb-0"
+    :class="isDark ? 'bg-[#090b10] text-white' : 'bg-neutral-50 text-neutral-900'"
   >
     <AppNavbar />
     <main class="flex-1 relative">

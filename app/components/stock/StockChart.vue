@@ -127,6 +127,25 @@
 
         <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
 
+        <!-- Zoom In / Zoom Out / Reset Controls -->
+        <button @click="zoomIn" class="w-6 h-6 flex items-center justify-center rounded-xs transition-all text-neutral-400 hover:text-neutral-900 dark:hover:text-white cursor-pointer"
+          title="Zoom In (Perbesar Candle)"
+        >
+          <span class="material-symbols-outlined text-[15px]">zoom_in</span>
+        </button>
+        <button @click="zoomOut" class="w-6 h-6 flex items-center justify-center rounded-xs transition-all text-neutral-400 hover:text-neutral-900 dark:hover:text-white cursor-pointer"
+          title="Zoom Out (Perkecil / Tampilkan Lebih Banyak)"
+        >
+          <span class="material-symbols-outlined text-[15px]">zoom_out</span>
+        </button>
+        <button @click="resetZoom" class="w-6 h-6 flex items-center justify-center rounded-xs transition-all text-neutral-400 hover:text-neutral-900 dark:hover:text-white cursor-pointer"
+          title="Reset Zoom Normal"
+        >
+          <span class="material-symbols-outlined text-[14px]">restart_alt</span>
+        </button>
+
+        <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
+
         <!-- Fullscreen Landscape Toggle Button -->
         <button @click="toggleFullscreen" class="h-6 px-2 flex items-center justify-center gap-1 rounded-xs transition-all font-bold cursor-pointer"
           :class="isFullscreen ? 'bg-amber-500 text-black font-black' : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
@@ -313,6 +332,9 @@ const visibleCandles = ref(60)
 let isDragging = false
 let dragStartX = 0
 let dragStartPan = 0
+let isPinching = false
+let initialPinchDist = 0
+let initialVisibleCandles = 60
 let isMobileLongPress = false
 let longPressTimer: ReturnType<typeof setTimeout> | null = null
 const isLoadingMore = ref(false)
@@ -864,6 +886,21 @@ function drawChart() {
 
   canvas.ontouchstart = (e: TouchEvent) => {
     if (!e.touches.length) return
+
+    // 2-finger pinch gesture
+    if (e.touches.length === 2) {
+      const t1 = e.touches[0]!
+      const t2 = e.touches[1]!
+      initialPinchDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY)
+      initialVisibleCandles = visibleCandles.value
+      isPinching = true
+      isDragging = false
+      isMobileLongPress = false
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
+      tooltip.show = false
+      return
+    }
+
     const t = e.touches[0]!
     dragStartX = t.clientX
     dragStartPan = panOffset.value
@@ -877,8 +914,25 @@ function drawChart() {
       showTooltipAt(t.clientX, t.clientY, true)
     }, 250)
   }
+
   canvas.ontouchmove = (e: TouchEvent) => {
     if (!e.touches.length) return
+
+    // Handle 2-finger pinch zoom
+    if (e.touches.length === 2 && isPinching) {
+      if (e.cancelable) e.preventDefault()
+      const t1 = e.touches[0]!
+      const t2 = e.touches[1]!
+      const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY)
+      if (initialPinchDist > 0 && currentDist > 0) {
+        const factor = initialPinchDist / currentDist
+        const targetCandles = Math.round(initialVisibleCandles * factor)
+        visibleCandles.value = Math.max(12, Math.min(250, targetCandles))
+        drawChart()
+      }
+      return
+    }
+
     const t = e.touches[0]!
     const dx = t.clientX - dragStartX
 
@@ -896,18 +950,39 @@ function drawChart() {
       }
     }
   }
+
   canvas.ontouchend = () => {
     if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
     isDragging = false
+    isPinching = false
     isMobileLongPress = false
     tooltip.show = false
   }
+
   canvas.ontouchcancel = () => {
     if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
     isDragging = false
+    isPinching = false
     isMobileLongPress = false
     tooltip.show = false
   }
+}
+
+// Quick Zoom Buttons
+function zoomIn() {
+  visibleCandles.value = Math.max(12, Math.round(visibleCandles.value * 0.75))
+  drawChart()
+}
+
+function zoomOut() {
+  visibleCandles.value = Math.min(250, Math.round(visibleCandles.value * 1.35))
+  drawChart()
+}
+
+function resetZoom() {
+  visibleCandles.value = 60
+  panOffset.value = 0
+  drawChart()
 }
 
 // Full-Fledged Price Action & Pattern Recognition Engine

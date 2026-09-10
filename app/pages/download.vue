@@ -1,60 +1,63 @@
 <template>
-  <div class="pt-24 pb-8 px-6 md:px-8 max-w-4xl mx-auto min-h-screen">
-    <!-- Header -->
-    <div class="text-center mb-12">
-      <div class="inline-block px-4 py-1.5 rounded-2xl text-xs font-bold tracking-widest uppercase mb-6"
-        :class="isDark ? 'bg-primary/15 text-primary' : 'bg-primary-fixed text-on-primary-fixed'"
+  <div class="pt-20 pb-12 px-4 sm:px-6 md:px-8 max-w-4xl mx-auto min-h-screen font-mono">
+    <!-- Swiss Header -->
+    <div class="text-center mb-10">
+      <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xs text-[10px] font-bold uppercase tracking-widest border mb-4"
+        :class="isDark ? 'bg-neutral-900 border-neutral-800 text-blue-400' : 'bg-neutral-100 border-neutral-300 text-neutral-800'"
       >
-        <span class="material-symbols-outlined text-sm align-middle mr-1">download</span>
-        Link Downloader
+        <span class="material-symbols-outlined text-[13px]">download</span>
+        <span>SYS.04 // MEDIA DOWNLOADER</span>
       </div>
-      <h1 class="text-3xl md:text-5xl font-headline font-extrabold tracking-tight mb-4"
-        :class="isDark ? 'text-white' : 'text-slate-900'"
-      >Download Anything</h1>
-      <p class="text-base md:text-lg max-w-xl mx-auto" :class="isDark ? 'text-gray-400' : 'text-secondary'">
-        Paste a link from YouTube, TikTok, Instagram, or Twitter and download the content instantly.
+      <h1 class="text-2xl md:text-4xl font-headline font-black uppercase tracking-tight mb-2"
+        :class="isDark ? 'text-white' : 'text-neutral-900'"
+      >UNIVERSAL DOWNLOADER</h1>
+      <p class="text-xs md:text-sm font-sans max-w-lg mx-auto opacity-70">
+        Download video, audio, dan foto dari YouTube, TikTok, Instagram, Twitter/X, dan Facebook dengan kualitas tertinggi.
       </p>
     </div>
 
-    <!-- URL Input -->
-    <div class="glass-panel rounded-2xl p-6 md:p-8" :class="isDark ? 'border border-white/5' : 'border border-slate-100'">
-      <div class="flex flex-col sm:flex-row gap-4">
+    <!-- URL Input (Swiss Style Modular Bar) -->
+    <div class="rounded-md p-4 sm:p-6 border" :class="isDark ? 'bg-[#0d1117] border-neutral-800' : 'bg-white border-neutral-300 shadow-xs'">
+      <div class="flex flex-col sm:flex-row gap-3">
         <div class="flex-1 relative">
           <!-- Dynamic Platform Icon -->
-          <div class="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center pointer-events-none transition-all duration-300">
-            <img v-if="detectedIcon" :src="detectedIcon" class="w-full h-full object-cover rounded-md shadow-sm bg-white" />
-            <span v-else class="material-symbols-outlined text-xl"
-              :class="isDark ? 'text-gray-500' : 'text-slate-400'"
+          <div class="absolute left-3.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center pointer-events-none transition-all">
+            <img v-if="detectedIcon" :src="detectedIcon" class="w-full h-full object-cover rounded-xs border" />
+            <span v-else class="material-symbols-outlined text-lg"
+              :class="isDark ? 'text-neutral-500' : 'text-neutral-400'"
             >link</span>
           </div>
           <input
             v-model="url"
             type="url"
-            placeholder="Paste URL here... (YouTube, TikTok, Instagram, Twitter)"
-            class="w-full pl-14 pr-12 py-4 rounded-md text-sm font-medium transition-all outline-none"
+            placeholder="PASTE URL DI SINI (YouTube, TikTok, IG, X, FB)..."
+            class="w-full pl-11 pr-10 py-3 rounded-xs text-xs font-mono font-bold uppercase tracking-wider transition-all outline-none border"
             :class="isDark
-              ? 'bg-white/5 text-white placeholder-gray-600 border border-white/10 focus:border-primary/40 focus:bg-white/8'
-              : 'bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 focus:border-primary focus:bg-white'"
+              ? 'bg-neutral-950 text-white placeholder-neutral-600 border-neutral-800 focus:border-neutral-500'
+              : 'bg-neutral-50 text-neutral-900 placeholder-neutral-400 border-neutral-300 focus:border-neutral-500'"
             @keydown.enter="fetchInfo"
             :disabled="isLoading"
           />
           <!-- Clear/Paste Button -->
           <button
-            class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            class="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-xs flex items-center justify-center transition-all text-neutral-400 hover:text-white cursor-pointer"
             @click="url ? resetAll() : pasteFromClipboard()"
           >
-            <span class="material-symbols-outlined text-lg">{{ url ? 'close' : 'content_paste' }}</span>
+            <span class="material-symbols-outlined text-base">{{ url ? 'close' : 'content_paste' }}</span>
           </button>
         </div>
         <button
-          class="px-8 py-4 bg-primary text-on-primary rounded-md font-headline font-bold text-sm hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 whitespace-nowrap"
+          class="px-6 py-3 rounded-xs font-headline font-black text-xs uppercase tracking-wider transition-all border flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+          :class="isDark 
+            ? 'bg-white text-neutral-950 border-white hover:bg-neutral-200' 
+            : 'bg-neutral-950 text-white border-neutral-950 hover:bg-neutral-800'"
           @click="fetchInfo"
           :disabled="!url.trim() || isLoading"
           :class="{ 'opacity-50 cursor-not-allowed': !url.trim() || isLoading }"
         >
-          <span v-if="isLoading" class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
-          <span v-else class="material-symbols-outlined text-lg">search</span>
-          {{ isLoading ? 'Fetching...' : 'Fetch Info' }}
+          <span v-if="isLoading" class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+          <span v-else class="material-symbols-outlined text-sm">search</span>
+          <span>{{ isLoading ? 'FETCHING...' : 'FETCH MEDIA' }}</span>
         </button>
       </div>
     </div>
