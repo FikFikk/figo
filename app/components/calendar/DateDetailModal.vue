@@ -98,7 +98,7 @@
                   <span class="font-normal opacity-50">· {{ info.zodiac.nameId }}</span>
                 </p>
                 <div class="flex items-center gap-2 mt-1">
-                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-xl"
                     :class="getElementStyle(info.zodiac.element)"
                   >
                     {{ info.zodiac.elementEmoji }} {{ info.zodiac.element }}
@@ -127,12 +127,12 @@
                   <span class="font-normal opacity-50">· {{ info.shio.name }}</span>
                 </p>
                 <div class="flex items-center gap-2 mt-1">
-                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-xl"
                     :class="getElementStyle(info.shio.element)"
                   >
                     {{ info.shio.elementEmoji }} {{ info.shio.element }}
                   </span>
-                  <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
+                  <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-xl"
                     :class="isDark ? 'bg-white/5 text-white/40' : 'bg-slate-100 text-slate-400'"
                   >
                     {{ info.shio.yinYang }}

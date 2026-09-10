@@ -22,7 +22,7 @@
         <div class="flex-1 relative">
           <!-- Dynamic Platform Icon -->
           <div class="absolute left-4 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center pointer-events-none transition-all">
-            <img v-if="detectedIcon" :src="detectedIcon" class="w-full h-full object-cover rounded-md border" />
+            <img v-if="detectedIcon" :src="detectedIcon" class="w-full h-full object-cover rounded-xl border" />
             <span v-else class="material-symbols-outlined text-xl"
               :class="isDark ? 'text-slate-500' : 'text-slate-400'"
             >link</span>
@@ -75,7 +75,7 @@
       <div class="glass-panel rounded-2xl p-6 md:p-8 border" :class="isDark ? 'border-white/5' : 'border-slate-100'">
         <!-- Video Preview -->
         <div class="flex flex-col md:flex-row gap-6 mb-8">
-          <div class="w-full md:w-64 shrink-0 rounded-md overflow-hidden shadow-lg aspect-video bg-black/10">
+          <div class="w-full md:w-64 shrink-0 rounded-xl overflow-hidden shadow-lg aspect-video bg-black/10">
             <img v-if="videoInfo.thumb && !failedThumbnails[videoInfo.thumb]" :src="getProxiedMediaUrl(videoInfo.thumb)" class="w-full h-full object-cover" alt="Thumbnail" @error="handleThumbnailError(videoInfo.thumb)" />
             <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
               <span class="material-symbols-outlined text-4xl text-white/20">movie</span>
@@ -112,7 +112,7 @@
             v-for="q in videoInfo.qualities"
             :key="q.formatId"
             @click="selectedFormat = q.formatId"
-            class="p-4 rounded-md text-left transition-all border-2 group"
+            class="p-4 rounded-xl text-left transition-all border-2 group"
             :class="selectedFormat === q.formatId
               ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10 scale-[1.02]'
               : isDark
@@ -147,7 +147,7 @@
         <button
           @click="downloadSelected"
           :disabled="!selectedFormat || isProcessing"
-          class="w-full py-4 bg-primary text-on-primary font-headline font-bold text-sm rounded-md hover:scale-[1.01] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.99] flex items-center justify-center gap-2"
+          class="w-full py-4 bg-primary text-on-primary font-headline font-bold text-sm rounded-xl hover:scale-[1.01] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.99] flex items-center justify-center gap-2"
           :class="{ 'opacity-50 cursor-not-allowed': !selectedFormat || isProcessing }"
         >
           <span v-if="isProcessing" class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
@@ -212,7 +212,7 @@
 
               <!-- Content for Video -->
               <div v-if="item.type === 'video' || item.type === 'gif'" class="space-y-2 mt-auto">
-                 <div v-for="q in item.qualities" :key="q.url" class="flex items-center justify-between p-2 rounded-md border" :class="isDark ? 'border-white/5 bg-black/20' : 'border-slate-200 bg-white'">
+                 <div v-for="q in item.qualities" :key="q.url" class="flex items-center justify-between p-2 rounded-xl border" :class="isDark ? 'border-white/5 bg-black/20' : 'border-slate-200 bg-white'">
                    <span class="font-bold text-sm" :class="isDark ? 'text-gray-200' : 'text-slate-700'">{{ q.height ? q.height + 'p' : 'Original' }}</span>
                    <button @click="downloadTwitterMedia(q.url, 'video', videoInfo.uploader, q.height ? q.height + 'p' : 'Orig')" class="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold text-xs rounded-2xl transition-colors flex items-center gap-1">
                      <span class="material-symbols-outlined text-[14px]">download</span> Download

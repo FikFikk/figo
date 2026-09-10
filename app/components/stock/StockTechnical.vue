@@ -1,5 +1,5 @@
 <template>
-  <div class="border rounded-md overflow-hidden transition-all duration-200"
+  <div class="border rounded-xl overflow-hidden transition-all duration-200"
     :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'"
   >
     <!-- Header -->
@@ -35,7 +35,7 @@
 
     <!-- Unlocked State -->
     <div v-if="!data && !loading" class="flex flex-col items-center justify-center p-8 text-center min-h-[220px]">
-      <div class="w-10 h-10 border rounded-md flex items-center justify-center mb-3" 
+      <div class="w-10 h-10 border rounded-xl flex items-center justify-center mb-3" 
         :class="isDark ? 'bg-neutral-900 border-neutral-700 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'"
       >
         <span class="material-symbols-outlined text-lg">lock</span>
@@ -45,7 +45,7 @@
       </h4>
       <p class="text-[11px] opacity-60 mb-4 max-w-[220px]">Click below to compute RSI, MACD, Stochastic &amp; Moving Averages.</p>
       <button @click="$emit('fetch')" 
-        class="px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider border rounded-md transition-all hover:border-neutral-400"
+        class="px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider border rounded-xl transition-all hover:border-neutral-400"
         :class="isDark 
           ? 'bg-white text-black border-white hover:bg-neutral-200' 
           : 'bg-neutral-900 text-white border-neutral-900 hover:bg-neutral-800'"

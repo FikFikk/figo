@@ -66,14 +66,14 @@
             <p class="text-[9px] text-center mb-1 font-bold" :class="p.labelColor">{{p.label}}</p>
             <p class="text-xs font-bold font-headline text-center mb-1" :class="isDark?'text-white':'text-slate-900'">{{p.name}}</p>
             <p class="text-[9px] leading-relaxed text-center flex-1" :class="isDark?'text-gray-500':'text-slate-500'">{{p.desc}}</p>
-            <div class="mt-2 flex justify-center"><span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-md tracking-wider" :class="signalClass(p.signal)">{{p.signal}}</span></div>
+            <div class="mt-2 flex justify-center"><span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-xl tracking-wider" :class="signalClass(p.signal)">{{p.signal}}</span></div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Kategori Konsep Lanjutan (collapsible) -->
-    <div v-for="cc in advConcepts" :key="cc.title" class="glass-panel rounded-md border overflow-hidden" :class="isDark?'border-white/5':'border-slate-100'">
+    <div v-for="cc in advConcepts" :key="cc.title" class="glass-panel rounded-xl border overflow-hidden" :class="isDark?'border-white/5':'border-slate-100'">
       <button @click="cc.open=!cc.open" class="w-full flex items-center justify-between p-5 text-left transition-colors" :class="isDark?'hover:bg-white/5':'hover:bg-slate-50'">
         <div>
           <p class="text-[9px] font-black uppercase tracking-[0.2em] mb-1" :class="isDark?'text-gray-600':'text-slate-400'">{{cc.subtitle}}</p>
@@ -86,7 +86,7 @@
       </button>
       <div v-show="cc.open">
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-5 pb-5">
-          <div v-for="c in cc.concepts" :key="c.name" @click="openConcept(c,cc.title)" class="rounded-md border p-4 flex flex-col items-center transition-all hover:scale-[1.02] cursor-pointer" :class="isDark?'bg-white/[0.03] border-white/10 hover:border-white/20':'bg-slate-50 border-slate-200 hover:border-slate-300'">
+          <div v-for="c in cc.concepts" :key="c.name" @click="openConcept(c,cc.title)" class="rounded-xl border p-4 flex flex-col items-center transition-all hover:scale-[1.02] cursor-pointer" :class="isDark?'bg-white/[0.03] border-white/10 hover:border-white/20':'bg-slate-50 border-slate-200 hover:border-slate-300'">
             <span class="material-symbols-outlined text-2xl mb-2 text-primary">{{c.icon}}</span>
             <p class="text-xs font-bold font-headline text-center mb-1" :class="isDark?'text-white':'text-slate-900'">{{c.name}}</p>
             <p class="text-[9px] leading-relaxed text-center" :class="isDark?'text-gray-500':'text-slate-500'">{{c.desc}}</p>

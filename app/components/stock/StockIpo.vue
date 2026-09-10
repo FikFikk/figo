@@ -79,7 +79,7 @@
               <div class="pr-24">
                 <div class="flex items-center gap-2 mb-1">
                   <h3 class="font-headline font-black text-2xl tracking-tight" :class="isDark ? 'text-white' : 'text-slate-900'">{{ ipo.symbol }}</h3>
-                  <span class="px-2 py-0.5 text-[10px] font-bold rounded-md" :class="getScoreClass(ipo.momentum_score)">
+                  <span class="px-2 py-0.5 text-[10px] font-bold rounded-xl" :class="getScoreClass(ipo.momentum_score)">
                     Score: {{ ipo.momentum_score }}/10
                   </span>
                 </div>

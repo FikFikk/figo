@@ -29,7 +29,7 @@
 
       <!-- MOBILE TOP BAR (Only visible on mobile) -->
       <div class="md:hidden flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 z-20 shadow-sm shrink-0">
-        <button @click="isMobileMenuOpen = true" class="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
+        <button @click="isMobileMenuOpen = true" class="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
           Menu
         </button>
@@ -47,7 +47,7 @@
           
           <h2 class="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest mb-6 uppercase">Workspace</h2>
           
-          <div class="flex items-center gap-3 px-3 py-2 bg-slate-200/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 rounded-md text-sm font-medium mb-1">
+          <div class="flex items-center gap-3 px-3 py-2 bg-slate-200/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-medium mb-1">
             <svg class="w-4 h-4 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             Nodes Overview
           </div>
@@ -59,7 +59,7 @@
               @input="filterList"
               type="text" 
               placeholder="Search..." 
-              class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 transition-colors text-slate-700 dark:text-slate-200"
+              class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 transition-colors text-slate-700 dark:text-slate-200"
             />
           </div>
         </div>
@@ -68,7 +68,7 @@
           <button 
             v-for="node in filteredNodes" :key="node.id"
             @click="selectNodeFromList(node.id)"
-            class="w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-3"
+            class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center gap-3"
             :class="selectedNode?.id === node.id 
               ? 'bg-blue-600 text-white shadow-sm' 
               : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'"
@@ -86,7 +86,7 @@
         </div>
         
         <div class="absolute bottom-6 left-6 flex gap-2 z-20 pointer-events-auto">
-          <button @click="recenterGraph" class="px-3 py-1.5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-md shadow-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          <button @click="recenterGraph" class="px-3 py-1.5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
             Center Canvas
           </button>
         </div>
@@ -112,7 +112,7 @@
               </span>
             </div>
             <!-- Huge Close Button for Mobile Accessibility -->
-            <button @click="selectedNode = null" class="bg-rose-100 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 hover:bg-rose-200 transition border border-rose-200 dark:border-rose-900/50 rounded-md px-3 py-1 text-xs font-bold uppercase tracking-wider">TUTUP</button>
+            <button @click="selectedNode = null" class="bg-rose-100 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 hover:bg-rose-200 transition border border-rose-200 dark:border-rose-900/50 rounded-xl px-3 py-1 text-xs font-bold uppercase tracking-wider">TUTUP</button>
           </div>
 
           <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-8 tracking-tight shrink-0">

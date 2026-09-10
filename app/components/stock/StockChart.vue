@@ -10,7 +10,7 @@
       :class="isDark ? 'border-white/[0.06]' : 'border-slate-100'"
     >
       <div class="flex items-center gap-2.5 shrink-0">
-        <span class="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase tracking-widest border"
+        <span class="px-2 py-0.5 rounded-xl text-[9px] font-mono font-bold uppercase tracking-widest border"
           :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'"
         >
           OHLCV TERMINAL
@@ -48,7 +48,7 @@
 
     <!-- Empty State -->
     <div v-if="!data?.length && !loading" class="flex flex-col items-center justify-center py-10 text-center font-mono" style="height: 440px;">
-      <div class="w-12 h-12 rounded-md flex items-center justify-center mb-3 border"
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3 border"
         :class="isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'"
       >
         <span class="material-symbols-outlined text-xl">candlestick_chart</span>
@@ -56,7 +56,7 @@
       <h4 class="font-bold text-sm mb-1 uppercase tracking-wider" :class="isDark ? 'text-white' : 'text-neutral-900'">OHLCV CHART STANDBY</h4>
       <p class="text-[11px] text-neutral-500 mb-4 max-w-[280px]">Klik untuk memuat grafik pergerakan harga historis.</p>
       <button @click="$emit('fetch', getActivePeriodParams())"
-        class="px-6 py-2.5 rounded-md text-xs font-bold font-headline uppercase tracking-wider transition-all border cursor-pointer"
+        class="px-6 py-2.5 rounded-xl text-xs font-bold font-headline uppercase tracking-wider transition-all border cursor-pointer"
         :class="isDark ? 'bg-white text-neutral-950 border-white hover:bg-neutral-200' : 'bg-neutral-950 text-white border-neutral-950 hover:bg-neutral-800'"
       >
         Tampilkan Chart
@@ -67,7 +67,7 @@
     <div v-else class="relative px-2 pb-2 pt-2 flex-1 w-full flex flex-col min-h-0" :style="{ height: isFullscreen ? 'calc(100vh - 85px)' : '440px' }">
       <!-- Loading -->
       <div v-if="loading && !isLoadingMore" class="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-xs z-10 font-mono text-xs">
-        <div class="flex items-center gap-2 px-4 py-2 rounded-md border bg-neutral-900 border-neutral-700 text-white">
+        <div class="flex items-center gap-2 px-4 py-2 rounded-xl border bg-neutral-900 border-neutral-700 text-white">
           <span class="material-symbols-outlined text-primary animate-spin text-base">progress_activity</span>
           <span>LOADING STREAM...</span>
         </div>
@@ -77,7 +77,7 @@
       <canvas ref="canvasRef" class="w-full h-full touch-none cursor-grab active:cursor-grabbing" :class="{ 'opacity-0': loading && !isLoadingMore, 'opacity-50 blur-[1px] cursor-wait': loading && isLoadingMore }"></canvas>
 
       <!-- Loading indicator saat auto-load more -->
-      <div v-if="atLeftEdge && loading" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-mono font-bold backdrop-blur-md border"
+      <div v-if="atLeftEdge && loading" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold backdrop-blur-md border"
         :class="isDark ? 'bg-neutral-900/90 text-primary border-neutral-700' : 'bg-white/90 text-neutral-800 border-neutral-300'"
       >
         <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
@@ -180,7 +180,7 @@
         leave-to-class="opacity-0 scale-95"
       >
         <div v-if="tooltip.show"
-          class="absolute z-30 pointer-events-none p-2.5 rounded-md border text-[10px] font-mono shadow-2xl backdrop-blur-md"
+          class="absolute z-30 pointer-events-none p-2.5 rounded-xl border text-[10px] font-mono shadow-2xl backdrop-blur-md"
           :class="isDark ? 'bg-neutral-950/95 border-neutral-700 text-white' : 'bg-white/95 border-neutral-300 text-neutral-900'"
           :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
         >
@@ -208,7 +208,7 @@
     >
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
         <div class="flex items-center gap-2">
-          <span class="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase tracking-wider border"
+          <span class="px-2.5 py-0.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider border"
             :class="primaryPattern.category === 'BULLISH' 
               ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
               : primaryPattern.category === 'BEARISH' 

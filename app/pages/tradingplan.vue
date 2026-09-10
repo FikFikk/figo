@@ -118,7 +118,7 @@
       </div>
 
       <!-- Error Global -->
-      <div v-if="globalError" class="p-4 border rounded-md flex items-start gap-3 font-mono text-xs"
+      <div v-if="globalError" class="p-4 border rounded-xl flex items-start gap-3 font-mono text-xs"
         :class="isDark ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-red-50 text-red-700 border-red-200'"
       >
         <span class="material-symbols-outlined text-base">error</span>
@@ -134,11 +134,11 @@
       <!-- TAMPILAN 1: Saat Belum Ada Saham Dipilih (Search Landing) -->
       <div v-if="!selectedSymbol" class="py-6 text-center space-y-6">
         <!-- Kotak Edukasi / Panduan Awal (Lebar Penuh w-full Menyesuaikan Search & Movers) -->
-        <div class="w-full p-8 md:p-10 border rounded-md text-center"
+        <div class="w-full p-8 md:p-10 border rounded-xl text-center"
           :class="isDark ? 'bg-neutral-900/30 border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'"
         >
           <div class="max-w-lg mx-auto">
-            <div class="w-10 h-10 border rounded-md flex items-center justify-center mx-auto mb-3"
+            <div class="w-10 h-10 border rounded-xl flex items-center justify-center mx-auto mb-3"
               :class="isDark ? 'bg-neutral-900 border-neutral-700 text-primary' : 'bg-neutral-100 border-neutral-300 text-primary'"
             >
               <span class="material-symbols-outlined text-xl">candlestick_chart</span>
@@ -153,7 +153,7 @@
         </div>
 
         <!-- Market Movers (Full Width Matching Search Bar) -->
-        <div class="border rounded-md overflow-hidden w-full text-left"
+        <div class="border rounded-xl overflow-hidden w-full text-left"
           :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'"
         >
           <button @click="moversOpen = !moversOpen"

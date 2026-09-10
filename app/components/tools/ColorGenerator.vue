@@ -531,11 +531,11 @@
             <div class="flex items-center justify-between gap-1 px-5 py-3.5 rounded-2xl border border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 shadow-inner">
               <span class="text-[10px] font-bold uppercase opacity-60 mr-1">Count</span>
               <div class="flex items-center bg-white/50 dark:bg-black/30 rounded-lg p-1">
-                <button @click="shadeLevels > 3 && shadeLevels--; generateShades()" :disabled="shadeLevels <= 3" class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                <button @click="shadeLevels > 3 && shadeLevels--; generateShades()" :disabled="shadeLevels <= 3" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/10 dark:hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                   <span class="material-symbols-outlined text-[14px]">remove</span>
                 </button>
                 <span class="text-[12px] font-mono font-bold w-10 text-center">{{ shadeLevels }}</span>
-                <button @click="shadeLevels < 20 && shadeLevels++; generateShades()" :disabled="shadeLevels >= 20" class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                <button @click="shadeLevels < 20 && shadeLevels++; generateShades()" :disabled="shadeLevels >= 20" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/10 dark:hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                   <span class="material-symbols-outlined text-[14px]">add</span>
                 </button>
               </div>

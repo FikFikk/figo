@@ -2,7 +2,7 @@
   <div class="relative w-full">
     <!-- Input Pencarian Swiss Style -->
     <div class="relative">
-      <div class="flex items-center border rounded-md transition-all duration-200"
+      <div class="flex items-center border rounded-xl transition-all duration-200"
         :class="[
           isDark 
             ? 'bg-[#12141a] border-neutral-800 focus-within:border-neutral-400' 
@@ -141,7 +141,7 @@
       leave-to-class="opacity-0 -translate-y-1"
     >
       <div v-if="showDropdown && query.length > 0"
-        class="absolute top-full left-0 right-0 mt-1 shadow-2xl z-50 max-h-80 overflow-y-auto border rounded-md"
+        class="absolute top-full left-0 right-0 mt-1 shadow-2xl z-50 max-h-80 overflow-y-auto border rounded-xl"
         :class="isDark ? 'bg-[#15171e] border-neutral-800 text-neutral-200' : 'bg-white border-neutral-300 text-neutral-900'"
       >
         <!-- Header Dropdown -->

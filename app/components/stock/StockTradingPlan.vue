@@ -3,7 +3,7 @@
     <!-- Linear Terminal Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-5 border-b gap-3" :class="isDark ? 'border-white/[0.06]' : 'border-slate-100'">
       <div class="flex items-center gap-2.5">
-        <span class="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase tracking-widest border"
+        <span class="px-2 py-0.5 rounded-xl text-[9px] font-mono font-bold uppercase tracking-widest border"
           :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'"
         >
           QUANT ENGINE
@@ -95,7 +95,7 @@
               <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
                 {{ activeHorizon === 'scalp' ? 'HORIZON 01 // INTRADAY SCALP' : activeHorizon === 'swing' ? 'HORIZON 02 // SWING TRADE' : 'HORIZON 03 // VALUE INVESTING' }}
               </span>
-              <span class="text-xs font-bold font-mono px-2.5 py-0.5 border rounded-md"
+              <span class="text-xs font-bold font-mono px-2.5 py-0.5 border rounded-xl"
                 :class="horizonData.badgeClass"
               >
                 {{ horizonData.verdict }}
@@ -110,7 +110,7 @@
           <!-- Execution Matrix (Buy, Target 1, Target 2, Stop Loss, Risk/Reward) -->
           <div class="grid grid-cols-2 gap-2">
             <!-- Cell 01: Buy Execution -->
-            <div class="p-3 border rounded-md flex flex-col justify-between"
+            <div class="p-3 border rounded-xl flex flex-col justify-between"
               :class="isDark ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200'"
             >
               <div>
@@ -126,7 +126,7 @@
             </div>
 
             <!-- Cell 02: Avoid/Wait Trigger -->
-            <div class="p-3 border rounded-md flex flex-col justify-between"
+            <div class="p-3 border rounded-xl flex flex-col justify-between"
               :class="isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200'"
             >
               <div>
@@ -145,7 +145,7 @@
           <!-- Targets & SL Matrix -->
           <div class="grid grid-cols-2 gap-2">
             <!-- TP 1 & TP 2 -->
-            <div class="p-3 border rounded-md flex flex-col justify-between"
+            <div class="p-3 border rounded-xl flex flex-col justify-between"
               :class="isDark ? 'bg-blue-500/10 border-blue-500/30' : 'bg-blue-50 border-blue-200'"
             >
               <div>
@@ -164,7 +164,7 @@
             </div>
 
             <!-- Stop Loss & Risk Reward -->
-            <div class="p-3 border rounded-md flex flex-col justify-between"
+            <div class="p-3 border rounded-xl flex flex-col justify-between"
               :class="isDark ? 'bg-red-500/10 border-red-500/30' : 'bg-red-50 border-red-200'"
             >
               <div>
@@ -184,7 +184,7 @@
           </div>
 
           <!-- Panduan Eksekusi Orang Awam & Trader (Super Actionable) -->
-          <div class="p-4 border rounded-md font-mono" :class="isDark ? 'bg-neutral-900/60 border-neutral-700 text-white' : 'bg-neutral-50 border-neutral-300 text-neutral-900 shadow-xs'">
+          <div class="p-4 border rounded-xl font-mono" :class="isDark ? 'bg-neutral-900/60 border-neutral-700 text-white' : 'bg-neutral-50 border-neutral-300 text-neutral-900 shadow-xs'">
             <div class="flex items-center gap-2 pb-2 mb-3 border-b" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
               <span class="material-symbols-outlined text-emerald-500 text-base">recommend</span>
               <span class="text-xs font-black uppercase tracking-wider">PANDUAN LANGKAH EKSEKUSI TRADER</span>
@@ -254,7 +254,7 @@
           </div>
 
           <!-- Stockbit-Style Tape Pressure Gauge (Haka vs Haki Volume Ratio) -->
-          <div class="p-4 border rounded-md" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
+          <div class="p-4 border rounded-xl" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
             <div class="flex items-center justify-between mb-2 text-[10px]">
               <span class="font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-xs">speed</span>
@@ -279,7 +279,7 @@
           <div class="grid grid-cols-3 gap-2">
             <button v-for="s in plan.signals" :key="s.name"
               @click="openSignalDetail(s)"
-              class="flex flex-col items-center py-2.5 px-2 border rounded-md text-center transition-all hover:border-neutral-400 cursor-pointer"
+              class="flex flex-col items-center py-2.5 px-2 border rounded-xl text-center transition-all hover:border-neutral-400 cursor-pointer"
               :class="s.bias === 'BULLISH'
                 ? (isDark ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:border-emerald-400' : 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:border-emerald-600')
                 : s.bias === 'BEARISH'
@@ -297,7 +297,7 @@
         <div class="space-y-4">
           
           <!-- Stockbit-Style Seasonality Heatmap Matrix (12 Bulan Jan-Des) -->
-          <div class="p-4 border rounded-md" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
+          <div class="p-4 border rounded-xl" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
             <div class="flex items-center justify-between mb-3 border-b pb-2" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
               <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-xs">calendar_month</span>
@@ -327,7 +327,7 @@
           </div>
 
           <!-- Position Sizing & DCA Averaging Calculator -->
-          <div class="p-4 border rounded-md" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
+          <div class="p-4 border rounded-xl" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
             <div class="flex items-center justify-between pb-3 mb-3 border-b" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
               <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-xs">calculate</span>
@@ -343,7 +343,7 @@
                 <div class="relative flex items-center">
                   <span class="absolute left-2.5 text-[10px] font-mono font-bold opacity-40">Rp</span>
                   <input v-model.number="posAvgPrice" type="number" inputmode="decimal" placeholder="6500"
-                    class="w-full pl-8 pr-2.5 py-2 text-xs font-mono font-bold outline-none border rounded-md transition-all focus:border-primary dark:focus:border-primary"
+                    class="w-full pl-8 pr-2.5 py-2 text-xs font-mono font-bold outline-none border rounded-xl transition-all focus:border-primary dark:focus:border-primary"
                     :class="isDark ? 'bg-neutral-950 border-neutral-700 text-white placeholder:opacity-30' : 'bg-white border-neutral-300 text-neutral-900'" />
                 </div>
               </div>
@@ -351,7 +351,7 @@
                 <label class="text-[9px] font-bold opacity-60 uppercase tracking-wider block mb-1">JUMLAH LOT DI BUKU</label>
                 <div class="relative flex items-center">
                   <input v-model.number="posLots" type="number" inputmode="numeric" placeholder="50"
-                    class="w-full pl-2.5 pr-9 py-2 text-xs font-mono font-bold outline-none border rounded-md transition-all focus:border-primary dark:focus:border-primary"
+                    class="w-full pl-2.5 pr-9 py-2 text-xs font-mono font-bold outline-none border rounded-xl transition-all focus:border-primary dark:focus:border-primary"
                     :class="isDark ? 'bg-neutral-950 border-neutral-700 text-white placeholder:opacity-30' : 'bg-white border-neutral-300 text-neutral-900'" />
                   <span class="absolute right-2.5 text-[9px] font-mono font-bold opacity-40">LOT</span>
                 </div>
@@ -360,7 +360,7 @@
 
             <!-- Calculator Results -->
             <div v-if="posCalc" class="space-y-2.5">
-              <div class="p-3 border rounded-md flex items-center justify-between"
+              <div class="p-3 border rounded-xl flex items-center justify-between"
                 :class="posCalc.isProfit
                   ? (isDark ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200')
                   : (isDark ? 'bg-red-500/10 border-red-500/30' : 'bg-red-50 border-red-200')">
@@ -399,7 +399,7 @@
             </div>
 
             <!-- Footer Action Rules -->
-            <div class="p-3.5 border rounded-md text-[10px] leading-relaxed mt-4"
+            <div class="p-3.5 border rounded-xl text-[10px] leading-relaxed mt-4"
               :class="isDark ? 'bg-neutral-900/20 border-neutral-800 text-neutral-400' : 'bg-neutral-50 border-neutral-200 text-neutral-600'"
             >
               <div class="flex items-center gap-1.5 font-bold uppercase tracking-wider text-neutral-300 mb-1">
@@ -424,7 +424,7 @@
         leave-to-class="opacity-0 scale-98"
       >
         <div v-if="showMethodModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" @click.self="showMethodModal = false">
-          <div class="border rounded-md max-w-lg w-full max-h-[85vh] overflow-y-auto font-mono shadow-2xl"
+          <div class="border rounded-xl max-w-lg w-full max-h-[85vh] overflow-y-auto font-mono shadow-2xl"
             :class="isDark ? 'bg-[#0d1117] border-neutral-700 text-white' : 'bg-white border-neutral-300 text-neutral-900'"
           >
             <!-- Modal Header -->

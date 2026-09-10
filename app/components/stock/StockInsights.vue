@@ -1,5 +1,5 @@
 <template>
-  <div class="border rounded-md overflow-hidden transition-all duration-200"
+  <div class="border rounded-xl overflow-hidden transition-all duration-200"
     :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'"
   >
     <!-- Header -->

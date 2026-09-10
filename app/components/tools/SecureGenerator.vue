@@ -168,8 +168,8 @@
       <!-- Hash Tools -->
       <div v-if="activeTab === 'hash'" class="flex flex-col gap-5">
         <div class="flex p-1 rounded-xl w-fit" :class="isDark ? 'bg-slate-900 border border-slate-700' : 'bg-slate-100 border border-slate-200'">
-          <button @click="hashMode = 'encode'" class="px-4 py-1.5 rounded-md text-xs font-bold transition-all" :class="hashMode === 'encode' ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'">ENCODE</button>
-          <button @click="hashMode = 'decode'" class="px-4 py-1.5 rounded-md text-xs font-bold transition-all" :class="hashMode === 'decode' ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'">DECODE</button>
+          <button @click="hashMode = 'encode'" class="px-4 py-1.5 rounded-xl text-xs font-bold transition-all" :class="hashMode === 'encode' ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'">ENCODE</button>
+          <button @click="hashMode = 'decode'" class="px-4 py-1.5 rounded-xl text-xs font-bold transition-all" :class="hashMode === 'decode' ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'">DECODE</button>
         </div>
 
         <div v-if="hashMode === 'encode'" class="flex flex-col gap-3">

@@ -6,16 +6,16 @@
     <div class="flex justify-between items-center px-4 sm:px-6 md:px-8 py-3 max-w-7xl mx-auto">
       <!-- Brand Logo -->
       <div class="flex items-center gap-3">
-        <NuxtLink to="/" class="flex items-center gap-2 group">
-          <div class="w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs transition-all shadow-sm"
-            :class="isDark ? 'bg-gradient-to-br from-primary to-blue-600 text-white shadow-primary/20 group-hover:shadow-primary/40' : 'bg-slate-900 text-white group-hover:bg-slate-800'"
+        <NuxtLink to="/" class="flex items-center gap-2.5 group">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm transition-all shadow-md"
+            :class="isDark ? 'bg-gradient-to-br from-primary to-blue-600 text-white shadow-primary/25 group-hover:shadow-primary/40' : 'bg-slate-900 text-white group-hover:bg-slate-800 shadow-slate-900/20'"
           >
             F
           </div>
-          <span class="font-headline font-black text-sm tracking-tight" :class="isDark ? 'text-white' : 'text-slate-900'">
+          <span class="font-headline font-black text-base tracking-tight" :class="isDark ? 'text-white' : 'text-slate-900'">
             Fi<span class="text-primary">Go</span>
           </span>
-          <span class="px-1.5 py-0.5 rounded-md text-[9px] font-mono font-semibold tracking-wide border hidden sm:inline"
+          <span class="px-2 py-0.5 rounded-lg text-[9px] font-mono font-semibold tracking-wide border hidden sm:inline"
             :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'"
           >
             v2.6
@@ -24,14 +24,14 @@
       </div>
 
       <!-- Desktop Nav Links (Linear Minimalist Pills) -->
-      <div class="hidden md:flex items-center p-1 rounded-xl border backdrop-blur-md"
+      <div class="hidden md:flex items-center p-1 rounded-2xl border backdrop-blur-md"
         :class="isDark ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-100/80 border-slate-200/60'"
       >
         <NuxtLink
           v-for="link in navLinks"
           :key="link.to"
           :to="link.to"
-          class="px-3.5 py-1.5 rounded-lg text-xs font-medium tracking-tight transition-all relative flex items-center gap-1.5"
+          class="px-4 py-1.5 rounded-xl text-xs font-medium tracking-tight transition-all relative flex items-center gap-1.5"
           :class="isActive(link.to)
             ? (isDark ? 'bg-white/[0.1] text-white font-semibold shadow-xs' : 'bg-white text-slate-900 font-semibold shadow-xs')
             : (isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.04]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60')"
@@ -45,7 +45,7 @@
       <div class="flex items-center gap-2">
         <!-- Support Button -->
         <button
-          class="px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all border flex items-center gap-1.5 cursor-pointer"
+          class="px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight transition-all border flex items-center gap-1.5 cursor-pointer"
           :class="isDark 
             ? 'bg-white/[0.04] border-white/[0.08] text-slate-300 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15]' 
             : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 shadow-xs'"
@@ -57,7 +57,7 @@
 
         <!-- Theme Toggle Button -->
         <button
-          class="w-8 h-8 rounded-lg flex items-center justify-center transition-all border cursor-pointer"
+          class="w-8 h-8 rounded-xl flex items-center justify-center transition-all border cursor-pointer"
           :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-amber-400 hover:bg-white/[0.08]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs'"
           @click="toggle"
           :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
@@ -68,7 +68,7 @@
         <!-- Get Started / Tools CTA -->
         <NuxtLink
           to="/tools"
-          class="px-3.5 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all border hidden sm:flex items-center gap-1 shadow-sm"
+          class="px-4 py-1.5 rounded-xl text-xs font-semibold tracking-tight transition-all border hidden sm:flex items-center gap-1 shadow-sm"
           :class="isDark
             ? 'bg-gradient-to-r from-primary to-blue-600 text-white border-primary/40 hover:brightness-110 shadow-primary/20'
             : 'bg-slate-900 text-white border-slate-800 hover:bg-slate-800 shadow-slate-900/10'"

@@ -409,8 +409,8 @@ function selectTemplate(tId: string) {
 // Frame options
 const frameOptions = [
   { id: 'none', label: 'None', previewClass: '' },
-  { id: 'text-bottom', label: 'Bottom Text', previewClass: 'border-b-4 border-current rounded-md w-full h-full' },
-  { id: 'text-top', label: 'Top Text', previewClass: 'border-t-4 border-current rounded-md w-full h-full' },
+  { id: 'text-bottom', label: 'Bottom Text', previewClass: 'border-b-4 border-current rounded-xl w-full h-full' },
+  { id: 'text-top', label: 'Top Text', previewClass: 'border-t-4 border-current rounded-xl w-full h-full' },
   { id: 'badge', label: 'Badge', previewClass: 'border-4 border-current rounded-2xl w-full h-full shadow-lg' },
 ]
 
@@ -441,7 +441,7 @@ const visibleShapes = computed(() => showAllShapes.value ? shapeOptions : shapeO
 // Eye options (corner patterns)
 const eyeOptions = [
   { id: 'square', label: 'Square', previewClass: 'w-5 h-5 border-[3px] border-current' },
-  { id: 'rounded', label: 'Rounded', previewClass: 'w-5 h-5 border-[3px] border-current rounded-md' },
+  { id: 'rounded', label: 'Rounded', previewClass: 'w-5 h-5 border-[3px] border-current rounded-xl' },
   { id: 'circle', label: 'Circle', previewClass: 'w-5 h-5 border-[3px] border-current rounded-full' },
   { id: 'leaf', label: 'Leaf', previewClass: 'w-5 h-5 border-[3px] border-current rounded-tl-xl rounded-br-xl' },
 ]

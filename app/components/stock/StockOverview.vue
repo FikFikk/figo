@@ -17,17 +17,17 @@
 
       <!-- 3-Horizon Quick Verdict Badges -->
       <div class="flex items-center gap-1.5 font-bold text-[9px]">
-        <span class="px-2.5 py-0.5 rounded-md border"
+        <span class="px-2.5 py-0.5 rounded-xl border"
           :class="changePct >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'"
         >
           ⚡ SCALP: {{ changePct >= 0 ? 'MOMENTUM UP' : 'PULLBACK' }}
         </span>
-        <span class="px-2.5 py-0.5 rounded-md border"
+        <span class="px-2.5 py-0.5 rounded-xl border"
           :class="isDark ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-700 border-blue-200'"
         >
           🌊 SWING: ACCUMULATE
         </span>
-        <span class="px-2.5 py-0.5 rounded-md border"
+        <span class="px-2.5 py-0.5 rounded-xl border"
           :class="isDark ? 'bg-white/[0.04] text-slate-300 border-white/[0.08]' : 'bg-slate-100 text-slate-700 border-slate-200'"
         >
           🏛️ INVEST: HOLD
@@ -62,7 +62,7 @@
               :class="isDark ? 'text-white' : 'text-slate-900'"
             >{{ symbol }}</h2>
             <span v-if="stockData?.sector" 
-              class="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest border rounded-md"
+              class="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest border rounded-xl"
               :class="isDark ? 'bg-white/[0.05] border-white/[0.1] text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'"
             >{{ stockData.sector }}</span>
           </div>
@@ -125,12 +125,12 @@
   </div>
 
   <!-- Loading skeleton -->
-  <div v-else-if="loading" class="border p-6 animate-pulse rounded-md"
+  <div v-else-if="loading" class="border p-6 animate-pulse rounded-xl"
     :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300'"
   >
     <div class="flex items-start justify-between mb-6">
       <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-md" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
+        <div class="w-12 h-12 rounded-xl" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
         <div>
           <div class="h-6 w-24 mb-2" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
           <div class="h-3.5 w-44" :class="isDark ? 'bg-neutral-800/60' : 'bg-neutral-100'"></div>
