@@ -1,5 +1,5 @@
 <template>
-  <div v-if="info" class="border transition-all duration-200 rounded-2xl overflow-hidden font-mono"
+  <div v-if="info" class="border transition-all duration-200 rounded-md overflow-hidden font-mono"
     :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'"
   >
     <!-- Top Technical System Badge & Multi-Horizon Summary -->
@@ -41,7 +41,7 @@
     >
       <!-- Left: Logo & Company -->
       <div class="flex items-start md:items-center gap-3.5 min-w-0">
-        <div class="w-12 h-12 flex items-center justify-center flex-shrink-0 bg-neutral-100 dark:bg-neutral-900 border rounded-xl"
+        <div class="w-12 h-12 flex items-center justify-center flex-shrink-0 bg-neutral-100 dark:bg-neutral-900 border rounded-md"
           :class="isDark ? 'border-neutral-700' : 'border-neutral-200'"
         >
           <img 
@@ -62,7 +62,7 @@
               :class="isDark ? 'text-white' : 'text-neutral-900'"
             >{{ symbol }}</h2>
             <span v-if="stockData?.sector" 
-              class="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest border rounded"
+              class="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest border rounded-xs"
               :class="isDark ? 'bg-neutral-800 border-neutral-700 text-neutral-300' : 'bg-neutral-100 border-neutral-300 text-neutral-700'"
             >{{ stockData.sector }}</span>
           </div>
@@ -81,7 +81,7 @@
             :class="isDark ? 'text-white' : 'text-neutral-900'"
           >{{ formatPrice(currentPrice) }}</p>
 
-          <span class="px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider uppercase border rounded flex items-center gap-1"
+          <span class="px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider uppercase border rounded-xs flex items-center gap-1"
             :class="changeValue >= 0 
               ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
               : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'"
@@ -97,7 +97,7 @@
             <span>L: {{ formatPrice(dayLow) }}</span>
             <span>H: {{ formatPrice(dayHigh) }}</span>
           </div>
-          <div class="h-1.5 w-full bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden relative">
+          <div class="h-1.5 w-full bg-neutral-200 dark:bg-neutral-800 rounded-xs overflow-hidden relative">
             <div class="h-full bg-primary" :style="{ width: `${dayRangePct}%` }"></div>
           </div>
         </div>
@@ -122,12 +122,12 @@
   </div>
 
   <!-- Loading skeleton -->
-  <div v-else-if="loading" class="border p-6 animate-pulse rounded-2xl"
+  <div v-else-if="loading" class="border p-6 animate-pulse rounded-md"
     :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300'"
   >
     <div class="flex items-start justify-between mb-6">
       <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-xl" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
+        <div class="w-12 h-12 rounded-md" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
         <div>
           <div class="h-6 w-24 mb-2" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
           <div class="h-3.5 w-44" :class="isDark ? 'bg-neutral-800/60' : 'bg-neutral-100'"></div>

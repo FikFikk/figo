@@ -1,9 +1,9 @@
 <template>
-  <div class="rounded-2xl border p-5 md:p-6 transition-colors font-mono" :class="isDark ? 'bg-[#0d1117] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'">
+  <div class="rounded-md border p-5 md:p-6 transition-colors font-mono" :class="isDark ? 'bg-[#0d1117] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'">
     <!-- Swiss Terminal Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-5 border-b gap-3" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
       <div class="flex items-center gap-2.5">
-        <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest border"
+        <span class="px-2 py-0.5 rounded-xs text-[9px] font-mono font-bold uppercase tracking-widest border"
           :class="isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-neutral-100 border-neutral-300 text-neutral-700'"
         >
           SYS.02 // MULTI-HORIZON QUANT
@@ -13,7 +13,7 @@
         </h3>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded border"
+        <span class="text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded-xs border"
           :class="isDark ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-purple-50 text-purple-600 border-purple-200'">
           AI CONFLUENCE ENGINE
         </span>
@@ -22,7 +22,7 @@
 
     <!-- Empty State -->
     <div v-if="!data?.length && !loading" class="flex flex-col items-center justify-center py-10 text-center">
-      <div class="w-12 h-12 rounded-xl border flex items-center justify-center mb-3" :class="isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'">
+      <div class="w-12 h-12 rounded-md border flex items-center justify-center mb-3" :class="isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'">
         <span class="material-symbols-outlined text-xl">analytics</span>
       </div>
       <p class="text-[11px] opacity-60 mb-3 max-w-[240px] uppercase">TAMPILKAN CHART TERLEBIH DAHULU UNTUK MEMUAT DATA KALKULASI AI.</p>
@@ -30,12 +30,12 @@
 
     <!-- Locked State -->
     <div v-else-if="!isAnalyzed" class="flex flex-col items-center justify-center py-6 text-center">
-      <div class="w-12 h-12 rounded-xl border flex items-center justify-center mb-3" :class="isDark ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'bg-purple-50 border-purple-200 text-purple-600'">
+      <div class="w-12 h-12 rounded-md border flex items-center justify-center mb-3" :class="isDark ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'bg-purple-50 border-purple-200 text-purple-600'">
         <span class="material-symbols-outlined text-xl">smart_toy</span>
       </div>
       <h4 class="font-bold text-xs uppercase tracking-wider mb-1" :class="isDark ? 'text-white' : 'text-neutral-900'">QUANT STRATEGY ENGINE</h4>
       <p class="text-[11px] opacity-60 mb-4 max-w-[280px]">Multi-horizon quant algorithms: Scalping Harian, Swing Trading, &amp; Value Investing.</p>
-      <button @click="analyzeData" class="px-6 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all border"
+      <button @click="analyzeData" class="px-6 py-2.5 rounded-md text-xs font-mono font-bold uppercase tracking-wider transition-all border"
         :class="isDark ? 'bg-white text-neutral-950 border-white hover:bg-neutral-200' : 'bg-neutral-950 text-white border-neutral-950 hover:bg-neutral-800'"
       >
         Jalankan Kalkulasi
@@ -51,35 +51,35 @@
     <!-- Content -->
     <div v-else-if="plan" class="space-y-6">
 
-      <!-- Horizon Switcher: Scalping vs Swing vs Investing (Stockbit + Swiss Style) -->
-      <div class="grid grid-cols-3 divide-x border font-mono text-[10px]"
+      <!-- Horizon Switcher: Scalping vs Swing vs Investing (Swiss Segmented Grid) -->
+      <div class="grid grid-cols-3 divide-x border font-mono text-[11px] rounded-md overflow-hidden"
         :class="isDark ? 'bg-neutral-950 border-neutral-800 divide-neutral-800' : 'bg-neutral-50 border-neutral-200 divide-neutral-200'"
       >
-        <button @click="activeHorizon = 'scalp'" class="py-3 px-2 flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center"
+        <button @click="activeHorizon = 'scalp'" class="py-2.5 px-2 flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center"
           :class="activeHorizon === 'scalp' 
-            ? (isDark ? 'bg-white text-neutral-950 font-black' : 'bg-neutral-950 text-white font-black') 
-            : 'opacity-60 hover:opacity-100'"
+            ? (isDark ? 'bg-neutral-900 text-emerald-400 border-b-2 border-b-emerald-500 font-black' : 'bg-white text-emerald-700 border-b-2 border-b-emerald-600 shadow-xs font-black') 
+            : 'opacity-60 hover:opacity-100 hover:bg-neutral-900/30'"
         >
-          <span class="material-symbols-outlined text-xs">bolt</span>
-          <span>⚡ SCALPING (1D)</span>
+          <span class="material-symbols-outlined text-sm text-emerald-500">bolt</span>
+          <span>SCALPING (1D)</span>
         </button>
 
-        <button @click="activeHorizon = 'swing'" class="py-3 px-2 flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center"
+        <button @click="activeHorizon = 'swing'" class="py-2.5 px-2 flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center"
           :class="activeHorizon === 'swing' 
-            ? (isDark ? 'bg-white text-neutral-950 font-black' : 'bg-neutral-950 text-white font-black') 
-            : 'opacity-60 hover:opacity-100'"
+            ? (isDark ? 'bg-neutral-900 text-blue-400 border-b-2 border-b-blue-500 font-black' : 'bg-white text-blue-700 border-b-2 border-b-blue-600 shadow-xs font-black') 
+            : 'opacity-60 hover:opacity-100 hover:bg-neutral-900/30'"
         >
-          <span class="material-symbols-outlined text-xs">waves</span>
-          <span>🌊 SWING (1-2W)</span>
+          <span class="material-symbols-outlined text-sm text-blue-500">waves</span>
+          <span>SWING (1-2W)</span>
         </button>
 
-        <button @click="activeHorizon = 'invest'" class="py-3 px-2 flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center"
+        <button @click="activeHorizon = 'invest'" class="py-2.5 px-2 flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold transition-all text-center"
           :class="activeHorizon === 'invest' 
-            ? (isDark ? 'bg-white text-neutral-950 font-black' : 'bg-neutral-950 text-white font-black') 
-            : 'opacity-60 hover:opacity-100'"
+            ? (isDark ? 'bg-neutral-900 text-purple-400 border-b-2 border-b-purple-500 font-black' : 'bg-white text-purple-700 border-b-2 border-b-purple-600 shadow-xs font-black') 
+            : 'opacity-60 hover:opacity-100 hover:bg-neutral-900/30'"
         >
-          <span class="material-symbols-outlined text-xs">account_balance</span>
-          <span>🏛️ INVEST (1-3Y)</span>
+          <span class="material-symbols-outlined text-sm text-purple-500">account_balance</span>
+          <span>INVEST (1-3Y)</span>
         </button>
       </div>
 
@@ -90,89 +90,93 @@
         <div class="space-y-4">
           
           <!-- Horizon Header Banner -->
-          <div class="p-4 border" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
+          <div class="p-4 border rounded-md" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-[9px] font-bold uppercase tracking-widest text-primary">
+              <span class="text-[10px] font-bold uppercase tracking-widest text-primary">
                 {{ activeHorizon === 'scalp' ? 'HORIZON // 01 · FAST INTRADAY SCALP' : activeHorizon === 'swing' ? 'HORIZON // 02 · MOMENTUM SWING TRADE' : 'HORIZON // 03 · LONG-TERM VALUE INVESTING' }}
               </span>
-              <span class="text-xs font-black px-2 py-0.5 border"
+              <span class="text-xs font-black px-2 py-0.5 border rounded-sm"
                 :class="horizonData.badgeClass"
               >
                 {{ horizonData.verdict }}
               </span>
             </div>
             <p class="text-xs leading-relaxed font-sans opacity-85">{{ horizonData.description }}</p>
-            <div class="mt-2 text-[9px] font-mono text-neutral-400 border-t pt-1.5" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
-              <span class="font-bold">MANDAT:</span> {{ horizonData.mandate }}
+            <div class="mt-2.5 text-[9px] font-mono text-neutral-400 border-t pt-1.5" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
+              <span class="font-bold text-neutral-300">MANDAT:</span> {{ horizonData.mandate }}
             </div>
           </div>
 
           <!-- Execution Matrix (Buy, Target 1, Target 2, Stop Loss, Risk/Reward) -->
           <div class="grid grid-cols-2 gap-2">
             <!-- Cell 01: Buy Execution -->
-            <div class="p-3 border flex flex-col justify-between"
+            <div class="p-3 border rounded-md flex flex-col justify-between"
               :class="isDark ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200'"
             >
               <div>
-                <p class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1 flex items-center gap-1">
                   <span class="material-symbols-outlined text-xs">shopping_cart</span> [ 01 // BUY TRIGGER ]
                 </p>
-                <p class="text-[10px] opacity-70 uppercase">{{ horizonData.buyLabel }}</p>
-                <p class="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5 tabular-nums">
+                <p class="text-[10px] opacity-70 uppercase font-medium">{{ horizonData.buyLabel }}</p>
+                <p class="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5 tabular-nums tracking-tight">
                   {{ formatPrice(horizonData.buyPrice) }}
                 </p>
               </div>
-              <p class="text-[8px] opacity-60 mt-1 uppercase">{{ horizonData.buyNote }}</p>
+              <p class="text-[9px] font-medium opacity-70 mt-1 uppercase">{{ horizonData.buyNote }}</p>
             </div>
 
             <!-- Cell 02: Avoid/Wait Trigger -->
-            <div class="p-3 border flex flex-col justify-between"
+            <div class="p-3 border rounded-md flex flex-col justify-between"
               :class="isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200'"
             >
               <div>
-                <p class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                <p class="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1 flex items-center gap-1">
                   <span class="material-symbols-outlined text-xs">do_not_disturb</span> [ 02 // JANGAN KEJAR ]
                 </p>
-                <p class="text-[10px] opacity-70 uppercase">JIKA HARGA DI ATAS</p>
-                <p class="text-base font-black text-amber-600 dark:text-amber-400 mt-0.5 tabular-nums">
+                <p class="text-[10px] opacity-70 uppercase font-medium">JIKA HARGA DI ATAS</p>
+                <p class="text-xl md:text-2xl font-black text-amber-600 dark:text-amber-400 mt-0.5 tabular-nums tracking-tight">
                   &gt; {{ formatPrice(horizonData.waitPrice) }}
                 </p>
               </div>
-              <p class="text-[8px] opacity-60 mt-1 uppercase">RISIKO TINGGI FOMO</p>
+              <p class="text-[9px] font-medium opacity-70 mt-1 uppercase">RISIKO TINGGI FOMO</p>
             </div>
           </div>
 
           <!-- Targets & SL Matrix -->
           <div class="grid grid-cols-2 gap-2">
             <!-- TP 1 & TP 2 -->
-            <div class="p-3 border flex flex-col justify-between"
+            <div class="p-3 border rounded-md flex flex-col justify-between"
               :class="isDark ? 'bg-blue-500/10 border-blue-500/30' : 'bg-blue-50 border-blue-200'"
             >
               <div>
-                <p class="text-[8px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">[ 03 // TAKE PROFIT 1 &amp; 2 ]</p>
+                <p class="text-[9.5px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-1 mb-1">
+                  <span class="material-symbols-outlined text-xs">flag</span> [ 03 // TAKE PROFIT 1 &amp; 2 ]
+                </p>
                 <div class="flex items-center justify-between mt-1">
-                  <span class="text-[10px] opacity-70">TP1:</span>
+                  <span class="text-[10px] opacity-70 font-medium">TP1:</span>
                   <span class="text-xs font-black text-blue-700 dark:text-blue-300 tabular-nums">{{ formatPrice(horizonData.tp1) }} ({{ horizonData.tp1Gain }})</span>
                 </div>
                 <div class="flex items-center justify-between mt-0.5">
-                  <span class="text-[10px] opacity-70">TP2:</span>
+                  <span class="text-[10px] opacity-70 font-medium">TP2:</span>
                   <span class="text-xs font-black text-blue-700 dark:text-blue-300 tabular-nums">{{ formatPrice(horizonData.tp2) }} ({{ horizonData.tp2Gain }})</span>
                 </div>
               </div>
             </div>
 
             <!-- Stop Loss & Risk Reward -->
-            <div class="p-3 border flex flex-col justify-between"
+            <div class="p-3 border rounded-md flex flex-col justify-between"
               :class="isDark ? 'bg-red-500/10 border-red-500/30' : 'bg-red-50 border-red-200'"
             >
               <div>
-                <p class="text-[8px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest">[ 04 // CUT LOSS &amp; R:R ]</p>
+                <p class="text-[9.5px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest flex items-center gap-1 mb-1">
+                  <span class="material-symbols-outlined text-xs">gpp_bad</span> [ 04 // CUT LOSS &amp; R:R ]
+                </p>
                 <div class="flex items-center justify-between mt-1">
-                  <span class="text-[10px] opacity-70">SL:</span>
+                  <span class="text-[10px] opacity-70 font-medium">SL:</span>
                   <span class="text-xs font-black text-red-700 dark:text-red-300 tabular-nums">&lt; {{ formatPrice(horizonData.sl) }} ({{ horizonData.slLoss }})</span>
                 </div>
                 <div class="flex items-center justify-between mt-0.5">
-                  <span class="text-[10px] opacity-70">R:R:</span>
+                  <span class="text-[10px] opacity-70 font-medium">R:R:</span>
                   <span class="text-xs font-black text-emerald-500 tabular-nums">1 : {{ horizonData.rrr }}</span>
                 </div>
               </div>
@@ -180,21 +184,24 @@
           </div>
 
           <!-- Stockbit-Style Tape Pressure Gauge (Haka vs Haki Volume Ratio) -->
-          <div class="p-4 border" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
+          <div class="p-4 border rounded-md" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
             <div class="flex items-center justify-between mb-2 text-[10px]">
-              <span class="font-bold uppercase tracking-wider text-neutral-400">TAPE READING // HAKA VS HAKI PRESSURE</span>
-              <span class="font-bold" :class="tapeData.hakaPct >= 50 ? 'text-emerald-500' : 'text-red-500'">
+              <span class="font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-xs">speed</span>
+                TAPE READING // HAKA VS HAKI PRESSURE
+              </span>
+              <span class="font-bold font-mono text-[11px]" :class="tapeData.hakaPct >= 50 ? 'text-emerald-500' : 'text-red-500'">
                 {{ tapeData.hakaPct }}% HAKA (BUY PRESSURE)
               </span>
             </div>
             <!-- Dual Gauge Bar -->
-            <div class="h-2 w-full flex rounded-none overflow-hidden border" :class="isDark ? 'border-neutral-700' : 'border-neutral-300'">
+            <div class="h-2 w-full flex rounded-xs overflow-hidden border" :class="isDark ? 'border-neutral-700 bg-neutral-950' : 'border-neutral-300 bg-neutral-200'">
               <div class="bg-emerald-500 h-full transition-all duration-500" :style="{ width: `${tapeData.hakaPct}%` }"></div>
               <div class="bg-red-500 h-full transition-all duration-500" :style="{ width: `${100 - tapeData.hakaPct}%` }"></div>
             </div>
-            <div class="flex justify-between items-center text-[9px] opacity-60 mt-1.5">
-              <span>HAKA: {{ tapeData.hakaVol }} LOTS</span>
-              <span>HAKI: {{ tapeData.hakiVol }} LOTS</span>
+            <div class="flex justify-between items-center text-[10px] font-mono opacity-70 mt-2">
+              <span class="text-emerald-500 font-bold">HAKA: {{ tapeData.hakaVol }} LOTS</span>
+              <span class="text-red-500 font-bold">HAKI: {{ tapeData.hakiVol }} LOTS</span>
             </div>
           </div>
 
@@ -202,16 +209,16 @@
           <div class="grid grid-cols-3 gap-2">
             <button v-for="s in plan.signals" :key="s.name"
               @click="openSignalDetail(s)"
-              class="flex flex-col items-center py-2 px-1.5 border text-center transition-all hover:border-neutral-900 dark:hover:border-white cursor-pointer"
+              class="flex flex-col items-center py-2.5 px-2 border rounded-md text-center transition-all hover:border-neutral-400 cursor-pointer"
               :class="s.bias === 'BULLISH'
-                ? (isDark ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-emerald-50 border-emerald-300 text-emerald-800')
+                ? (isDark ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:border-emerald-400' : 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:border-emerald-600')
                 : s.bias === 'BEARISH'
-                ? (isDark ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-red-50 border-red-300 text-red-800')
-                : (isDark ? 'bg-neutral-900/40 border-neutral-800 text-neutral-300' : 'bg-neutral-50 border-neutral-200 text-neutral-700')"
+                ? (isDark ? 'bg-red-500/10 border-red-500/30 text-red-400 hover:border-red-400' : 'bg-red-50 border-red-300 text-red-800 hover:border-red-600')
+                : (isDark ? 'bg-neutral-900/40 border-neutral-800 text-neutral-300 hover:border-neutral-600' : 'bg-neutral-50 border-neutral-200 text-neutral-700 hover:border-neutral-400')"
             >
-              <span class="text-[8px] uppercase tracking-widest font-bold opacity-60 mb-0.5">{{ s.name }}</span>
-              <p class="text-[10px] font-black tracking-wider uppercase">{{ s.bias }}</p>
-              <p class="text-[8px] opacity-60 tabular-nums mt-0.5">{{ s.value }}</p>
+              <span class="text-[9px] uppercase tracking-widest font-bold opacity-60 mb-0.5">{{ s.name }}</span>
+              <p class="text-[11px] font-black tracking-wider uppercase">{{ s.bias }}</p>
+              <p class="text-[9px] opacity-70 tabular-nums mt-0.5 font-mono">{{ s.value }}</p>
             </button>
           </div>
         </div>
@@ -220,69 +227,81 @@
         <div class="space-y-4">
           
           <!-- Stockbit-Style Seasonality Heatmap Matrix (12 Bulan Jan-Des) -->
-          <div class="p-4 border" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
+          <div class="p-4 border rounded-md" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
             <div class="flex items-center justify-between mb-3 border-b pb-2" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
-              <span class="text-[9px] font-bold uppercase tracking-widest text-neutral-400">STOCKBIT SEASONALITY // 10Y WIN-RATE MATRIX</span>
-              <span class="text-[9px] font-bold text-primary">BULAN {{ currentMonthName }} ({{ currentMonthProb }}% HIJAU)</span>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-xs">calendar_month</span>
+                STOCKBIT SEASONALITY // 10Y WIN-RATE MATRIX
+              </span>
+              <span class="text-[10px] font-bold text-primary font-mono">BULAN {{ currentMonthName }} ({{ currentMonthProb }}% HIJAU)</span>
             </div>
             <!-- 12 Months Grid -->
-            <div class="grid grid-cols-4 sm:grid-cols-6 gap-1.5 text-center text-[9px]">
+            <div class="grid grid-cols-4 sm:grid-cols-6 gap-1.5 text-center text-[10px]">
               <div v-for="m in seasonalityMonths" :key="m.month"
-                class="p-1.5 border flex flex-col justify-between"
+                class="p-2 border rounded-sm flex flex-col justify-between transition-all hover:border-neutral-400"
                 :class="[
                   m.winRate >= 65 
                     ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400' 
                     : m.winRate >= 50 
                     ? 'bg-neutral-800/40 border-neutral-700 text-neutral-300' 
                     : 'bg-red-500/10 border-red-500/30 text-red-400',
-                  m.month === currentMonthName ? 'ring-2 ring-primary font-black' : ''
+                  m.month === currentMonthName ? 'ring-2 ring-primary font-black shadow-sm' : ''
                 ]"
               >
-                <span class="font-bold opacity-60">{{ m.month }}</span>
-                <span class="font-black mt-0.5 tabular-nums">{{ m.winRate }}%</span>
-                <span class="text-[7.5px] opacity-60">{{ m.avgReturn }}</span>
+                <span class="font-bold opacity-70 text-[9px]">{{ m.month }}</span>
+                <span class="font-black mt-0.5 tabular-nums text-xs">{{ m.winRate }}%</span>
+                <span class="text-[8.5px] opacity-70 font-mono">{{ m.avgReturn }}</span>
               </div>
             </div>
-            <p class="text-[8px] opacity-50 mt-2 uppercase tracking-wider">*Dihitung dari probabilitas performa historis 10 tahun terakhir emiten.</p>
+            <p class="text-[9px] opacity-50 mt-2.5 uppercase tracking-wider">*Dihitung dari probabilitas performa historis 10 tahun terakhir emiten.</p>
           </div>
 
           <!-- Position Sizing & DCA Averaging Calculator -->
-          <div class="p-4 border" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
+          <div class="p-4 border rounded-md" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
             <div class="flex items-center justify-between pb-3 mb-3 border-b" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
-              <span class="text-[9px] font-bold uppercase tracking-widest text-neutral-400">POSITION SIZING &amp; DCA SIMULATOR</span>
-              <span class="text-[9px] text-primary font-bold">1 LOT = 100 LEMBAR</span>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-xs">calculate</span>
+                POSITION SIZING &amp; DCA SIMULATOR
+              </span>
+              <span class="text-[9px] text-primary font-bold px-2 py-0.5 rounded-sm border border-primary/30 bg-primary/5">1 LOT = 100 LEMBAR</span>
             </div>
 
             <!-- Inputs -->
-            <div class="grid grid-cols-2 gap-2 mb-3">
+            <div class="grid grid-cols-2 gap-2.5 mb-3">
               <div>
-                <label class="text-[8px] font-bold opacity-50 uppercase tracking-wider block mb-1">HARGA AVERAGE ANDA</label>
-                <input v-model.number="posAvgPrice" type="number" inputmode="decimal" placeholder="cth: 6500"
-                  class="w-full px-2.5 py-2 text-xs font-mono font-bold outline-none border transition-all focus:border-neutral-900 dark:focus:border-white"
-                  :class="isDark ? 'bg-neutral-950 border-neutral-700 text-white placeholder:opacity-30' : 'bg-white border-neutral-300 text-neutral-900'" />
+                <label class="text-[9px] font-bold opacity-60 uppercase tracking-wider block mb-1">HARGA AVERAGE ANDA</label>
+                <div class="relative flex items-center">
+                  <span class="absolute left-2.5 text-[10px] font-mono font-bold opacity-40">Rp</span>
+                  <input v-model.number="posAvgPrice" type="number" inputmode="decimal" placeholder="6500"
+                    class="w-full pl-8 pr-2.5 py-2 text-xs font-mono font-bold outline-none border rounded-md transition-all focus:border-primary dark:focus:border-primary"
+                    :class="isDark ? 'bg-neutral-950 border-neutral-700 text-white placeholder:opacity-30' : 'bg-white border-neutral-300 text-neutral-900'" />
+                </div>
               </div>
               <div>
-                <label class="text-[8px] font-bold opacity-50 uppercase tracking-wider block mb-1">JUMLAH LOT DI BUKU</label>
-                <input v-model.number="posLots" type="number" inputmode="numeric" placeholder="cth: 50"
-                  class="w-full px-2.5 py-2 text-xs font-mono font-bold outline-none border transition-all focus:border-neutral-900 dark:focus:border-white"
-                  :class="isDark ? 'bg-neutral-950 border-neutral-700 text-white placeholder:opacity-30' : 'bg-white border-neutral-300 text-neutral-900'" />
+                <label class="text-[9px] font-bold opacity-60 uppercase tracking-wider block mb-1">JUMLAH LOT DI BUKU</label>
+                <div class="relative flex items-center">
+                  <input v-model.number="posLots" type="number" inputmode="numeric" placeholder="50"
+                    class="w-full pl-2.5 pr-9 py-2 text-xs font-mono font-bold outline-none border rounded-md transition-all focus:border-primary dark:focus:border-primary"
+                    :class="isDark ? 'bg-neutral-950 border-neutral-700 text-white placeholder:opacity-30' : 'bg-white border-neutral-300 text-neutral-900'" />
+                  <span class="absolute right-2.5 text-[9px] font-mono font-bold opacity-40">LOT</span>
+                </div>
               </div>
             </div>
 
             <!-- Calculator Results -->
             <div v-if="posCalc" class="space-y-2.5">
-              <div class="p-3 border flex items-center justify-between"
+              <div class="p-3 border rounded-md flex items-center justify-between"
                 :class="posCalc.isProfit
                   ? (isDark ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200')
                   : (isDark ? 'bg-red-500/10 border-red-500/30' : 'bg-red-50 border-red-200')">
                 <div>
-                  <p class="text-[8px] font-bold uppercase tracking-wider opacity-60">STATUS REAL-TIME</p>
+                  <p class="text-[9px] font-bold uppercase tracking-wider opacity-60">STATUS REAL-TIME</p>
                   <p class="text-xs font-black" :class="posCalc.isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
                     {{ posCalc.isProfit ? 'PROFIT' : 'FLOATING LOSS' }} {{ posCalc.plPct >= 0 ? '+' : '' }}{{ posCalc.plPct.toFixed(2) }}%
                   </p>
                 </div>
                 <div class="text-right">
-                  <p class="text-[8px] font-bold uppercase tracking-wider opacity-60">P/L RUPIAH</p>
+                  <p class="text-[9px] font-bold uppercase tracking-wider opacity-60">P/L RUPIAH</p>
                   <p class="text-xs font-black tabular-nums" :class="posCalc.plRupiah! >= 0 ? 'text-emerald-500' : 'text-red-500'">
                     {{ posCalc.plRupiah !== null ? `${posCalc.plRupiah >= 0 ? '+' : ''}${formatPrice(posCalc.plRupiah)}` : '-' }}
                   </p>
@@ -291,35 +310,34 @@
 
               <!-- DCA 3-Tier Execution Plan -->
               <div class="space-y-1">
-                <p class="text-[8px] font-bold uppercase tracking-wider opacity-50">3-TIER DCA ACCUMULATION PLAN</p>
-                <div class="grid grid-cols-3 gap-1.5 text-center text-[9px]">
-                  <div class="p-2 border" :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'">
-                    <span class="opacity-50 block text-[7px]">TIER 1 (NOW)</span>
+                <p class="text-[9px] font-bold uppercase tracking-wider opacity-50">3-TIER DCA ACCUMULATION PLAN</p>
+                <div class="grid grid-cols-3 gap-1.5 text-center text-[10px]">
+                  <div class="p-2 border rounded-sm" :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'">
+                    <span class="opacity-50 block text-[8px]">TIER 1 (NOW)</span>
                     <strong class="font-bold text-primary">@ {{ formatPrice(currentPrice) }}</strong>
                   </div>
-                  <div class="p-2 border" :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'">
-                    <span class="opacity-50 block text-[7px]">TIER 2 (-5%)</span>
-                    <strong class="font-bold">@ {{ formatPrice(currentPrice * 0.95) }}</strong>
+                  <div class="p-2 border rounded-sm" :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'">
+                    <span class="opacity-50 block text-[8px]">TIER 2 (-5%)</span>
+                    <strong class="font-bold text-neutral-300">@ {{ formatPrice(Math.round(currentPrice * 0.95)) }}</strong>
                   </div>
-                  <div class="p-2 border" :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'">
-                    <span class="opacity-50 block text-[7px]">TIER 3 (-10%)</span>
-                    <strong class="font-bold">@ {{ formatPrice(currentPrice * 0.90) }}</strong>
+                  <div class="p-2 border rounded-sm" :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'">
+                    <span class="opacity-50 block text-[8px]">TIER 3 (-10%)</span>
+                    <strong class="font-bold text-neutral-300">@ {{ formatPrice(Math.round(currentPrice * 0.9)) }}</strong>
                   </div>
                 </div>
               </div>
             </div>
-            <p v-else class="text-[9px] opacity-40 text-center py-2 uppercase">MASUKKAN AVERAGE DAN LOT UNTUK MENAMPILKAN PERHITUNGAN PORTOFOLIO.</p>
-          </div>
 
-          <!-- Strict Risk Note -->
-          <div class="p-3.5 border text-[10px] leading-relaxed"
-            :class="isDark ? 'bg-neutral-950 border-neutral-800 text-neutral-400' : 'bg-neutral-50 border-neutral-300 text-neutral-700'"
-          >
-            <div class="text-neutral-900 dark:text-neutral-200 font-bold mb-1 uppercase tracking-wider flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-amber-500 text-sm">security</span>
-              <span>[ MANDAT DISIPLIN KEUANGAN ]</span>
+            <!-- Footer Action Rules -->
+            <div class="p-3.5 border rounded-md text-[10px] leading-relaxed mt-4"
+              :class="isDark ? 'bg-neutral-900/20 border-neutral-800 text-neutral-400' : 'bg-neutral-50 border-neutral-200 text-neutral-600'"
+            >
+              <div class="flex items-center gap-1.5 font-bold uppercase tracking-wider text-neutral-300 mb-1">
+                <span class="material-symbols-outlined text-xs">gavel</span>
+                GOLDEN TRADING DISCIPLINE
+              </div>
+              <p class="opacity-90">Untuk <strong class="text-emerald-500">Scalping</strong>, kunci take profit bertahap dan wajib cut loss jika level support jebol. Untuk <strong class="text-purple-400">Investing</strong>, manfaatkan momentum seasonality dan akumulasi hanya pada level diskon intrinsic value.</p>
             </div>
-            <p>Untuk <strong>Scalping</strong>, kunci take profit bertahap dan wajib cut loss jika level support jebol. Untuk <strong>Investing</strong>, manfaatkan momentum seasonality dan akumulasi hanya pada level diskon intrinsic value.</p>
           </div>
         </div>
       </div>
@@ -336,8 +354,8 @@
         leave-to-class="opacity-0 scale-98"
       >
         <div v-if="showMethodModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" @click.self="showMethodModal = false">
-          <div class="border max-w-lg w-full max-h-[85vh] overflow-y-auto font-mono"
-            :class="isDark ? 'bg-[#0d1117] border-neutral-700 text-white' : 'bg-white border-neutral-300 text-neutral-900 shadow-2xl'"
+          <div class="border rounded-md max-w-lg w-full max-h-[85vh] overflow-y-auto font-mono shadow-2xl"
+            :class="isDark ? 'bg-[#0d1117] border-neutral-700 text-white' : 'bg-white border-neutral-300 text-neutral-900'"
           >
             <!-- Modal Header -->
             <div class="sticky top-0 z-10 p-5 pb-3 border-b"

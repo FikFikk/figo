@@ -163,24 +163,10 @@ export function useStockApi(): UseStockApiReturn {
     return fetchWithState('/api/stock/movers', { type })
   }
 
-  // Ambil insights / news
+  // Ambil data audit fundamental emiten (atau AI Insights)
   async function getInsights(symbol: string) {
-    if (apiSource.value === 'zpi') {
-       const ticker = symbol.startsWith('IDX:') ? symbol : `IDX:${symbol}`
-       const data = await fetchWithState<{data?: {items?: any[]}}>('/api/stock/zpi', { endpoint: 'news', symbol: ticker, market: 'indonesia' })
-       // Format ZPI News to match whatever insightData expects if possible, or just return them
-       if (data?.data?.items) {
-           return data.data.items.map((n: any) => ({
-             title: n.title,
-             summary: n.snippet || '',
-             source: n.source || 'TradingView',
-             url: n.link || n.storyPath || '#',
-             publishedAt: new Date(n.publishedDate || n.published * 1000).toISOString()
-           }))
-       }
-       return []
-    }
-    return fetchWithState('/api/stock/insights', { symbol })
+    const cleanSymbol = symbol.replace(/^IDX:/i, '').replace(/\.JK$/i, '').trim().toUpperCase()
+    return fetchWithState('/api/stock/insights', { symbol: cleanSymbol })
   }
 
   // Ambil data bandarmology (hanya RapidAPI IDX)

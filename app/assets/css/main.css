@@ -2,7 +2,7 @@
    FiGo — Ethereal Flux Design System
    Light + Dark theme, glassmorphism, minimal
    ======================================= */
-/* Font Material Symbols dimuat secara non-blocking via head.link dengan preconnect di nuxt.config.ts */
+/* Font Material Symbols dimuat secara non-blocking via useHead di app.vue */
 /* Material Symbols */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';

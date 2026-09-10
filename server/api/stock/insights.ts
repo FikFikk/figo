@@ -2,11 +2,12 @@ import { IDX_BASE_URL, getIdxHeaders, fetchWithRetry, cachedFetch, CACHE_TTL } f
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
-  const symbol = query.symbol as string
-
-  if (!symbol) {
+  const rawSymbol = query.symbol as string
+  if (!rawSymbol) {
     throw createError({ statusCode: 400, statusMessage: 'Parameter symbol diperlukan' })
   }
+
+  const symbol = rawSymbol.replace(/^IDX:/i, '').replace(/\.JK$/i, '').trim().toUpperCase()
 
   // Gunakan cache medium karena insight cukup stabil harian
   const cacheKey = `idx:insights:${symbol.toUpperCase()}`

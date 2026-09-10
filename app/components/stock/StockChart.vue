@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded-2xl border overflow-hidden transition-colors"
+  <div class="rounded-md border overflow-hidden transition-colors"
     :class="isDark ? 'bg-[#0d1117] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'"
   >
     <!-- Swiss Terminal Header -->
@@ -7,7 +7,7 @@
       :class="isDark ? 'border-neutral-800' : 'border-neutral-200'"
     >
       <div class="flex items-center gap-2.5 shrink-0">
-        <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest border"
+        <span class="px-2 py-0.5 rounded-xs text-[9px] font-mono font-bold uppercase tracking-widest border"
           :class="isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-neutral-100 border-neutral-300 text-neutral-700'"
         >
           SYS.01 // OHLCV
@@ -43,7 +43,7 @@
 
     <!-- Empty State -->
     <div v-if="!data?.length && !loading" class="flex flex-col items-center justify-center py-10 text-center font-mono" style="height: 440px;">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3 border"
+      <div class="w-12 h-12 rounded-md flex items-center justify-center mb-3 border"
         :class="isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'"
       >
         <span class="material-symbols-outlined text-xl">candlestick_chart</span>
@@ -51,7 +51,7 @@
       <h4 class="font-bold text-sm mb-1 uppercase tracking-wider" :class="isDark ? 'text-white' : 'text-neutral-900'">OHLCV CHART STANDBY</h4>
       <p class="text-[11px] text-neutral-500 mb-4 max-w-[280px]">Klik untuk memuat grafik pergerakan harga historis.</p>
       <button @click="$emit('fetch', getActivePeriodParams())"
-        class="px-6 py-2.5 rounded-xl text-xs font-bold font-headline uppercase tracking-wider transition-all border"
+        class="px-6 py-2.5 rounded-md text-xs font-bold font-headline uppercase tracking-wider transition-all border"
         :class="isDark ? 'bg-white text-neutral-950 border-white hover:bg-neutral-200' : 'bg-neutral-950 text-white border-neutral-950 hover:bg-neutral-800'"
       >
         Tampilkan Chart
@@ -62,7 +62,7 @@
     <div v-else class="relative px-2 pb-4 pt-2" style="height: 440px;">
       <!-- Loading -->
       <div v-if="loading && !isLoadingMore" class="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-xs z-10 font-mono text-xs">
-        <div class="flex items-center gap-2 px-4 py-2 rounded-lg border bg-neutral-900 border-neutral-700 text-white">
+        <div class="flex items-center gap-2 px-4 py-2 rounded-md border bg-neutral-900 border-neutral-700 text-white">
           <span class="material-symbols-outlined text-primary animate-spin text-base">progress_activity</span>
           <span>LOADING STREAM...</span>
         </div>
@@ -83,7 +83,7 @@
       <div v-if="data?.length && detectedPatterns.length > 0 && !isAnalyzingPattern" class="absolute bottom-[70px] right-2 flex flex-col items-end gap-1.5 z-20 pointer-events-none font-mono">
         <template v-for="(pat, idx) in detectedPatterns" :key="'pat-'+idx">
           <div v-if="pat.label" class="animate-in fade-in slide-in-from-right-3 duration-300">
-             <div class="backdrop-blur-xl px-2.5 py-1 text-[9px] font-bold tracking-widest uppercase shadow-md flex items-center gap-1.5 border truncate max-w-full rounded"
+             <div class="backdrop-blur-xl px-2.5 py-1 text-[9px] font-bold tracking-widest uppercase shadow-md flex items-center gap-1.5 border truncate max-w-full rounded-sm"
                :style="{ backgroundColor: isDark ? '#09090bF0' : '#FFFFFFFA', color: pat.color, borderColor: pat.color }"
              >
                <span class="material-symbols-outlined text-[13px]">polyline</span>
@@ -94,26 +94,26 @@
       </div>
 
       <!-- Type Toggle & Pattern Analyzer (Swiss Modular Toolbar) -->
-      <div v-if="data?.length" class="absolute bottom-[30px] right-2 flex items-center backdrop-blur-md rounded-lg p-1 z-20 border shadow-sm font-mono text-[10px]"
+      <div v-if="data?.length" class="absolute bottom-[30px] right-2 flex items-center backdrop-blur-md rounded-md p-0.5 z-20 border shadow-sm font-mono text-[10px]"
         :class="isDark ? 'bg-neutral-900/90 border-neutral-700' : 'bg-white/90 border-neutral-300'"
       >
-        <button @click="analyzeChartPatterns" class="h-7 px-2.5 flex items-center justify-center gap-1.5 rounded transition-all border border-transparent font-bold" 
+        <button @click="analyzeChartPatterns" class="h-6 px-2 flex items-center justify-center gap-1.5 rounded-sm transition-all border border-transparent font-bold cursor-pointer" 
            :class="isAnalyzingPattern ? 'animate-pulse text-purple-400' : detectedPatterns.length ? 'bg-purple-600 text-white' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'"
            title="Deteksi Pola Chart Otomatis">
-           <span class="material-symbols-outlined text-[15px]">draw</span>
+           <span class="material-symbols-outlined text-[14px]">draw</span>
            <span class="text-[9px] font-bold uppercase tracking-wider">{{ detectedPatterns.length ? 'POLA AKTIF' : 'POLA' }}</span>
         </button>
-        <div class="w-px h-4 mx-1" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
+        <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
 
-        <button @click="chartType = 'candle'" class="w-7 h-7 flex items-center justify-center rounded transition-all"
-          :class="chartType === 'candle' ? (isDark ? 'bg-white text-neutral-950 font-bold' : 'bg-neutral-950 text-white font-bold') : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
+        <button @click="chartType = 'candle'" class="w-6 h-6 flex items-center justify-center rounded-sm transition-all cursor-pointer"
+          :class="chartType === 'candle' ? (isDark ? 'bg-white text-neutral-950 font-bold shadow-xs' : 'bg-neutral-950 text-white font-bold shadow-xs') : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
         >
-          <span class="material-symbols-outlined text-[16px]">candlestick_chart</span>
+          <span class="material-symbols-outlined text-[15px]">candlestick_chart</span>
         </button>
-        <button @click="chartType = 'line'" class="w-7 h-7 flex items-center justify-center rounded transition-all"
-          :class="chartType === 'line' ? (isDark ? 'bg-white text-neutral-950 font-bold' : 'bg-neutral-950 text-white font-bold') : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
+        <button @click="chartType = 'line'" class="w-6 h-6 flex items-center justify-center rounded-sm transition-all cursor-pointer"
+          :class="chartType === 'line' ? (isDark ? 'bg-white text-neutral-950 font-bold shadow-xs' : 'bg-neutral-950 text-white font-bold shadow-xs') : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
         >
-          <span class="material-symbols-outlined text-[16px]">show_chart</span>
+          <span class="material-symbols-outlined text-[15px]">show_chart</span>
         </button>
       </div>
 
@@ -124,7 +124,7 @@
       ></div>
       
       <!-- Crosshair Date Tag Top -->
-      <div v-if="tooltip.show" class="absolute top-[2px] transform -translate-x-1/2 px-2 py-0.5 rounded text-[9px] font-mono font-bold z-20 shadow-sm border uppercase"
+      <div v-if="tooltip.show" class="absolute top-[2px] transform -translate-x-1/2 px-2 py-0.5 rounded-xs text-[9px] font-mono font-bold z-20 shadow-sm border uppercase"
         :class="isDark ? 'bg-white text-neutral-950 border-white' : 'bg-neutral-950 text-white border-neutral-950'"
         :style="{ left: tooltip.cx + 'px' }"
       >
@@ -141,7 +141,7 @@
         leave-to-class="opacity-0 scale-95"
       >
         <div v-if="tooltip.show"
-          class="absolute pointer-events-none px-3.5 py-2.5 rounded-xl text-[10px] font-mono shadow-xl z-20 border"
+          class="absolute pointer-events-none px-3.5 py-2.5 rounded-md text-[10px] font-mono shadow-xl z-20 border"
           :class="isDark ? 'bg-neutral-950/95 border-neutral-700 text-neutral-200' : 'bg-white/95 border-neutral-300 text-neutral-800'"
           :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
         >

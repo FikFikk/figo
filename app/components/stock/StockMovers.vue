@@ -1,6 +1,6 @@
 <template>
-  <div class="border transition-all duration-200"
-    :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'"
+  <div class="transition-all duration-200"
+    :class="isDark ? 'bg-[#15171e]' : 'bg-white'"
   >
     <!-- Header Tabs: Swiss Segmented Grid -->
     <div class="grid grid-cols-3 divide-x border-b font-mono text-[10px] font-bold"

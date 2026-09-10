@@ -101,4 +101,14 @@
 | Response          | HTTP 200 + JSON `{url: string, finalUrl: string, status: number, ssl: boolean, redirected: boolean, threats: ThreatFinding[], score: number, level: string, summary: string, ...}` |
 | Notes             | Analisis ancaman phishing, typosquatting, reputasi domain, SSL, dan DNS. Memiliki proteksi SSRF: menolak URL privat, loopback (127.0.0.1/localhost), dan metadata cloud.       |
 
+| Field             | Detail                                                                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Method + Endpoint | GET /api/stock/insights                                                                                                                                                         |
+| Auth Required     | No (Internal/Proxy)                                                                                                                                                             |
+| Headers           | None specific                                                                                                                                                                   |
+| Query Params      | `symbol`: string (wajib, kode ticker saham misal `BBCA`, `BBRI`, `FUTR`)                                                                                                        |
+| Request Body      | N/A                                                                                                                                                                             |
+| Response          | HTTP 200 + JSON `{ success: boolean, data: { symbol: string, categories: Record<string, any[]>, summary: any } }`                                                               |
+| Notes             | Proxy data audit fundamental emiten dari RapidAPI IDX beta dengan cache medium TTL. Mendukung normalisasi ticker dan arsitektur integrasi Live AI Router.                     |
+
 No scheduled tasks (cron jobs) configured.

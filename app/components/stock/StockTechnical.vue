@@ -1,5 +1,5 @@
 <template>
-  <div class="border transition-all duration-200"
+  <div class="border rounded-md overflow-hidden transition-all duration-200"
     :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'"
   >
     <!-- Header -->
@@ -15,7 +15,7 @@
 
       <!-- Summary Score Badge -->
       <div v-if="summary" class="flex items-center gap-2 font-mono text-[10px]">
-        <div class="px-2 py-0.5 border font-bold uppercase tracking-wider flex items-center gap-1"
+        <div class="px-2 py-0.5 border rounded-xs font-bold uppercase tracking-wider flex items-center gap-1"
           :class="summary.signal === 'BUY' 
             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' 
             : summary.signal === 'SELL' 
@@ -35,7 +35,7 @@
 
     <!-- Unlocked State -->
     <div v-if="!data && !loading" class="flex flex-col items-center justify-center p-8 text-center min-h-[220px]">
-      <div class="w-10 h-10 border flex items-center justify-center mb-3" 
+      <div class="w-10 h-10 border rounded-md flex items-center justify-center mb-3" 
         :class="isDark ? 'bg-neutral-900 border-neutral-700 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'"
       >
         <span class="material-symbols-outlined text-lg">lock</span>
@@ -43,9 +43,9 @@
       <h4 class="font-mono font-bold text-xs uppercase tracking-wider mb-1" :class="isDark ? 'text-white' : 'text-neutral-900'">
         TECHNICAL OSCILLATORS
       </h4>
-      <p class="text-[11px] opacity-60 mb-4 max-w-[220px]">Click below to compute RSI, MACD, Stochastic & Moving Averages.</p>
+      <p class="text-[11px] opacity-60 mb-4 max-w-[220px]">Click below to compute RSI, MACD, Stochastic &amp; Moving Averages.</p>
       <button @click="$emit('fetch')" 
-        class="px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider border transition-all"
+        class="px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider border rounded-md transition-all hover:border-neutral-400"
         :class="isDark 
           ? 'bg-white text-black border-white hover:bg-neutral-200' 
           : 'bg-neutral-900 text-white border-neutral-900 hover:bg-neutral-800'"

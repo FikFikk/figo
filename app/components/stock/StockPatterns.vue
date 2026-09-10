@@ -73,20 +73,20 @@
     </div>
 
     <!-- Kategori Konsep Lanjutan (collapsible) -->
-    <div v-for="cc in advConcepts" :key="cc.title" class="glass-panel rounded-2xl border overflow-hidden" :class="isDark?'border-white/5':'border-slate-100'">
+    <div v-for="cc in advConcepts" :key="cc.title" class="glass-panel rounded-md border overflow-hidden" :class="isDark?'border-white/5':'border-slate-100'">
       <button @click="cc.open=!cc.open" class="w-full flex items-center justify-between p-5 text-left transition-colors" :class="isDark?'hover:bg-white/5':'hover:bg-slate-50'">
         <div>
           <p class="text-[9px] font-black uppercase tracking-[0.2em] mb-1" :class="isDark?'text-gray-600':'text-slate-400'">{{cc.subtitle}}</p>
           <h3 class="font-headline font-bold text-sm" :class="isDark?'text-white':'text-slate-900'">{{cc.title}}</h3>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-[9px] font-bold px-2 py-0.5 rounded-full" :class="isDark?'bg-white/10 text-gray-400':'bg-slate-100 text-slate-500'">{{ cc.concepts.length }}</span>
+          <span class="text-[9px] font-bold px-2 py-0.5 rounded-xs" :class="isDark?'bg-white/10 text-gray-400':'bg-slate-100 text-slate-500'">{{ cc.concepts.length }}</span>
           <span class="material-symbols-outlined text-lg transition-transform duration-300" :class="cc.open?'rotate-180':''" style="opacity:0.4">expand_more</span>
         </div>
       </button>
       <div v-show="cc.open">
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-5 pb-5">
-          <div v-for="c in cc.concepts" :key="c.name" @click="openConcept(c,cc.title)" class="rounded-2xl border p-4 flex flex-col items-center transition-all hover:scale-[1.02] cursor-pointer" :class="isDark?'bg-white/[0.03] border-white/10 hover:border-white/20':'bg-slate-50 border-slate-200 hover:border-slate-300'">
+          <div v-for="c in cc.concepts" :key="c.name" @click="openConcept(c,cc.title)" class="rounded-md border p-4 flex flex-col items-center transition-all hover:scale-[1.02] cursor-pointer" :class="isDark?'bg-white/[0.03] border-white/10 hover:border-white/20':'bg-slate-50 border-slate-200 hover:border-slate-300'">
             <span class="material-symbols-outlined text-2xl mb-2 text-primary">{{c.icon}}</span>
             <p class="text-xs font-bold font-headline text-center mb-1" :class="isDark?'text-white':'text-slate-900'">{{c.name}}</p>
             <p class="text-[9px] leading-relaxed text-center" :class="isDark?'text-gray-500':'text-slate-500'">{{c.desc}}</p>

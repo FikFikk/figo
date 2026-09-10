@@ -2,7 +2,7 @@
   <div class="relative w-full">
     <!-- Input Pencarian Swiss Style -->
     <div class="relative">
-      <div class="flex items-center border transition-all duration-200"
+      <div class="flex items-center border rounded-md transition-all duration-200"
         :class="[
           isDark 
             ? 'bg-[#12141a] border-neutral-800 focus-within:border-neutral-400' 
@@ -37,14 +37,42 @@
         </button>
       </div>
 
-      <!-- Quick Tickers Bar (Swiss Pill Grid) -->
+      <!-- Quick & Recent Tickers Bar (Swiss Pill Grid) -->
       <div class="flex items-center gap-1.5 mt-2.5 overflow-x-auto pb-1 no-scrollbar text-[10px] font-mono font-medium">
+        <!-- Cache / Recent Searches -->
+        <template v-if="recentTickers.length > 0">
+          <span class="text-amber-500 uppercase tracking-widest text-[9px] mr-1 shrink-0 flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">history</span> CACHE:
+          </span>
+          <div
+            v-for="sym in recentTickers"
+            :key="sym"
+            class="px-2 py-0.5 border rounded-sm transition-all shrink-0 flex items-center gap-1.5 cursor-pointer"
+            :class="[
+              isDark 
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:border-amber-400' 
+                : 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100'
+            ]"
+            @click="selectQuickTicker({ symbol: sym })"
+          >
+            <span class="font-bold">{{ sym }}</span>
+            <button
+              @click.stop="removeRecentTicker(sym)"
+              class="opacity-40 hover:opacity-100 text-xs leading-none hover:text-red-400 cursor-pointer"
+              title="Hapus dari cache"
+            >
+              &times;
+            </button>
+          </div>
+          <span class="opacity-20 mx-1 text-neutral-500">|</span>
+        </template>
+
         <span class="text-neutral-400 dark:text-neutral-600 uppercase tracking-widest text-[9px] mr-1 shrink-0">QUICK:</span>
         <button
           v-for="ticker in quickTickers"
           :key="ticker.symbol"
           @click="selectQuickTicker(ticker)"
-          class="px-2.5 py-1 border transition-all shrink-0 hover:border-neutral-900 dark:hover:border-white"
+          class="px-2.5 py-1 border rounded-sm transition-all shrink-0 hover:border-neutral-900 dark:hover:border-white cursor-pointer"
           :class="[
             isDark 
               ? 'bg-neutral-900/60 border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800' 
@@ -54,6 +82,52 @@
           <span class="font-bold">{{ ticker.symbol }}</span>
           <span v-if="ticker.tag" class="ml-1 text-[8px] opacity-40 uppercase">{{ ticker.tag }}</span>
         </button>
+
+        <!-- Tombol Tambah Quick ke Cache LocalStorage (+) -->
+        <button
+          v-if="!showAddQuick"
+          @click="showAddQuick = true"
+          class="px-2.5 py-1 border border-dashed rounded-sm transition-all shrink-0 cursor-pointer"
+          :class="[
+            isDark 
+              ? 'border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500 bg-neutral-900/40' 
+              : 'border-neutral-300 text-neutral-600 hover:text-neutral-900 hover:border-neutral-400 bg-neutral-50'
+          ]"
+          title="Tambah Ticker ke Cache LocalStorage"
+        >
+          <span class="font-bold">+</span>
+          <span class="ml-1 text-[8px] opacity-50 uppercase font-bold">QUICK</span>
+        </button>
+
+        <!-- Inline Input Saat Tambah Ticker -->
+        <div v-else class="shrink-0 flex items-center gap-1">
+          <input
+            ref="addQuickInputRef"
+            v-model="newQuickInput"
+            type="text"
+            maxlength="10"
+            placeholder="TICKER..."
+            class="w-20 px-2 py-1 text-[10px] uppercase font-mono font-bold border rounded-sm outline-none leading-none"
+            :class="isDark ? 'bg-neutral-900 border-neutral-600 text-white placeholder:opacity-30' : 'bg-white border-neutral-400 text-neutral-900 placeholder:opacity-40'"
+            @keydown.enter.prevent="addCustomQuick"
+            @keydown.escape="showAddQuick = false"
+          />
+          <button
+            @click="addCustomQuick"
+            class="px-2 py-1 border rounded-sm font-bold text-[9px] uppercase transition-all cursor-pointer leading-none"
+            :class="isDark ? 'bg-white text-black border-white hover:bg-neutral-200' : 'bg-neutral-900 text-white border-neutral-900 hover:bg-neutral-800'"
+            title="Simpan ke Cache"
+          >
+            OK
+          </button>
+          <button
+            @click="showAddQuick = false"
+            class="px-1 py-1 opacity-50 hover:opacity-100 text-xs leading-none hover:text-red-400 cursor-pointer"
+            title="Batal"
+          >
+            &times;
+          </button>
+        </div>
       </div>
     </div>
 
@@ -67,7 +141,7 @@
       leave-to-class="opacity-0 -translate-y-1"
     >
       <div v-if="showDropdown && query.length > 0"
-        class="absolute top-full left-0 right-0 mt-1 shadow-2xl z-50 max-h-80 overflow-y-auto border"
+        class="absolute top-full left-0 right-0 mt-1 shadow-2xl z-50 max-h-80 overflow-y-auto border rounded-md"
         :class="isDark ? 'bg-[#15171e] border-neutral-800 text-neutral-200' : 'bg-white border-neutral-300 text-neutral-900'"
       >
         <!-- Header Dropdown -->
@@ -168,8 +242,57 @@ const showDropdown = ref(false)
 const isTyping = ref(false)
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
-// Quick Tickers Populer
+// Cache Ticker Riwayat Pencarian
+const RECENT_KEY = 'figo_recent_tickers'
+const recentTickers = ref<string[]>([])
+
+onMounted(() => {
+  if (import.meta.client) {
+    try {
+      const saved = localStorage.getItem(RECENT_KEY)
+      if (saved) {
+        const parsed: string[] = JSON.parse(saved)
+        // Hapus ticker yang sudah ada di daftar QUICK default agar tidak duplikat
+        recentTickers.value = parsed.filter(sym => !quickTickers.some(q => q.symbol === sym))
+        localStorage.setItem(RECENT_KEY, JSON.stringify(recentTickers.value))
+      }
+    } catch (e) {
+      console.error('Failed to load recent tickers from cache:', e)
+    }
+  }
+})
+
+function saveRecentTicker(symbol: string) {
+  if (!symbol) return
+  const clean = symbol.trim().toUpperCase().replace(/^IDX:/i, '').replace(/\.JK$/i, '')
+  // Jangan masukkan ke cache jika ticker sudah menjadi bagian dari QUICK bawaan
+  if (quickTickers.some(q => q.symbol === clean)) return
+
+  const filtered = recentTickers.value.filter(s => s !== clean)
+  recentTickers.value = [clean, ...filtered].slice(0, 6)
+  if (import.meta.client) {
+    try {
+      localStorage.setItem(RECENT_KEY, JSON.stringify(recentTickers.value))
+    } catch (e) {
+      console.error('Failed to save recent tickers to cache:', e)
+    }
+  }
+}
+
+function removeRecentTicker(symbol: string) {
+  recentTickers.value = recentTickers.value.filter(s => s !== symbol)
+  if (import.meta.client) {
+    try {
+      localStorage.setItem(RECENT_KEY, JSON.stringify(recentTickers.value))
+    } catch (e) {
+      console.error('Failed to update recent tickers in cache:', e)
+    }
+  }
+}
+
+// Quick Tickers Populer (Default diawali FUTR)
 const quickTickers = [
+  { symbol: 'FUTR', tag: 'IDX' },
   { symbol: 'BBCA', tag: 'IDX' },
   { symbol: 'BBRI', tag: 'IDX' },
   { symbol: 'BMRI', tag: 'IDX' },
@@ -181,6 +304,28 @@ const quickTickers = [
   { symbol: 'AAPL', tag: 'US' },
   { symbol: 'TSLA', tag: 'US' },
 ]
+
+// State & fungsi penambahan ticker ke cache manual (+)
+const showAddQuick = ref(false)
+const newQuickInput = ref('')
+const addQuickInputRef = ref<HTMLInputElement | null>(null)
+
+watch(showAddQuick, (val) => {
+  if (val) {
+    nextTick(() => {
+      addQuickInputRef.value?.focus()
+    })
+  }
+})
+
+function addCustomQuick() {
+  const sym = newQuickInput.value.trim().toUpperCase().replace(/^IDX:/i, '').replace(/\.JK$/i, '')
+  if (sym) {
+    saveRecentTicker(sym)
+    newQuickInput.value = ''
+    showAddQuick.value = false
+  }
+}
 
 function selectQuickTicker(ticker: { symbol: string; tag?: string }) {
   emit('select', { symbol: ticker.symbol })
@@ -240,8 +385,10 @@ function extractSearchResults(data: any): any[] {
 }
 
 function selectStock(stock: any) {
-  query.value = stock.symbol || stock.code || ''
+  const sym = stock.symbol || stock.code || ''
+  query.value = sym
   showDropdown.value = false
+  saveRecentTicker(sym)
   emit('select', stock)
 }
 
