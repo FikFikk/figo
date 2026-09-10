@@ -23,7 +23,7 @@
         </span>
       </div>
 
-      <!-- Timeframe Selector & Fullscreen Button -->
+      <!-- Timeframe Selector -->
       <div class="flex w-full sm:w-auto flex-wrap items-center justify-between sm:justify-end gap-1.5 font-mono text-[10px]">
         <div class="flex flex-wrap items-center gap-1">
           <button v-for="p in periods" :key="p.interval" @click="changePeriod(p.interval)"
@@ -35,18 +35,6 @@
             {{ p.label }}
           </button>
         </div>
-
-        <!-- Fullscreen Landscape Toggle Button (TradingView Style) -->
-        <button @click="toggleFullscreen"
-          class="px-2.5 py-1 rounded-md uppercase font-bold tracking-wider transition-all border flex items-center gap-1 cursor-pointer shrink-0 ml-1"
-          :class="isFullscreen 
-            ? 'bg-amber-500 text-black border-amber-400 font-black shadow-md' 
-            : (isDark ? 'bg-neutral-900/90 text-neutral-300 border-neutral-700 hover:border-neutral-500' : 'bg-neutral-50 text-neutral-700 border-neutral-300 hover:border-neutral-500')"
-          :title="isFullscreen ? 'Keluar Fullscreen (Esc)' : 'TradingView Fullscreen Landscape'"
-        >
-          <span class="material-symbols-outlined text-[15px]">{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</span>
-          <span class="text-[9px] font-black">{{ isFullscreen ? 'EXIT' : 'FULLSCREEN' }}</span>
-        </button>
       </div>
     </div>
 
@@ -110,11 +98,12 @@
         </template>
       </div>
 
-      <!-- Type Toggle & Pattern Analyzer (Swiss Modular Toolbar) -->
-      <div v-if="data?.length" class="absolute bottom-3 right-3 flex items-center backdrop-blur-md rounded-md p-0.5 z-20 border shadow-sm font-mono text-[10px]"
-        :class="isDark ? 'bg-neutral-900/90 border-neutral-700' : 'bg-white/90 border-neutral-300'"
+      <!-- Type Toggle, Pattern Analyzer & Fullscreen (Swiss Modular Toolbar) -->
+      <div v-if="data?.length" class="absolute bottom-3 right-3 flex items-center backdrop-blur-md rounded-md p-1 z-30 border shadow-md font-mono text-[10px]"
+        :class="isDark ? 'bg-neutral-900/95 border-neutral-700' : 'bg-white/95 border-neutral-300'"
       >
-        <button @click="analyzeChartPatterns" class="h-6 px-2.5 flex items-center justify-center gap-1.5 rounded-sm transition-all border border-transparent font-bold cursor-pointer" 
+        <!-- Pola Button -->
+        <button @click="analyzeChartPatterns" class="h-6 px-2.5 flex items-center justify-center gap-1.5 rounded-xs transition-all border border-transparent font-bold cursor-pointer" 
            :class="isAnalyzingPattern ? 'animate-pulse text-purple-400' : detectedPatterns.length ? 'bg-purple-600 text-white' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'"
            title="Deteksi Pola Chart & Price Action Otomatis">
            <span class="material-symbols-outlined text-[14px]">draw</span>
@@ -122,17 +111,29 @@
         </button>
         <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
 
-        <button @click="chartType = 'candle'" class="w-6 h-6 flex items-center justify-center rounded-sm transition-all cursor-pointer"
+        <!-- Candle / Line Toggle -->
+        <button @click="chartType = 'candle'" class="w-6 h-6 flex items-center justify-center rounded-xs transition-all cursor-pointer"
           :class="chartType === 'candle' ? (isDark ? 'bg-white text-neutral-950 font-bold shadow-xs' : 'bg-neutral-950 text-white font-bold shadow-xs') : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
           title="Tampilan Candlestick"
         >
           <span class="material-symbols-outlined text-[15px]">candlestick_chart</span>
         </button>
-        <button @click="chartType = 'line'" class="w-6 h-6 flex items-center justify-center rounded-sm transition-all cursor-pointer"
+        <button @click="chartType = 'line'" class="w-6 h-6 flex items-center justify-center rounded-xs transition-all cursor-pointer"
           :class="chartType === 'line' ? (isDark ? 'bg-white text-neutral-950 font-bold shadow-xs' : 'bg-neutral-950 text-white font-bold shadow-xs') : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
           title="Tampilan Line Chart"
         >
           <span class="material-symbols-outlined text-[15px]">show_chart</span>
+        </button>
+
+        <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
+
+        <!-- Fullscreen Landscape Toggle Button -->
+        <button @click="toggleFullscreen" class="h-6 px-2 flex items-center justify-center gap-1 rounded-xs transition-all font-bold cursor-pointer"
+          :class="isFullscreen ? 'bg-amber-500 text-black font-black' : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
+          :title="isFullscreen ? 'Keluar Fullscreen (Esc)' : 'TradingView Fullscreen Landscape'"
+        >
+          <span class="material-symbols-outlined text-[15px]">{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</span>
+          <span class="text-[9px] font-bold uppercase tracking-wider">{{ isFullscreen ? 'EXIT' : 'FULLSCREEN' }}</span>
         </button>
       </div>
 
@@ -644,7 +645,7 @@ function drawChart() {
       ctx.stroke()
     }
 
-    const drawSwissBadgeLine = (y: number, color: string, label: string, priceVal: number) => {
+    const drawSwissBadgeLine = (y: number, color: string, label: string, priceVal: number, subLabel?: string) => {
       if (y < padding.top || y > height - padding.bottom) return
       ctx.strokeStyle = color
       ctx.lineWidth = 1.2
@@ -655,21 +656,24 @@ function drawChart() {
       ctx.stroke()
       ctx.setLineDash([])
       
+      const badgeText = `${label}: ${fmt(priceVal)}${subLabel ? ' (' + subLabel + ')' : ''}`
+      const badgeW = Math.min(chartW - 10, Math.max(85, badgeText.length * 6.5 + 12))
+
       ctx.fillStyle = isDark.value ? '#090b10' : '#ffffff'
-      ctx.fillRect(padding.left + 2, y - 10, 80, 16)
+      ctx.fillRect(padding.left + 2, y - 9.5, badgeW, 17)
       ctx.strokeStyle = color
       ctx.lineWidth = 1
-      ctx.strokeRect(padding.left + 2, y - 10, 80, 16)
+      ctx.strokeRect(padding.left + 2, y - 9.5, badgeW, 17)
       
       ctx.fillStyle = color
       ctx.textAlign = 'left'
       ctx.font = 'bold 8.5px monospace, sans-serif'
-      ctx.fillText(`${label}: ${fmt(priceVal)}`, padding.left + 6, y + 2)
+      ctx.fillText(badgeText, padding.left + 6, y + 2.5)
     }
 
-    drawSwissBadgeLine(yR1, '#3b82f6', 'TARGET', r1)
-    drawSwissBadgeLine(yS1, '#10b981', 'BUY ZONE', s1)
-    drawSwissBadgeLine(ySL, '#ef4444', 'STOP LOSS', sl)
+    drawSwissBadgeLine(yR1, '#3b82f6', 'TARGET TP', r1, 'AMBIL PROFIT')
+    drawSwissBadgeLine(yS1, '#10b981', 'BUY ZONE', s1, `AREA BELI ${fmt(bBottom)}-${fmt(bTop)}`)
+    drawSwissBadgeLine(ySL, '#ef4444', 'STOP LOSS', sl, 'CUT LOSS')
   }
 
   // Dates on X Axis
