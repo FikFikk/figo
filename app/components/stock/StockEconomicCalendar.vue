@@ -1,93 +1,88 @@
 <template>
-  <div class="glass-panel rounded-2xl border overflow-hidden"
-    :class="isDark ? 'border-white/5' : 'border-slate-100'"
+  <div class="border transition-all duration-200 font-mono"
+    :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'"
   >
     <!-- Toggle Header -->
     <button @click="expanded = !expanded"
-      class="w-full flex items-center justify-between p-5 text-left transition-colors"
-      :class="isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'"
+      class="w-full flex items-center justify-between p-4 md:p-5 text-left transition-colors border-b"
+      :class="isDark ? 'border-neutral-800 hover:bg-neutral-800/30' : 'border-neutral-200 hover:bg-neutral-50'"
     >
       <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-lg text-primary">calendar_month</span>
-        <h2 class="font-headline font-bold text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">Kalender Ekonomi</h2>
+        <span class="material-symbols-outlined text-base opacity-70">calendar_month</span>
+        <h2 class="font-mono font-bold text-xs uppercase tracking-widest" :class="isDark ? 'text-white' : 'text-neutral-900'">
+          GLOBAL ECONOMIC CALENDAR
+        </h2>
       </div>
-      <span class="material-symbols-outlined text-lg transition-transform duration-300" 
-        :class="expanded ? 'rotate-180' : ''" style="opacity: 0.4"
+      <span class="material-symbols-outlined text-base transition-transform duration-200 opacity-60" 
+        :class="expanded ? 'rotate-180' : ''"
       >expand_more</span>
     </button>
-
-    <!-- Content -->
-    <Transition
-      enter-active-class="transition-all duration-500 ease-out"
-      enter-from-class="max-h-0 opacity-0"
-      enter-to-class="max-h-[1000px] opacity-100"
-      leave-active-class="transition-all duration-300 ease-in"
-      leave-from-class="max-h-[1000px] opacity-100"
-      leave-to-class="max-h-0 opacity-0"
-    >
-      <div v-if="expanded" class="px-5 pb-5">
-        <!-- Unlocked State (Click to Load) -->
-        <div v-if="!isUnlocked && !loading" class="flex flex-col items-center justify-center py-6 text-center border-t"
-          :class="isDark ? 'border-white/5' : 'border-slate-100'">
-          <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" :class="isDark ? 'bg-white/5' : 'bg-slate-50'">
-            <span class="material-symbols-outlined text-xl opacity-50">calendar_month</span>
-          </div>
-          <h4 class="font-bold text-sm mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">Kalender Ekonomi Global</h4>
-          <p class="text-[10px] opacity-60 mb-4 max-w-[280px]">Pantau inflasi, suku bunga, & data ekonomi makro yang memicu volatilitas pasar.</p>
-          <button @click="handleUnlock" 
-            class="px-5 py-2 rounded-2xl text-xs font-bold transition-all"
-            :class="isDark ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'bg-primary text-white hover:bg-primary/90 shadow-sm'"
-          >
-            Tampilkan Data
-          </button>
-        </div>
-
-        <!-- Controls / Filters (Always shown after unlock) -->
-        <div v-if="isUnlocked" class="flex flex-wrap items-center gap-2 mb-6 transition-opacity py-4 border-t" 
-          :class="[
-            loading ? 'opacity-50 pointer-events-none' : '',
-            isDark ? 'border-white/5' : 'border-slate-100'
-          ]"
+    
+    <div v-if="expanded" class="p-5">
+      <!-- Unlocked State (Click to Load) -->
+      <div v-if="!isUnlocked && !loading" class="flex flex-col items-center justify-center p-8 text-center min-h-[200px]">
+        <div class="w-10 h-10 border flex items-center justify-center mb-3"
+          :class="isDark ? 'bg-neutral-900 border-neutral-700 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'"
         >
-          <button v-for="f in countryFilters" :key="f.value"
-            @click="filter = f.value"
-            class="px-4 py-1.5 rounded-xl text-[10px] font-bold transition-all border"
-            :class="filter === f.value
-              ? (isDark ? 'bg-primary/20 text-primary border-primary/20' : 'bg-primary text-white border-primary shadow-lg shadow-primary/20')
-              : (isDark ? 'bg-white/5 text-gray-500 border-white/5 hover:bg-white/10' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100')"
-          >
-            {{ f.label }}
-          </button>
-          
-          <div class="flex items-center gap-2 p-1.5 rounded-xl border" 
-            :class="isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'"
-          >
-            <div class="flex items-center gap-1 px-2">
-              <span class="material-symbols-outlined text-[14px] opacity-40">calendar_today</span>
-              <input type="date" v-model="startDate" 
-                class="bg-transparent border-none text-[10px] font-bold focus:ring-0 p-0 w-24"
-                :class="isDark ? 'text-gray-300' : 'text-slate-600'"
-              />
-            </div>
-            <div class="h-4 w-[1px]" :class="isDark ? 'bg-white/10' : 'bg-slate-200'"></div>
-            <div class="flex items-center gap-1 px-2">
-              <input type="date" v-model="endDate" 
-                class="bg-transparent border-none text-[10px] font-bold focus:ring-0 p-0 w-24"
-                :class="isDark ? 'text-gray-300' : 'text-slate-600'"
-              />
-            </div>
+          <span class="material-symbols-outlined text-lg">calendar_month</span>
+        </div>
+        <h4 class="font-mono font-bold text-xs uppercase tracking-wider mb-1" :class="isDark ? 'text-white' : 'text-neutral-900'">
+          MACROECONOMIC EVENTS
+        </h4>
+        <p class="text-[11px] opacity-60 mb-4 max-w-[280px]">Pantau inflasi, suku bunga, &amp; data makro global yang memicu volatilitas pasar.</p>
+        <button @click="handleUnlock" 
+          class="px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider border transition-all"
+          :class="isDark 
+            ? 'bg-white text-black border-white hover:bg-neutral-200' 
+            : 'bg-neutral-900 text-white border-neutral-900 hover:bg-neutral-800'"
+        >
+          LOAD CALENDAR
+        </button>
+      </div>
+
+      <!-- Controls / Filters (Always shown after unlock) -->
+      <div v-if="isUnlocked" class="flex flex-wrap items-center gap-2 mb-4 transition-opacity pb-4 border-b" 
+        :class="[
+          loading ? 'opacity-50 pointer-events-none' : '',
+          isDark ? 'border-neutral-800' : 'border-neutral-200'
+        ]"
+      >
+        <button v-for="f in countryFilters" :key="f.value"
+          @click="filter = f.value"
+          class="px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-all border"
+          :class="filter === f.value
+            ? (isDark ? 'bg-white text-black border-white' : 'bg-neutral-900 text-white border-neutral-900')
+            : (isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-700' : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:border-neutral-300')"
+        >
+          {{ f.label }}
+        </button>
+        
+        <div class="flex items-center gap-2 p-1 border font-mono text-[10px]" 
+          :class="isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-neutral-50 border-neutral-200 text-neutral-700'"
+        >
+          <div class="flex items-center gap-1 px-1.5">
+            <input type="date" v-model="startDate" 
+              class="bg-transparent border-none text-[10px] font-mono font-bold focus:ring-0 p-0 w-24"
+              :class="isDark ? 'text-neutral-300' : 'text-neutral-700'"
+            />
           </div>
-          
-          <div class="flex items-center gap-2">
-             <button @click="fetchCalendar" 
-              class="p-2 rounded-xl transition-all"
-              :class="isDark ? 'hover:bg-white/5 text-gray-400' : 'hover:bg-slate-50 text-slate-400'"
-              :disabled="loading"
-            >
-              <span class="material-symbols-outlined text-sm" :class="loading ? 'animate-spin' : ''">refresh</span>
-            </button>
+          <span class="opacity-40">→</span>
+          <div class="flex items-center gap-1 px-1.5">
+            <input type="date" v-model="endDate" 
+              class="bg-transparent border-none text-[10px] font-mono font-bold focus:ring-0 p-0 w-24"
+              :class="isDark ? 'text-neutral-300' : 'text-neutral-700'"
+            />
           </div>
         </div>
+        
+        <button @click="fetchCalendar" 
+          class="p-1.5 border transition-all"
+          :class="isDark ? 'border-neutral-800 hover:bg-neutral-800 text-neutral-400' : 'border-neutral-200 hover:bg-neutral-100 text-neutral-600'"
+          :disabled="loading"
+        >
+          <span class="material-symbols-outlined text-sm" :class="loading ? 'animate-spin' : ''">refresh</span>
+        </button>
+      </div>
 
         <!-- Loading State -->
         <div v-if="loading" class="space-y-4 py-4 border-t" :class="isDark ? 'border-white/5' : 'border-slate-100'">
@@ -200,7 +195,6 @@
           <p class="text-xs opacity-40">Tidak ada event ekonomi penting dalam waktu dekat.</p>
         </div>
       </div>
-    </Transition>
   </div>
 </template>
 

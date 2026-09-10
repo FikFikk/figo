@@ -1,49 +1,53 @@
 <template>
-  <div class="space-y-6">
-    <!-- Header statistik -->
-    <div class="glass-panel rounded-2xl border p-5" :class="isDark?'border-white/5':'border-slate-100'">
-      <div class="flex items-center gap-3 mb-3">
-        <span class="material-symbols-outlined text-2xl text-primary">menu_book</span>
-        <h2 class="font-headline font-bold text-base" :class="isDark?'text-white':'text-slate-900'">Stock Encyclopedia</h2>
+  <div class="space-y-6 font-mono">
+    <!-- Header statistik (Swiss Modular Block) -->
+    <div class="border p-5" :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
+        <span class="material-symbols-outlined text-lg opacity-70">menu_book</span>
+        <h2 class="font-mono font-bold text-xs uppercase tracking-widest" :class="isDark ? 'text-white' : 'text-neutral-900'">
+          CHART PATTERNS ENCYCLOPEDIA // DIRECTORY
+        </h2>
       </div>
-      <div class="grid grid-cols-4 gap-2">
-        <div v-for="s in stats" :key="s.label" class="rounded-xl p-2.5 text-center" :class="isDark?'bg-white/5':'bg-slate-50'">
-          <p class="text-lg font-black font-headline" :class="s.color">{{ s.val }}</p>
-          <p class="text-[8px] uppercase tracking-wider font-bold" :class="isDark?'text-gray-500':'text-slate-500'">{{ s.label }}</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x border"
+        :class="isDark ? 'bg-neutral-950 border-neutral-800 divide-neutral-800' : 'bg-neutral-50 border-neutral-200 divide-neutral-200'"
+      >
+        <div v-for="s in stats" :key="s.label" class="p-3 text-center">
+          <p class="text-xl font-black font-mono tabular-nums" :class="s.color">{{ s.val }}</p>
+          <p class="text-[8px] uppercase tracking-widest font-bold opacity-50 mt-0.5">{{ s.label }}</p>
         </div>
       </div>
     </div>
 
-    <!-- Konsep Dasar (SELALU TERBUKA) -->
-    <div v-for="cc in baseConcepts" :key="cc.title" class="glass-panel rounded-2xl border overflow-hidden" :class="isDark?'border-white/5':'border-slate-100'">
-      <div class="p-5">
-        <p class="text-[9px] font-black uppercase tracking-[0.2em] mb-1" :class="isDark?'text-gray-600':'text-slate-400'">{{ cc.subtitle }}</p>
-        <h3 class="font-headline font-bold text-sm" :class="isDark?'text-white':'text-slate-900'">{{ cc.title }}</h3>
+    <!-- Konsep Dasar -->
+    <div v-for="cc in baseConcepts" :key="cc.title" class="border overflow-hidden" :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'">
+      <div class="p-4 md:p-5 border-b" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
+        <p class="text-[9px] font-mono font-bold uppercase tracking-[0.2em] opacity-40 mb-0.5">{{ cc.subtitle }}</p>
+        <h3 class="font-mono font-bold text-xs uppercase tracking-wider" :class="isDark ? 'text-white' : 'text-neutral-900'">{{ cc.title }}</h3>
       </div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-5 pb-5">
-        <div v-for="c in cc.concepts" :key="c.name" @click="openConcept(c,cc.title)" class="rounded-2xl border p-4 flex flex-col items-center transition-all hover:scale-[1.02] cursor-pointer" :class="isDark?'bg-white/[0.03] border-white/10 hover:border-white/20':'bg-slate-50 border-slate-200 hover:border-slate-300'">
-          <span class="material-symbols-outlined text-2xl mb-2 text-primary">{{ c.icon }}</span>
-          <p class="text-xs font-bold font-headline text-center mb-1" :class="isDark?'text-white':'text-slate-900'">{{ c.name }}</p>
-          <p class="text-[9px] leading-relaxed text-center" :class="isDark?'text-gray-500':'text-slate-500'">{{ c.desc }}</p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 p-4 md:p-5">
+        <div v-for="c in cc.concepts" :key="c.name" @click="openConcept(c,cc.title)" class="border p-3.5 flex flex-col items-center transition-all hover:border-neutral-900 dark:hover:border-white cursor-pointer" :class="isDark ? 'bg-neutral-950/60 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
+          <span class="material-symbols-outlined text-xl mb-1.5 text-primary">{{ c.icon }}</span>
+          <p class="text-xs font-mono font-bold text-center mb-1 uppercase" :class="isDark ? 'text-white' : 'text-neutral-900'">{{ c.name }}</p>
+          <p class="text-[9px] leading-relaxed text-center opacity-60 font-sans">{{ c.desc }}</p>
         </div>
       </div>
     </div>
 
     <!-- Kategori Pola (collapsible) -->
-    <div v-for="cat in allPatternCats" :key="cat.title" class="glass-panel rounded-2xl border overflow-hidden" :class="isDark?'border-white/5':'border-slate-100'">
-      <button @click="cat.open=!cat.open" class="w-full flex items-center justify-between p-5 text-left transition-colors" :class="isDark?'hover:bg-white/5':'hover:bg-slate-50'">
+    <div v-for="cat in allPatternCats" :key="cat.title" class="border overflow-hidden" :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'">
+      <button @click="cat.open=!cat.open" class="w-full flex items-center justify-between p-4 md:p-5 text-left transition-colors border-b" :class="isDark ? 'border-neutral-800 hover:bg-neutral-800/30' : 'border-neutral-200 hover:bg-neutral-50'">
         <div>
-          <p class="text-[9px] font-black uppercase tracking-[0.2em] mb-1" :class="isDark?'text-gray-600':'text-slate-400'">{{ cat.subtitle }}</p>
-          <h3 class="font-headline font-bold text-sm" :class="isDark?'text-white':'text-slate-900'">{{ cat.title }}</h3>
+          <p class="text-[9px] font-mono font-bold uppercase tracking-[0.2em] opacity-40 mb-0.5">{{ cat.subtitle }}</p>
+          <h3 class="font-mono font-bold text-xs uppercase tracking-wider" :class="isDark ? 'text-white' : 'text-neutral-900'">{{ cat.title }}</h3>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-[9px] font-bold px-2 py-0.5 rounded-full" :class="isDark?'bg-white/10 text-gray-400':'bg-slate-100 text-slate-500'">{{ cat.patterns.length }}</span>
-          <span class="material-symbols-outlined text-lg transition-transform duration-300" :class="cat.open?'rotate-180':''" style="opacity:0.4">expand_more</span>
+          <span class="text-[9px] font-mono font-bold px-2 py-0.5 border" :class="isDark ? 'bg-neutral-900 border-neutral-700 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'">{{ cat.patterns.length }} PATTERNS</span>
+          <span class="material-symbols-outlined text-base transition-transform duration-200 opacity-60" :class="cat.open ? 'rotate-180' : ''">expand_more</span>
         </div>
       </button>
       <div v-show="cat.open">
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-5 pb-5">
-          <div v-for="p in cat.patterns" :key="p.name" @click="activePattern=p" class="rounded-2xl border p-3.5 flex flex-col transition-all hover:scale-[1.02] cursor-pointer" :class="isDark?'bg-white/[0.03] border-white/10 hover:border-white/20':'bg-slate-50 border-slate-200 hover:border-slate-300'">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 p-4 md:p-5">
+          <div v-for="p in cat.patterns" :key="p.name" @click="activePattern=p" class="border p-3 flex flex-col transition-all hover:border-neutral-900 dark:hover:border-white cursor-pointer" :class="isDark ? 'bg-neutral-950/60 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
             <div v-if="p.harmonic" class="h-20 flex items-center justify-center mb-2">
               <svg width="100%" height="76" viewBox="0 0 200 120" class="max-w-full">
                 <template v-for="(pt,pi) in p.harmonic.points" :key="'l'+pi"><line v-if="pi<p.harmonic.points.length-1" :x1="pt.x" :y1="pt.y" :x2="p.harmonic.points[pi+1].x" :y2="p.harmonic.points[pi+1].y" :stroke="p.harmonic.points[pi+1].y<pt.y?'#10b981':'#ef4444'" stroke-width="2" stroke-linecap="round"/></template>

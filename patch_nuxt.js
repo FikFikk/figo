@@ -44,7 +44,7 @@ if (!config.includes('@vite-pwa/nuxt')) {
           name: "Artikel",
           short_name: "Artikel",
           description: "Kejawen Archive & Artikel",
-          url: "/tools/artikel",
+          url: "/articles",
           icons: [{ src: "/icon-artikel.png", sizes: "192x192" }]
         },
         {

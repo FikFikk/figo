@@ -1,155 +1,148 @@
 <template>
-  <div class="glass-panel rounded-2xl p-5 md:p-6 border"
-    :class="isDark ? 'border-white/5' : 'border-slate-100'"
+  <div class="border transition-all duration-200"
+    :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'"
   >
     <!-- Header -->
-    <div class="flex items-center gap-2 mb-5">
-      <span class="material-symbols-outlined text-lg text-primary">psychology</span>
-      <h3 class="font-headline font-bold text-sm" :class="isDark ? 'text-white' : 'text-slate-900'">
-        Bandarmology
-      </h3>
-      <span class="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
-        :class="isDark ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-blue-50 text-primary'"
-      >Smart Money</span>
+    <div class="p-4 md:p-5 border-b flex items-center justify-between"
+      :class="isDark ? 'border-neutral-800' : 'border-neutral-200'"
+    >
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-base opacity-70">psychology</span>
+        <h3 class="font-mono font-bold text-xs uppercase tracking-widest" :class="isDark ? 'text-white' : 'text-neutral-900'">
+          BANDARMOLOGY & SMART MONEY
+        </h3>
+      </div>
+      <span class="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest border"
+        :class="isDark ? 'bg-neutral-800 border-neutral-700 text-neutral-300' : 'bg-neutral-100 border-neutral-300 text-neutral-700'"
+      >INSTITUTIONAL FLOW</span>
     </div>
 
     <!-- Unlocked State -->
-    <div v-if="!data && !loading" class="flex flex-col items-center justify-center py-10 text-center min-h-[220px]">
-      <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" :class="isDark ? 'bg-white/5' : 'bg-slate-50'">
-        <span class="material-symbols-outlined text-xl opacity-50">data_exploration</span>
+    <div v-if="!data && !loading" class="flex flex-col items-center justify-center p-8 text-center min-h-[220px]">
+      <div class="w-10 h-10 border flex items-center justify-center mb-3"
+        :class="isDark ? 'bg-neutral-900 border-neutral-700 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'"
+      >
+        <span class="material-symbols-outlined text-lg">data_exploration</span>
       </div>
-      <h4 class="font-bold text-sm mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">Bandarmologi</h4>
-      <p class="text-[10px] opacity-60 mb-4 max-w-[280px]">Lihat pergerakan bandar (Smart Money Flow & Akumulasi/Distribusi). Memerlukan request API.</p>
-      <button @click="$emit('fetch')" class="px-5 py-2 rounded-2xl text-xs font-bold transition-all" :class="isDark ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'bg-primary text-white hover:bg-primary/90 shadow-sm'">
-        Tampilkan Analisa Bandar
+      <h4 class="font-mono font-bold text-xs uppercase tracking-wider mb-1" :class="isDark ? 'text-white' : 'text-neutral-900'">
+        SMART MONEY FLOW ANALYSIS
+      </h4>
+      <p class="text-[11px] opacity-60 mb-4 max-w-[260px]">Analyze institutional accumulation, distribution, and net broker summary.</p>
+      <button @click="$emit('fetch')" 
+        class="px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider border transition-all"
+        :class="isDark 
+          ? 'bg-white text-black border-white hover:bg-neutral-200' 
+          : 'bg-neutral-900 text-white border-neutral-900 hover:bg-neutral-800'"
+      >
+        LOAD BANDARMOLOGY
       </button>
     </div>
 
     <!-- Loading -->
-    <div v-else-if="loading" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div v-for="i in 2" :key="i" class="h-32 rounded-xl animate-pulse"
-        :class="isDark ? 'bg-white/5' : 'bg-slate-100'"></div>
+    <div v-else-if="loading" class="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div v-for="i in 2" :key="i" class="h-28 border animate-pulse"
+        :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-100 border-neutral-200'"></div>
     </div>
 
-    <div v-else-if="hasData" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <!-- Content: 2-Column Swiss Grid -->
+    <div v-else-if="hasData" class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x"
+      :class="isDark ? 'divide-neutral-800' : 'divide-neutral-200'"
+    >
       <!-- Akumulasi Card -->
-      <div class="rounded-2xl p-4 border"
-        :class="isDark ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50/60 border-slate-100'"
-      >
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-[10px] font-bold uppercase tracking-widest opacity-40">Akumulasi</span>
-          <span class="material-symbols-outlined text-sm"
-            :class="accumulationStatus === 'ACCUMULATING' ? 'text-emerald-500' :
-                     accumulationStatus === 'DISTRIBUTING' ? 'text-red-500' : 'text-gray-400'"
-          >{{ accumulationStatus === 'ACCUMULATING' ? 'add_circle' :
-               accumulationStatus === 'DISTRIBUTING' ? 'remove_circle' : 'radio_button_unchecked' }}</span>
-        </div>
+      <div class="p-4 md:p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3 font-mono text-[10px]">
+            <span class="uppercase tracking-[0.2em] opacity-50">ACCUMULATION / DISTRIBUTION</span>
+            <span class="font-bold tabular-nums"
+              :class="accumulationStatus === 'ACCUMULATING' ? 'text-emerald-500' : accumulationStatus === 'DISTRIBUTING' ? 'text-red-500' : 'opacity-60'"
+            >
+              {{ accumulationScore }}%
+            </span>
+          </div>
 
-        <!-- Visual Gauge -->
-        <div class="mb-3">
-          <div class="w-full h-2 rounded-2xl overflow-hidden"
-            :class="isDark ? 'bg-white/10' : 'bg-slate-200'"
-          >
-            <div class="h-full rounded-2xl transition-all duration-700 ease-out"
+          <!-- Gauge Line -->
+          <div class="h-1.5 w-full bg-neutral-200 dark:bg-neutral-800 mb-2 overflow-hidden">
+            <div class="h-full transition-all duration-500"
               :style="{ width: accumulationScore + '%' }"
-              :class="accumulationScore > 60 ? 'bg-emerald-500' :
-                       accumulationScore > 40 ? 'bg-yellow-500' : 'bg-red-500'"
+              :class="accumulationScore > 60 ? 'bg-emerald-500' : accumulationScore > 40 ? 'bg-amber-500' : 'bg-red-500'"
             ></div>
           </div>
-          <div class="flex items-center justify-between mt-1.5">
-            <span class="text-[9px] font-bold text-red-500/60">Distribusi</span>
-            <span class="text-xs font-black font-mono"
-              :class="accumulationScore > 60 ? 'text-emerald-500' :
-                       accumulationScore > 40 ? 'text-yellow-500' : 'text-red-500'"
-            >{{ accumulationScore }}%</span>
-            <span class="text-[9px] font-bold text-emerald-500/60">Akumulasi</span>
+
+          <div class="flex items-center justify-between text-[9px] font-mono opacity-50 mb-4">
+            <span>0% DIST</span>
+            <span>50% NEUTRAL</span>
+            <span>100% ACC</span>
           </div>
         </div>
 
-        <!-- Status Label -->
-        <div class="px-3 py-2 rounded-md text-center"
+        <!-- Status Tag -->
+        <div class="p-2.5 border text-center font-mono text-xs font-bold"
           :class="accumulationStatus === 'ACCUMULATING'
-            ? (isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-700')
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
             : accumulationStatus === 'DISTRIBUTING'
-              ? (isDark ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700')
-              : (isDark ? 'bg-white/5 text-gray-400' : 'bg-slate-100 text-slate-500')"
+            ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30'
+            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-300 dark:border-neutral-700'"
         >
-          <p class="text-[11px] font-bold">{{ accumulationLabel }}</p>
+          {{ accumulationLabel }}
         </div>
       </div>
 
       <!-- Smart Money Flow Card -->
-      <div class="rounded-2xl p-4 border"
-        :class="isDark ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50/60 border-slate-100'"
-      >
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-[10px] font-bold uppercase tracking-widest opacity-40">Smart Money Flow</span>
-          <span class="material-symbols-outlined text-sm"
-            :class="smartMoneyDirection === 'INFLOW' ? 'text-emerald-500' :
-                     smartMoneyDirection === 'OUTFLOW' ? 'text-red-500' : 'text-gray-400'"
-          >{{ smartMoneyDirection === 'INFLOW' ? 'south_west' :
-               smartMoneyDirection === 'OUTFLOW' ? 'north_east' : 'swap_vert' }}</span>
-        </div>
+      <div class="p-4 md:p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3 font-mono text-[10px]">
+            <span class="uppercase tracking-[0.2em] opacity-50">SMART MONEY FLOW</span>
+            <span class="font-bold uppercase"
+              :class="smartMoneyDirection === 'INFLOW' ? 'text-emerald-500' : smartMoneyDirection === 'OUTFLOW' ? 'text-red-500' : 'opacity-60'"
+            >
+              {{ smartMoneyDirection }}
+            </span>
+          </div>
 
-        <!-- Flow Visual -->
-        <div class="flex items-center gap-3 mb-3">
-          <div class="flex-1 space-y-1.5">
-            <!-- Inflow bar -->
-            <div class="flex items-center gap-2">
-              <span class="text-[9px] font-bold w-12 text-emerald-500">Inflow</span>
-              <div class="flex-1 h-2 rounded-2xl overflow-hidden"
-                :class="isDark ? 'bg-white/10' : 'bg-slate-200'"
-              >
-                <div class="h-full bg-emerald-500 rounded-2xl transition-all duration-700"
-                  :style="{ width: inflowPct + '%' }"
-                ></div>
+          <!-- Inflow/Outflow Bars -->
+          <div class="space-y-2 mb-4">
+            <div class="flex items-center gap-2 font-mono text-[10px]">
+              <span class="w-12 text-emerald-500 font-bold uppercase">INFLOW</span>
+              <div class="flex-1 h-1.5 bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
+                <div class="h-full bg-emerald-500 transition-all duration-500" :style="{ width: inflowPct + '%' }"></div>
               </div>
-              <span class="text-[10px] font-mono font-bold w-10 text-right opacity-60">
-                {{ inflowPct }}%
-              </span>
+              <span class="w-8 text-right tabular-nums opacity-70">{{ inflowPct }}%</span>
             </div>
-            <!-- Outflow bar -->
-            <div class="flex items-center gap-2">
-              <span class="text-[9px] font-bold w-12 text-red-500">Outflow</span>
-              <div class="flex-1 h-2 rounded-2xl overflow-hidden"
-                :class="isDark ? 'bg-white/10' : 'bg-slate-200'"
-              >
-                <div class="h-full bg-red-500 rounded-2xl transition-all duration-700"
-                  :style="{ width: outflowPct + '%' }"
-                ></div>
+
+            <div class="flex items-center gap-2 font-mono text-[10px]">
+              <span class="w-12 text-red-500 font-bold uppercase">OUTFLOW</span>
+              <div class="flex-1 h-1.5 bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
+                <div class="h-full bg-red-500 transition-all duration-500" :style="{ width: outflowPct + '%' }"></div>
               </div>
-              <span class="text-[10px] font-mono font-bold w-10 text-right opacity-60">
-                {{ outflowPct }}%
-              </span>
+              <span class="w-8 text-right tabular-nums opacity-70">{{ outflowPct }}%</span>
             </div>
           </div>
         </div>
 
         <!-- Direction Label -->
-        <div class="px-3 py-2 rounded-md text-center"
+        <div class="p-2.5 border text-center font-mono text-xs font-bold"
           :class="smartMoneyDirection === 'INFLOW'
-            ? (isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-700')
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
             : smartMoneyDirection === 'OUTFLOW'
-              ? (isDark ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700')
-              : (isDark ? 'bg-white/5 text-gray-400' : 'bg-slate-100 text-slate-500')"
+            ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30'
+            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-300 dark:border-neutral-700'"
         >
-          <p class="text-[11px] font-bold">{{ smartMoneyLabel }}</p>
+          {{ smartMoneyLabel }}
         </div>
       </div>
     </div>
 
     <!-- Empty state -->
     <div v-else class="text-center py-8">
-      <span class="material-symbols-outlined text-3xl opacity-15 mb-2 block">psychology</span>
-      <p class="text-xs opacity-40">Institutional flow data is not available for this stock</p>
+      <span class="material-symbols-outlined text-2xl opacity-20 mb-1 block">psychology</span>
+      <p class="text-xs font-mono opacity-50 uppercase">NO INSTITUTIONAL FLOW DATA AVAILABLE</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 /**
- * Komponen bandarmology — deteksi akumulasi/distribusi & smart money flow
- * Visual gauge & flow bars untuk analisa pergerakan bandar
+ * Komponen Bandarmology Swiss Style — Deteksi Akumulasi/Distribusi & Smart Money Flow
  */
 const props = defineProps<{
   data: any
@@ -162,11 +155,9 @@ const hasData = computed(() => {
   return props.data && (props.data.accumulation || props.data.smartMoney)
 })
 
-// === Akumulasi ===
 const accumulationScore = computed(() => {
   if (!props.data?.accumulation) return 50
   const acc = props.data.accumulation
-  // Coba ambil score dari berbagai kemungkinan field
   return acc.score ?? acc.accumulationScore ?? acc.percentage ?? 50
 })
 
@@ -182,12 +173,11 @@ const accumulationStatus = computed(() => {
 })
 
 const accumulationLabel = computed(() => {
-  if (accumulationStatus.value === 'ACCUMULATING') return '🟢 Bandar sedang mengakumulasi'
-  if (accumulationStatus.value === 'DISTRIBUTING') return '🔴 Bandar sedang distribusi'
-  return '⚪ Tidak ada aktivitas signifikan'
+  if (accumulationStatus.value === 'ACCUMULATING') return 'ACCUMULATION DETECTED (BIG MONEY INFLOW)'
+  if (accumulationStatus.value === 'DISTRIBUTING') return 'DISTRIBUTION DETECTED (INSTITUTIONAL SELLING)'
+  return 'NEUTRAL MARKET FLOW (NO HEAVY ACCUMULATION)'
 })
 
-// === Smart Money Flow ===
 const inflowPct = computed(() => {
   if (!props.data?.smartMoney) return 50
   const sm = props.data.smartMoney
@@ -210,8 +200,8 @@ const smartMoneyDirection = computed(() => {
 })
 
 const smartMoneyLabel = computed(() => {
-  if (smartMoneyDirection.value === 'INFLOW') return '🟢 Smart money masuk — bullish signal'
-  if (smartMoneyDirection.value === 'OUTFLOW') return '🔴 Smart money keluar — bearish signal'
-  return '⚪ Aliran netral'
+  if (smartMoneyDirection.value === 'INFLOW') return 'NET POSITIVE BUY VOLUME'
+  if (smartMoneyDirection.value === 'OUTFLOW') return 'NET NEGATIVE SELL VOLUME'
+  return 'BALANCED ORDER BOOK FLOW'
 })
 </script>

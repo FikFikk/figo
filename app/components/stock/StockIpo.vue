@@ -1,55 +1,63 @@
 <template>
-  <div class="glass-panel rounded-2xl border overflow-hidden"
-    :class="isDark ? 'border-white/5' : 'border-slate-100'"
+  <div class="border transition-all duration-200"
+    :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'"
   >
     <!-- Toggle Header -->
     <button @click="isOpen = !isOpen"
-      class="w-full flex items-center justify-between p-5 text-left transition-colors"
-      :class="isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'"
+      class="w-full flex items-center justify-between p-4 md:p-5 text-left transition-colors border-b"
+      :class="isDark ? 'border-neutral-800 hover:bg-neutral-800/30' : 'border-neutral-200 hover:bg-neutral-50'"
     >
       <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-lg text-primary">rocket_launch</span>
-        <h2 class="font-headline font-bold text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">Momentum IPO</h2>
+        <span class="material-symbols-outlined text-base opacity-70">rocket_launch</span>
+        <h2 class="font-mono font-bold text-xs uppercase tracking-widest" :class="isDark ? 'text-white' : 'text-neutral-900'">
+          MOMENTUM IPO // PIPELINE
+        </h2>
       </div>
-      <span class="material-symbols-outlined text-lg transition-transform duration-300"
-        :class="isOpen ? 'rotate-180' : ''" style="opacity: 0.4">expand_more</span>
+      <span class="material-symbols-outlined text-base transition-transform duration-200 opacity-60"
+        :class="isOpen ? 'rotate-180' : ''">expand_more</span>
     </button>
     
-    <div v-show="isOpen" class="px-5 pb-5">
+    <div v-show="isOpen" class="p-5 font-mono">
       <!-- Unlocked State -->
-      <div v-if="!isFetched && !loading" class="flex flex-col items-center justify-center py-6 text-center border-t"
-        :class="isDark ? 'border-white/5' : 'border-slate-100'">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" :class="isDark ? 'bg-white/5' : 'bg-slate-50'">
-          <span class="material-symbols-outlined text-xl opacity-50">rocket_launch</span>
+      <div v-if="!isFetched && !loading" class="flex flex-col items-center justify-center p-8 text-center min-h-[200px]">
+        <div class="w-10 h-10 border flex items-center justify-center mb-3"
+          :class="isDark ? 'bg-neutral-900 border-neutral-700 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'"
+        >
+          <span class="material-symbols-outlined text-lg">rocket_launch</span>
         </div>
-        <h4 class="font-bold text-sm mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">Pantau IPO Terbaru</h4>
-        <p class="text-[10px] opacity-60 mb-4 max-w-[280px]">Sentiment analysis, momentum, and trading strategies for upcoming IPOs.</p>
-        <button @click="handleFetch" class="px-5 py-2 rounded-2xl text-xs font-bold transition-all"
-          :class="isDark ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'bg-primary text-white hover:bg-primary/90 shadow-sm'">
-          Tampilkan Data
+        <h4 class="font-mono font-bold text-xs uppercase tracking-wider mb-1" :class="isDark ? 'text-white' : 'text-neutral-900'">
+          IPO RADAR &amp; PIPELINE
+        </h4>
+        <p class="text-[11px] opacity-60 mb-4 max-w-[280px]">Sentiment analysis, momentum, and valuation metrics for upcoming IPOs.</p>
+        <button @click="handleFetch" 
+          class="px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider border transition-all"
+          :class="isDark 
+            ? 'bg-white text-black border-white hover:bg-neutral-200' 
+            : 'bg-neutral-900 text-white border-neutral-900 hover:bg-neutral-800'"
+        >
+          LOAD IPO DATA
         </button>
       </div>
 
       <!-- Loading -->
-      <div v-else-if="loading" class="space-y-4 py-4 border-t" :class="isDark ? 'border-white/5' : 'border-slate-100'">
-        <div v-for="i in 2" :key="i" class="h-40 rounded-xl animate-pulse" :class="isDark ? 'bg-white/5' : 'bg-slate-100'"></div>
+      <div v-else-if="loading" class="space-y-3 py-2">
+        <div v-for="i in 2" :key="i" class="h-32 border animate-pulse" :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-100 border-neutral-200'"></div>
       </div>
 
       <!-- Result/Data -->
-      <div v-else-if="ipoData" class="space-y-5 py-4 border-t" :class="isDark ? 'border-white/5' : 'border-slate-100'">
-        <!-- Summary Alert -->
-        <div class="p-4 rounded-2xl flex items-center justify-between border"
-          :class="isDark ? 'bg-primary/10 border-primary/20' : 'bg-blue-50 border-blue-100'">
+      <div v-else-if="ipoData" class="space-y-4">
+        <!-- Summary Alert (Swiss Block) -->
+        <div class="p-3.5 border flex items-center justify-between"
+          :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-neutral-50 border-neutral-200'">
           <div class="flex items-center gap-3">
-             <span class="material-symbols-outlined text-primary text-2xl">monitoring</span>
              <div>
-               <p class="text-[10px] font-bold uppercase tracking-wider text-primary">Sentimen Pasar IPO</p>
-               <p class="font-headline font-black text-lg" :class="isDark ? 'text-white' : 'text-slate-900'">{{ ipoData.market_sentiment || 'UNKNOWN' }}</p>
+               <span class="text-[9px] uppercase tracking-wider font-bold text-neutral-400 block">MARKET SENTIMENT</span>
+               <p class="font-mono font-black text-base text-primary uppercase">{{ ipoData.market_sentiment || 'UNKNOWN' }}</p>
              </div>
           </div>
           <div class="text-right">
-             <p class="text-[10px] opacity-60">Total IPO Terjadwal</p>
-             <p class="font-bold text-lg font-mono" :class="isDark ? 'text-white' : 'text-slate-900'">{{ ipoData.summary?.total_upcoming || 0 }}</p>
+             <span class="text-[9px] uppercase tracking-wider font-bold text-neutral-400 block">SCHEDULED IPOS</span>
+             <p class="font-bold text-base font-mono tabular-nums" :class="isDark ? 'text-white' : 'text-neutral-900'">{{ ipoData.summary?.total_upcoming || 0 }}</p>
           </div>
         </div>
 

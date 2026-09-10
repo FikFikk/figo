@@ -1,45 +1,60 @@
 <template>
-  <section class="py-20 md:py-32 transition-colors duration-300"
-    :class="isDark ? 'bg-[#0a0c14]' : 'bg-surface-container-low'"
+  <section class="py-16 md:py-24 border-t border-neutral-200 dark:border-neutral-800 transition-colors duration-300"
+    :class="isDark ? 'bg-neutral-950 text-white' : 'bg-neutral-50 text-neutral-900'"
   >
-    <div class="max-w-4xl mx-auto text-center px-6"
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 md:px-8"
       ref="ctaRef"
-      :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
-      style="transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);"
+      :class="isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
+      style="transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);"
     >
-      <!-- Badge -->
-      <div class="inline-block px-4 py-1.5 rounded-2xl text-xs font-bold tracking-widest uppercase mb-8"
-        :class="isDark ? 'bg-primary/15 text-primary border border-primary/20' : 'bg-primary-fixed text-on-primary-fixed'"
-      >
-        Start for Free?
-      </div>
+      <div class="p-8 md:p-14 rounded-2xl border border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm relative overflow-hidden">
+        <!-- Swiss Corner Markers -->
+        <div class="absolute top-3 left-3 font-mono text-[9px] text-neutral-400 select-none">+</div>
+        <div class="absolute top-3 right-3 font-mono text-[9px] text-neutral-400 select-none">+</div>
+        <div class="absolute bottom-3 left-3 font-mono text-[9px] text-neutral-400 select-none">+</div>
+        <div class="absolute bottom-3 right-3 font-mono text-[9px] text-neutral-400 select-none">+</div>
 
-      <h2 class="text-3xl sm:text-4xl md:text-6xl font-headline font-extrabold mb-6 md:mb-8 tracking-tight"
-        :class="isDark ? 'text-white' : 'text-slate-900'"
-      >
-        Zero configuration.<br />Infinite potential.
-      </h2>
+        <div class="flex flex-col md:flex-row items-start md:items-end justify-between gap-8">
+          <div class="space-y-4 max-w-xl">
+            <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded border border-neutral-200 dark:border-neutral-800 font-mono text-[10px] font-bold tracking-widest uppercase"
+              :class="isDark ? 'bg-neutral-800 text-neutral-300' : 'bg-neutral-100 text-neutral-700'"
+            >
+              DEPLOYMENT // INSTANT UTILITY
+            </div>
 
-      <p class="text-base md:text-lg max-w-xl mx-auto mb-8 md:mb-10"
-        :class="isDark ? 'text-gray-400' : 'text-secondary'"
-      >
-        Join thousands of engineers who trust FiGo for their daily file operations. No signup required.
-      </p>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-headline font-black tracking-tight leading-[1.05]"
+              :class="isDark ? 'text-white' : 'text-neutral-950'"
+            >
+              ZERO FRICTION.<br />
+              <span class="text-primary">INFINITE UTILITY.</span>
+            </h2>
 
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6">
-        <button
-          class="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 bg-primary text-on-primary rounded-2xl font-bold text-base md:text-lg hover:scale-105 shadow-xl shadow-primary/20 transition-all active:scale-95"
-          @click="scrollTo('tools')"
-        >
-          Launch Dashboard
-        </button>
-        <button
-          class="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 rounded-2xl font-bold text-base md:text-lg transition-all"
-          :class="isDark ? 'bg-white/10 text-white hover:bg-white/15 border border-white/10' : 'bg-white text-slate-900 hover:bg-slate-50 border border-slate-200'"
-          @click="scrollTo('toolkit')"
-        >
-          View All Tools
-        </button>
+            <p class="text-sm md:text-base leading-relaxed"
+              :class="isDark ? 'text-neutral-400' : 'text-neutral-600'"
+            >
+              Semua alat dirancang untuk langsung dipakai dari peramban tanpa hambatan pendaftaran, langganan, atau batasan tersembunyi.
+            </p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            <NuxtLink
+              to="/tools"
+              class="min-h-12 px-8 py-3.5 rounded-2xl bg-primary text-white font-headline font-extrabold text-sm uppercase tracking-wider hover:bg-primary/90 active:scale-98 transition-all flex items-center justify-center gap-2 shadow-sm text-center"
+            >
+              <span>Mulai Sekarang</span>
+              <span class="material-symbols-outlined text-lg">arrow_forward</span>
+            </NuxtLink>
+
+            <NuxtLink
+              to="/articles"
+              class="min-h-12 px-6 py-3.5 rounded-2xl border border-neutral-300 dark:border-neutral-700 font-headline font-bold text-sm hover:border-neutral-900 dark:hover:border-white transition-all flex items-center justify-center gap-2 text-center"
+              :class="isDark ? 'text-neutral-200 hover:bg-neutral-800' : 'text-neutral-800 hover:bg-neutral-100'"
+            >
+              <span>Baca Arsip</span>
+              <span class="material-symbols-outlined text-lg">north_east</span>
+            </NuxtLink>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -49,10 +64,6 @@
 const { isDark } = useColorMode()
 const ctaRef = ref<HTMLElement | null>(null)
 const isVisible = ref(false)
-
-function scrollTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
 
 onMounted(() => {
   if (!ctaRef.value) return
@@ -70,6 +81,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* fix */
+/* Swiss Poster Styling */
 </style>
-

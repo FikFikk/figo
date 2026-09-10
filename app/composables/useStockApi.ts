@@ -102,7 +102,8 @@ export function useStockApi(): UseStockApiReturn {
        // Map interval ke format ZPI TradingView
        let resZpi = '1D'
        const inv = params?.interval || '1d'
-       if (inv === '5m') resZpi = '5'
+       if (inv === '1m') resZpi = '1'
+       else if (inv === '5m') resZpi = '5'
        else if (inv === '15m') resZpi = '15'
        else if (inv === '30m') resZpi = '30'
        else if (inv === '60m' || inv === '1h') resZpi = '60'

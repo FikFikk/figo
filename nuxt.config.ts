@@ -8,6 +8,11 @@ export default defineNuxtConfig({
     port: 5000
   },
 
+  sourcemap: {
+    server: false,
+    client: false,
+  },
+
   // Pengaturan eksperimental untuk navigasi instan dan ekstraksi payload ringan
   experimental: {
     viewTransition: true,

@@ -1,5 +1,5 @@
 const fs = require('fs');
-const vueFile = '/home/fikfikk/projects/node/figo/app/pages/tools/artikel.vue';
+const vueFile = '/home/fikfikk/projects/node/figo/app/pages/articles.vue';
 const content = fs.readFileSync(vueFile, 'utf8');
 
 const regex = /const documents = ref\(\[([\s\S]*?)\]\)/;

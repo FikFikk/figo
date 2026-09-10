@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const srcDir = '/root/ObsidianVault/Kejawen/Dataset';
-const vueFile = '/home/fikfikk/projects/node/figo/app/pages/tools/artikel.vue';
+const vueFile = '/home/fikfikk/projects/node/figo/app/pages/articles.vue';
 
 const files = fs.readdirSync(srcDir).filter(f => f.endsWith('.json'));
 let cards = [];

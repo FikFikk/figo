@@ -1,110 +1,134 @@
 <template>
-  <div class="relative">
-    <!-- Input Pencarian -->
-    <div class="flex items-center gap-3">
-      <div class="flex-1 relative">
-        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-xl"
-          :class="isDark ? 'text-gray-500' : 'text-slate-400'"
-        >search</span>
+  <div class="relative w-full">
+    <!-- Input Pencarian Swiss Style -->
+    <div class="relative">
+      <div class="flex items-center border transition-all duration-200"
+        :class="[
+          isDark 
+            ? 'bg-[#12141a] border-neutral-800 focus-within:border-neutral-400' 
+            : 'bg-white border-neutral-300 focus-within:border-neutral-900 shadow-sm'
+        ]"
+      >
+        <div class="pl-4 pr-2 flex items-center justify-center text-neutral-400">
+          <span class="material-symbols-outlined text-lg">search</span>
+        </div>
+        
         <input
           v-model="query"
           type="text"
-          placeholder="Search stocks (e.g. AAPL, TSLA, BBCA)..."
-          class="w-full pl-12 pr-12 py-4 rounded-2xl text-sm font-medium transition-all outline-none"
-          :class="isDark
-            ? 'bg-white/5 text-white placeholder-gray-600 border border-white/10 focus:border-primary/40'
-            : 'bg-white text-slate-900 placeholder-slate-400 border border-slate-200 focus:border-primary shadow-sm'"
+          placeholder="SEARCH TICKER OR COMPANY (E.G. BBCA, BBRI, NVDA, AAPL)..."
+          class="w-full py-3.5 pr-10 text-xs md:text-sm font-mono tracking-wider uppercase bg-transparent outline-none placeholder:normal-case placeholder:font-sans placeholder:tracking-normal placeholder:opacity-40"
+          :class="isDark ? 'text-white' : 'text-neutral-900'"
           @input="onSearch"
           @focus="showDropdown = true"
           @keydown.escape="showDropdown = false"
           @keydown.enter="selectFirst"
         />
+
         <!-- Loading spinner -->
-        <span v-if="loading" class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-lg animate-spin text-primary"
-        >progress_activity</span>
+        <span v-if="loading" class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-sm animate-spin text-neutral-400">
+          progress_activity
+        </span>
         <!-- Clear button -->
         <button v-else-if="query" @click="clearSearch"
-          class="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-100 transition-opacity"
+          class="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
         >
-          <span class="material-symbols-outlined text-lg">close</span>
+          <span class="material-symbols-outlined text-base">close</span>
+        </button>
+      </div>
+
+      <!-- Quick Tickers Bar (Swiss Pill Grid) -->
+      <div class="flex items-center gap-1.5 mt-2.5 overflow-x-auto pb-1 no-scrollbar text-[10px] font-mono font-medium">
+        <span class="text-neutral-400 dark:text-neutral-600 uppercase tracking-widest text-[9px] mr-1 shrink-0">QUICK:</span>
+        <button
+          v-for="ticker in quickTickers"
+          :key="ticker.symbol"
+          @click="selectQuickTicker(ticker)"
+          class="px-2.5 py-1 border transition-all shrink-0 hover:border-neutral-900 dark:hover:border-white"
+          :class="[
+            isDark 
+              ? 'bg-neutral-900/60 border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800' 
+              : 'bg-neutral-50 border-neutral-200 text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100'
+          ]"
+        >
+          <span class="font-bold">{{ ticker.symbol }}</span>
+          <span v-if="ticker.tag" class="ml-1 text-[8px] opacity-40 uppercase">{{ ticker.tag }}</span>
         </button>
       </div>
     </div>
 
     <!-- Dropdown hasil pencarian -->
     <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0 -translate-y-2"
+      enter-active-class="transition duration-150 ease-out"
+      enter-from-class="opacity-0 -translate-y-1"
       enter-to-class="opacity-100 translate-y-0"
-      leave-active-class="transition duration-150 ease-in"
+      leave-active-class="transition duration-100 ease-in"
       leave-from-class="opacity-100 translate-y-0"
-      leave-to-class="opacity-0 -translate-y-2"
+      leave-to-class="opacity-0 -translate-y-1"
     >
       <div v-if="showDropdown && query.length > 0"
-        class="absolute top-full left-0 right-0 mt-2 rounded-2xl shadow-2xl z-50 max-h-80 overflow-y-auto border"
-        :class="isDark ? 'bg-[#1a1d28] border-white/10' : 'bg-white border-slate-200'"
+        class="absolute top-full left-0 right-0 mt-1 shadow-2xl z-50 max-h-80 overflow-y-auto border"
+        :class="isDark ? 'bg-[#15171e] border-neutral-800 text-neutral-200' : 'bg-white border-neutral-300 text-neutral-900'"
       >
-        <!-- Label: Hasil Pencarian -->
-        <div class="px-4 pt-3 pb-2">
-          <p class="text-[10px] font-black uppercase tracking-[0.2em]"
-            :class="isDark ? 'text-gray-600' : 'text-slate-400'"
-          >
-            Hasil untuk "{{ query }}"
+        <!-- Header Dropdown -->
+        <div class="px-4 py-2 border-b flex items-center justify-between"
+          :class="isDark ? 'bg-neutral-900/80 border-neutral-800 text-neutral-500' : 'bg-neutral-50 border-neutral-200 text-neutral-400'"
+        >
+          <p class="text-[9px] font-mono uppercase tracking-[0.2em]">
+            SEARCH RESULTS FOR <span class="text-neutral-900 dark:text-neutral-200 font-bold">"{{ query }}"</span>
           </p>
+          <span class="text-[9px] font-mono">{{ displayList.length }} MATCHES</span>
         </div>
 
         <!-- Loading State -->
         <div v-if="isTyping || loading" class="px-4 py-8 text-center flex flex-col items-center justify-center">
-          <span class="material-symbols-outlined text-primary animate-spin text-3xl mb-3 inline-block">progress_activity</span>
-          <p class="text-xs font-bold opacity-70">{{ isTyping ? 'Waiting...' : 'Searching stocks...' }}</p>
+          <span class="material-symbols-outlined text-neutral-400 animate-spin text-2xl mb-2 inline-block">progress_activity</span>
+          <p class="text-[11px] font-mono opacity-60 uppercase tracking-wider">{{ isTyping ? 'Typing...' : 'Fetching market data...' }}</p>
         </div>
 
         <!-- Daftar Saham -->
-        <div v-else class="pb-2">
+        <div v-else class="divide-y" :class="isDark ? 'divide-neutral-800/60' : 'divide-neutral-100'">
           <!-- Item Saham -->
           <button
             v-for="stock in displayList"
             :key="stock.symbol || stock.code"
             @click="selectStock(stock)"
-            class="w-full px-4 py-3 flex items-center gap-3 transition-all"
-            :class="isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'"
+            class="w-full px-4 py-2.5 flex items-center gap-3 transition-colors text-left group"
+            :class="isDark ? 'hover:bg-neutral-800/50' : 'hover:bg-neutral-50'"
           >
-            <!-- Ikon saham / Logo -->
-            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-black bg-white overflow-hidden shadow-sm border"
-              :class="isDark ? 'border-white/10' : 'border-slate-100'"
+            <!-- Badge Ticker -->
+            <div class="w-11 h-9 flex items-center justify-center flex-shrink-0 text-xs font-mono font-bold border uppercase"
+              :class="isDark ? 'bg-neutral-900 border-neutral-700 text-white' : 'bg-neutral-100 border-neutral-200 text-neutral-900'"
             >
-              <img 
-                v-if="!stock.logoError"
-                :src="`https://assets.stockbit.com/logos/companies/${stock.symbol || stock.code}.png`" 
-                :alt="stock.symbol || stock.code"
-                class="w-full h-full object-contain p-1"
-                @error="stock.logoError = true"
-              />
-              <span v-else :class="isDark ? 'text-slate-800' : 'text-slate-900'">
-                {{ (stock.symbol || stock.code || '?').substring(0, 2) }}
-              </span>
+              {{ (stock.symbol || stock.code || '?').replace('.JK', '').substring(0, 4) }}
             </div>
-            <div class="flex-1 text-left min-w-0">
-              <div class="flex items-center gap-1.5">
-                <p class="font-headline font-bold text-sm truncate"
-                  :class="isDark ? 'text-white' : 'text-slate-900'"
-                >{{ stock.symbol || stock.code }}</p>
-                <!-- Badge IDX / Exchange -->
-                <span v-if="stock.isIDX || stock.tag === 'IDX'" class="px-1.5 py-0.5 rounded text-[8px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">IDX</span>
-                <span v-else-if="stock.tag" class="px-1.5 py-0.5 rounded text-[8px] font-black opacity-40 border"
-                  :class="isDark ? 'border-white/10' : 'border-slate-200'"
+
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-bold text-xs tracking-wider"
+                  :class="isDark ? 'text-white' : 'text-neutral-900'"
+                >{{ stock.symbol || stock.code }}</span>
+                
+                <!-- Exchange Badge -->
+                <span v-if="stock.isIDX || stock.tag === 'IDX' || (stock.symbol && stock.symbol.endsWith('.JK'))" 
+                  class="px-1.5 py-0.2 text-[8px] font-mono uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                >IDX</span>
+                <span v-else-if="stock.tag" 
+                  class="px-1.5 py-0.2 text-[8px] font-mono uppercase opacity-50 border"
+                  :class="isDark ? 'border-neutral-700' : 'border-neutral-200'"
                 >{{ stock.tag }}</span>
               </div>
-              <p class="text-[11px] truncate"
-                :class="isDark ? 'text-gray-500' : 'text-slate-400'"
+              <p class="text-[11px] truncate opacity-60 font-sans"
+                :class="isDark ? 'text-neutral-400' : 'text-neutral-600'"
               >{{ stock.name || stock.company || '' }}</p>
             </div>
+
             <!-- Harga jika tersedia -->
-            <div v-if="stock.close || stock.price" class="text-right flex-shrink-0">
-              <p class="text-sm font-bold font-mono"
-                :class="isDark ? 'text-white' : 'text-slate-900'"
+            <div v-if="stock.close || stock.price" class="text-right flex-shrink-0 font-mono tabular-nums">
+              <p class="text-xs font-bold"
+                :class="isDark ? 'text-white' : 'text-neutral-900'"
               >{{ formatPrice(stock.close || stock.price) }}</p>
-              <p v-if="stock.change !== undefined" class="text-[10px] font-bold"
+              <p v-if="stock.change !== undefined" class="text-[9px] font-bold"
                 :class="(stock.change || 0) >= 0 ? 'text-emerald-500' : 'text-red-500'"
               >{{ (stock.change || 0) >= 0 ? '+' : '' }}{{ formatPercent(stock.changePct || stock.percent || 0) }}%</p>
             </div>
@@ -114,8 +138,8 @@
           <div v-if="query.length > 0 && results.length === 0"
             class="px-4 py-8 text-center"
           >
-            <span class="material-symbols-outlined text-3xl mb-2 block opacity-20">search_off</span>
-            <p class="text-sm font-bold opacity-80">Stock "{{ query }}" not found</p>
+            <span class="material-symbols-outlined text-2xl mb-1 block opacity-30">search_off</span>
+            <p class="text-xs font-mono opacity-60">NO TICKER MATCHING "{{ query }}"</p>
           </div>
         </div>
       </div>
@@ -128,8 +152,8 @@
 
 <script setup lang="ts">
 /**
- * Komponen pencarian saham dengan autocomplete
- * Menampilkan trending stocks saat input kosong
+ * Komponen pencarian saham Swiss International Typographic Style
+ * Dilengkapi Shortcut Ticker Cepat dan Debounce Optimal
  */
 const emit = defineEmits<{
   select: [stock: any]
@@ -144,12 +168,30 @@ const showDropdown = ref(false)
 const isTyping = ref(false)
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
-// Daftar yang ditampilkan: hasil pencarian
-const displayList = computed(() => {
-  return results.value
-})
+// Quick Tickers Populer
+const quickTickers = [
+  { symbol: 'BBCA', tag: 'IDX' },
+  { symbol: 'BBRI', tag: 'IDX' },
+  { symbol: 'BMRI', tag: 'IDX' },
+  { symbol: 'TLKM', tag: 'IDX' },
+  { symbol: 'ASII', tag: 'IDX' },
+  { symbol: 'BREN', tag: 'IDX' },
+  { symbol: 'AMMN', tag: 'IDX' },
+  { symbol: 'NVDA', tag: 'US' },
+  { symbol: 'AAPL', tag: 'US' },
+  { symbol: 'TSLA', tag: 'US' },
+]
 
-// Debounced search
+function selectQuickTicker(ticker: { symbol: string; tag?: string }) {
+  emit('select', { symbol: ticker.symbol })
+  query.value = ticker.symbol
+  showDropdown.value = false
+}
+
+// Daftar yang ditampilkan
+const displayList = computed(() => results.value)
+
+// Debounced search (350ms agar cepat dan responsif)
 function onSearch() {
   if (searchTimeout) clearTimeout(searchTimeout)
   showDropdown.value = true
@@ -161,19 +203,15 @@ function onSearch() {
     return
   }
 
-  // Debounce 2000ms
   searchTimeout = setTimeout(async () => {
     isTyping.value = false
     const data = await searchStock(query.value)
 
-    // Yahoo Finance: mengembalikan array langsung [{symbol, name}]
-    // RapidAPI IDX: mengembalikan { data: { data: { company: [...] } } }
     let items: any[] = []
     if (Array.isArray(data)) {
       items = data
     } else {
-      const companies = extractSearchResults(data)
-      items = companies
+      items = extractSearchResults(data)
     }
 
     results.value = items.map((c: any) => ({
@@ -181,12 +219,9 @@ function onSearch() {
       name: c.name || c.longname || c.desc || c.description || c.company || '',
       ...c,
     }))
-  }, 2000)
+  }, 350)
 }
 
-/**
- * Extract array dari berbagai format response API
- */
 function extractArray(data: any): any[] {
   if (!data) return []
   if (Array.isArray(data)) return data
@@ -197,46 +232,36 @@ function extractArray(data: any): any[] {
   return []
 }
 
-/**
- * Extract hasil search dari format { data: { data: { company: [...] } } }
- */
 function extractSearchResults(data: any): any[] {
   if (!data) return []
-  // Format: { success, data: { data: { company: [...] } } }
   if (data?.data?.data?.company) return data.data.data.company
   if (data?.data?.company) return data.data.company
-  // Fallback
   return extractArray(data)
 }
 
-// Pilih saham
 function selectStock(stock: any) {
   query.value = stock.symbol || stock.code || ''
   showDropdown.value = false
   emit('select', stock)
 }
 
-// Pilih saham pertama dari daftar (Enter)
 function selectFirst() {
   if (displayList.value.length > 0) {
     selectStock(displayList.value[0])
   }
 }
 
-// Bersihkan pencarian
 function clearSearch() {
   query.value = ''
   results.value = []
   showDropdown.value = false
 }
 
-// Format harga ke Rupiah
 function formatPrice(price: number): string {
   if (!price) return '-'
   return new Intl.NumberFormat('id-ID').format(price)
 }
 
-// Format persen
 function formatPercent(pct: number): string {
   return (pct || 0).toFixed(2)
 }

@@ -1,98 +1,100 @@
 <template>
-  <div class="glass-panel rounded-2xl border overflow-hidden"
-    :class="isDark ? 'border-white/5' : 'border-slate-100'"
+  <div class="border transition-all duration-200"
+    :class="isDark ? 'bg-[#15171e] border-neutral-800' : 'bg-white border-neutral-300 shadow-sm'"
   >
-    <!-- Tabs -->
-    <div class="flex items-center border-b"
-      :class="isDark ? 'border-white/5' : 'border-slate-100'"
+    <!-- Header Tabs: Swiss Segmented Grid -->
+    <div class="grid grid-cols-3 divide-x border-b font-mono text-[10px] font-bold"
+      :class="isDark ? 'divide-neutral-800 border-neutral-800 bg-neutral-900/40' : 'divide-neutral-200 border-neutral-200 bg-neutral-50'"
     >
       <button v-for="tab in tabs" :key="tab.type" @click="switchTab(tab.type)"
-        class="flex-1 py-3.5 text-[11px] font-bold uppercase tracking-wider transition-all relative"
+        class="py-3 px-2 flex items-center justify-center gap-1.5 uppercase tracking-widest transition-all text-center"
         :class="activeTab === tab.type
-          ? (isDark ? 'text-primary' : 'text-primary')
-          : (isDark ? 'text-gray-500 hover:text-gray-300' : 'text-slate-400 hover:text-slate-600')"
+          ? (isDark ? 'bg-neutral-800 text-white border-b-2 border-b-white' : 'bg-white text-neutral-900 border-b-2 border-b-neutral-900 shadow-xs')
+          : (isDark ? 'text-neutral-500 hover:text-neutral-300' : 'text-neutral-500 hover:text-neutral-900')"
       >
-        <span class="flex items-center justify-center gap-1.5">
-          <span class="material-symbols-outlined text-sm">{{ tab.icon }}</span>
-          {{ tab.label }}
-        </span>
-        <!-- Indikator aktif -->
-        <div v-if="activeTab === tab.type"
-          class="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary rounded-full"
-        ></div>
+        <span class="material-symbols-outlined text-xs">{{ tab.icon }}</span>
+        <span>{{ tab.label }}</span>
       </button>
     </div>
 
     <!-- Content -->
-    <div class="p-4">
+    <div class="p-0">
       <!-- Unlocked State -->
-      <div v-if="!isUnlocked && !movers.length && !loading" class="flex flex-col items-center justify-center py-6 text-center">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" :class="isDark ? 'bg-white/5' : 'bg-slate-50'">
-          <span class="material-symbols-outlined text-xl opacity-50">leaderboard</span>
+      <div v-if="!isUnlocked && !movers.length && !loading" class="flex flex-col items-center justify-center p-8 text-center min-h-[200px]">
+        <div class="w-10 h-10 border flex items-center justify-center mb-3"
+          :class="isDark ? 'bg-neutral-900 border-neutral-700 text-neutral-400' : 'bg-neutral-100 border-neutral-300 text-neutral-600'"
+        >
+          <span class="material-symbols-outlined text-lg">leaderboard</span>
         </div>
-        <h4 class="font-bold text-sm mb-1" :class="isDark ? 'text-white' : 'text-slate-900'">Market Movers</h4>
-        <p class="text-[10px] opacity-60 mb-4 max-w-[280px]">List of most active stocks (Top Gainers/Losers/Volume). Click to load details.</p>
-        <button @click="handleUnlock" class="px-5 py-2 rounded-2xl text-xs font-bold transition-all" :class="isDark ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'bg-primary text-white hover:bg-primary/90 shadow-sm'">
-          Tampilkan Data
+        <h4 class="font-mono font-bold text-xs uppercase tracking-wider mb-1" :class="isDark ? 'text-white' : 'text-neutral-900'">
+          REAL-TIME MARKET MOVERS
+        </h4>
+        <p class="text-[11px] opacity-60 mb-4 max-w-[260px]">Load the most active stocks filtered by Top Gainers, Losers, and Volume.</p>
+        <button @click="handleUnlock" 
+          class="px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider border transition-all"
+          :class="isDark 
+            ? 'bg-white text-black border-white hover:bg-neutral-200' 
+            : 'bg-neutral-900 text-white border-neutral-900 hover:bg-neutral-800'"
+        >
+          LOAD MOVERS
         </button>
       </div>
 
       <!-- Loading -->
-      <div v-else-if="loading" class="space-y-2">
-        <div v-for="i in 5" :key="i" class="h-12 rounded-xl animate-pulse"
-          :class="isDark ? 'bg-white/5' : 'bg-slate-100'"></div>
+      <div v-else-if="loading" class="p-4 space-y-2">
+        <div v-for="i in 5" :key="i" class="h-10 border animate-pulse"
+          :class="isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-neutral-100 border-neutral-200'"></div>
       </div>
 
-      <!-- Tabel Movers -->
-      <div v-else-if="movers.length > 0" class="space-y-1.5">
+      <!-- Tabel Movers: Swiss Dense Rows -->
+      <div v-else-if="movers.length > 0" class="divide-y"
+        :class="isDark ? 'divide-neutral-800/80' : 'divide-neutral-200'"
+      >
         <div v-for="(stock, idx) in movers" :key="stock.symbol || idx"
           @click="$emit('selectStock', stock)"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all group"
-          :class="isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'"
+          class="flex items-center justify-between px-4 py-3 cursor-pointer transition-colors group hover:bg-neutral-50 dark:hover:bg-neutral-900/40"
         >
-          <!-- Ranking -->
-          <span class="text-[10px] font-black w-5 text-center opacity-30">{{ Number(idx) + 1 }}</span>
+          <!-- Left: Rank + Ticker + Company -->
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="font-mono text-[10px] font-bold w-5 opacity-40 tabular-nums">
+              {{ String(idx + 1).padStart(2, '0') }}
+            </span>
 
-          <!-- Stock Info -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <p class="font-headline font-bold text-sm"
-                :class="isDark ? 'text-white' : 'text-slate-900'"
-              >{{ stock.symbol }}</p>
-              <p class="text-[10px] truncate max-w-[120px]"
-                :class="isDark ? 'text-gray-600' : 'text-slate-400'"
-              >{{ stock.name }}</p>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-bold text-xs tracking-wider"
+                  :class="isDark ? 'text-white' : 'text-neutral-900'"
+                >{{ stock.symbol }}</span>
+                <span class="text-[9px] font-mono opacity-50 truncate max-w-[140px] hidden sm:inline">
+                  {{ stock.name }}
+                </span>
+              </div>
             </div>
           </div>
 
-          <!-- Harga & Perubahan -->
-          <div class="text-right flex-shrink-0 flex items-center gap-3">
-            <p class="text-sm font-bold font-mono"
-              :class="isDark ? 'text-gray-200' : 'text-slate-700'"
-            >{{ formatPrice(stock.price) }}</p>
+          <!-- Right: Price + Percent Change + Volume -->
+          <div class="flex items-center gap-3 font-mono tabular-nums shrink-0">
+            <p class="text-xs font-bold" :class="isDark ? 'text-white' : 'text-neutral-900'">
+              {{ formatPrice(stock.price) }}
+            </p>
 
-            <div class="min-w-[60px] text-right">
-              <p class="text-[11px] font-bold px-2 py-0.5 rounded-md inline-block"
-                :class="getChangeClass(stock)"
-              >
-                {{ getChangeText(stock) }}
-              </p>
-            </div>
-          </div>
+            <span class="px-2 py-0.5 text-[9px] font-bold border tracking-wider"
+              :class="getChangeClass(stock)"
+            >
+              {{ getChangeText(stock) }}
+            </span>
 
-          <!-- Volume (opsional, hanya di tab volume) -->
-          <div v-if="activeTab === 'volume'" class="text-right flex-shrink-0 min-w-[60px] hidden md:block">
-            <p class="text-[10px] font-mono font-bold"
-              :class="isDark ? 'text-gray-500' : 'text-slate-400'"
-            >{{ formatVolume(stock.volume) }}</p>
+            <span v-if="activeTab === 'volume'" class="text-[10px] opacity-50 w-12 text-right hidden md:inline">
+              {{ formatVolume(stock.volume) }}
+            </span>
           </div>
         </div>
       </div>
 
       <!-- Empty state -->
       <div v-else class="text-center py-8">
-        <span class="material-symbols-outlined text-3xl opacity-15 mb-2 block">leaderboard</span>
-        <p class="text-xs opacity-40">Data market movers tidak tersedia</p>
+        <span class="material-symbols-outlined text-2xl opacity-20 mb-1 block">leaderboard</span>
+        <p class="text-xs font-mono opacity-50 uppercase">NO MARKET MOVERS DATA AVAILABLE</p>
       </div>
     </div>
   </div>
@@ -100,8 +102,7 @@
 
 <script setup lang="ts">
 /**
- * Komponen market movers — top gainers, losers, dan volume
- * Dengan tabs dan interaksi klik untuk melihat detail saham
+ * Komponen Market Movers Swiss Style
  */
 const props = defineProps<{
   data: any
@@ -117,13 +118,12 @@ const emit = defineEmits<{
 }>()
 
 const isUnlocked = ref(false)
-
 const { isDark } = useColorMode()
 
 const tabs = [
-  { type: 'gainers', label: 'Top Gainers', icon: 'trending_up' },
-  { type: 'losers', label: 'Top Losers', icon: 'trending_down' },
-  { type: 'volume', label: 'Top Volume', icon: 'bar_chart' },
+  { type: 'gainers', label: 'Gainers', icon: 'arrow_upward' },
+  { type: 'losers', label: 'Losers', icon: 'arrow_downward' },
+  { type: 'volume', label: 'Volume', icon: 'bar_chart' },
 ]
 
 function handleUnlock() {
@@ -139,11 +139,9 @@ function switchTab(type: string) {
   }
 }
 
-// Parse movers dari data API, normalize ke format seragam
 const movers = computed(() => {
   if (!props.data) return []
 
-  // Extract array dari berbagai format: { data: { data: { mover_list: [...] } } }
   let raw: any[] = []
   if (Array.isArray(props.data)) raw = props.data
   else if (props.data?.data?.data?.mover_list && Array.isArray(props.data.data.data.mover_list)) raw = props.data.data.data.mover_list
@@ -151,7 +149,6 @@ const movers = computed(() => {
   else if (props.data?.data?.data && Array.isArray(props.data.data.data)) raw = props.data.data.data
   else if (props.data?.data && Array.isArray(props.data.data)) raw = props.data.data
 
-  // Normalize setiap item ke format flat
   return raw.slice(0, 10).map((item: any) => ({
     symbol: item.stock_detail?.code || item.symbol || item.code || '',
     name: item.stock_detail?.name || item.name || item.company || '',
@@ -165,9 +162,9 @@ const movers = computed(() => {
 
 function getChangeClass(stock: any): string {
   const pct = stock.changePct || 0
-  if (pct > 0) return 'bg-emerald-500/15 text-emerald-500'
-  if (pct < 0) return 'bg-red-500/15 text-red-500'
-  return isDark.value ? 'bg-white/5 text-gray-500' : 'bg-slate-100 text-slate-400'
+  if (pct > 0) return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+  if (pct < 0) return 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30'
+  return isDark.value ? 'bg-neutral-800 text-neutral-400 border-neutral-700' : 'bg-neutral-100 text-neutral-600 border-neutral-300'
 }
 
 function getChangeText(stock: any): string {
