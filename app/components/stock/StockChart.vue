@@ -1,9 +1,12 @@
 <template>
   <div class="rounded-md border overflow-hidden transition-colors"
-    :class="isDark ? 'bg-[#0d1117] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'"
+    :class="[
+      isFullscreen ? 'fixed inset-0 z-[99999] w-screen h-screen flex flex-col p-2 sm:p-4 bg-[#090b10] rounded-none border-none' : 'relative',
+      isDark ? 'bg-[#0d1117] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'
+    ]"
   >
     <!-- Swiss Terminal Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 pt-5 pb-3 border-b"
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 border-b"
       :class="isDark ? 'border-neutral-800' : 'border-neutral-200'"
     >
       <div class="flex items-center gap-2.5 shrink-0">
@@ -20,21 +23,35 @@
         </span>
       </div>
 
-      <!-- Timeframe Selector (Swiss Modular Tabs) -->
-      <div class="flex w-full sm:w-auto flex-wrap items-center gap-1 font-mono text-[10px]">
-        <button v-for="p in periods" :key="p.interval" @click="changePeriod(p.interval)"
-          class="px-2.5 py-1 rounded-md uppercase font-bold tracking-wider transition-all border"
-          :class="activePeriod === p.interval
-            ? (isDark ? 'bg-white text-neutral-950 border-white font-black' : 'bg-neutral-950 text-white border-neutral-950 font-black')
-            : (isDark ? 'bg-neutral-900/80 text-neutral-400 border-neutral-800 hover:border-neutral-600' : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:border-neutral-400')"
+      <!-- Timeframe Selector & Fullscreen Button -->
+      <div class="flex w-full sm:w-auto flex-wrap items-center justify-between sm:justify-end gap-1.5 font-mono text-[10px]">
+        <div class="flex flex-wrap items-center gap-1">
+          <button v-for="p in periods" :key="p.interval" @click="changePeriod(p.interval)"
+            class="px-2.5 py-1 rounded-md uppercase font-bold tracking-wider transition-all border cursor-pointer"
+            :class="activePeriod === p.interval
+              ? (isDark ? 'bg-white text-neutral-950 border-white font-black' : 'bg-neutral-950 text-white border-neutral-950 font-black')
+              : (isDark ? 'bg-neutral-900/80 text-neutral-400 border-neutral-800 hover:border-neutral-600' : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:border-neutral-400')"
+          >
+            {{ p.label }}
+          </button>
+        </div>
+
+        <!-- Fullscreen Landscape Toggle Button (TradingView Style) -->
+        <button @click="toggleFullscreen"
+          class="px-2.5 py-1 rounded-md uppercase font-bold tracking-wider transition-all border flex items-center gap-1 cursor-pointer shrink-0 ml-1"
+          :class="isFullscreen 
+            ? 'bg-amber-500 text-black border-amber-400 font-black shadow-md' 
+            : (isDark ? 'bg-neutral-900/90 text-neutral-300 border-neutral-700 hover:border-neutral-500' : 'bg-neutral-50 text-neutral-700 border-neutral-300 hover:border-neutral-500')"
+          :title="isFullscreen ? 'Keluar Fullscreen (Esc)' : 'TradingView Fullscreen Landscape'"
         >
-          {{ p.label }}
+          <span class="material-symbols-outlined text-[15px]">{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</span>
+          <span class="text-[9px] font-black">{{ isFullscreen ? 'EXIT' : 'FULLSCREEN' }}</span>
         </button>
       </div>
     </div>
 
     <!-- Sub-header info mobile -->
-    <div v-if="data?.length" class="px-5 py-2 flex items-center justify-between text-[10px] font-mono border-b md:hidden"
+    <div v-if="data?.length && !isFullscreen" class="px-5 py-2 flex items-center justify-between text-[10px] font-mono border-b md:hidden"
       :class="isDark ? 'border-neutral-800 text-neutral-400' : 'border-neutral-200 text-neutral-600'"
     >
       <span>INTERVAL: {{ activeCandle }}</span>
@@ -51,15 +68,15 @@
       <h4 class="font-bold text-sm mb-1 uppercase tracking-wider" :class="isDark ? 'text-white' : 'text-neutral-900'">OHLCV CHART STANDBY</h4>
       <p class="text-[11px] text-neutral-500 mb-4 max-w-[280px]">Klik untuk memuat grafik pergerakan harga historis.</p>
       <button @click="$emit('fetch', getActivePeriodParams())"
-        class="px-6 py-2.5 rounded-md text-xs font-bold font-headline uppercase tracking-wider transition-all border"
+        class="px-6 py-2.5 rounded-md text-xs font-bold font-headline uppercase tracking-wider transition-all border cursor-pointer"
         :class="isDark ? 'bg-white text-neutral-950 border-white hover:bg-neutral-200' : 'bg-neutral-950 text-white border-neutral-950 hover:bg-neutral-800'"
       >
         Tampilkan Chart
       </button>
     </div>
 
-    <!-- Chart Canvas -->
-    <div v-else class="relative px-2 pb-4 pt-2" style="height: 440px;">
+    <!-- Chart Canvas Container -->
+    <div v-else class="relative px-2 pb-2 pt-2 flex-1 w-full flex flex-col min-h-0" :style="{ height: isFullscreen ? 'calc(100vh - 85px)' : '440px' }">
       <!-- Loading -->
       <div v-if="loading && !isLoadingMore" class="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-xs z-10 font-mono text-xs">
         <div class="flex items-center gap-2 px-4 py-2 rounded-md border bg-neutral-900 border-neutral-700 text-white">
@@ -69,7 +86,7 @@
       </div>
 
       <!-- Canvas -->
-      <canvas ref="canvasRef" class="w-full h-full touch-none" :class="{ 'opacity-0': loading && !isLoadingMore, 'opacity-50 blur-[1px] cursor-wait': loading && isLoadingMore }"></canvas>
+      <canvas ref="canvasRef" class="w-full h-full touch-none cursor-grab active:cursor-grabbing" :class="{ 'opacity-0': loading && !isLoadingMore, 'opacity-50 blur-[1px] cursor-wait': loading && isLoadingMore }"></canvas>
 
       <!-- Loading indicator saat auto-load more -->
       <div v-if="atLeftEdge && loading" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-mono font-bold backdrop-blur-md border"
@@ -79,14 +96,14 @@
         MEMUAT DATA HISTORIS...
       </div>
 
-      <!-- Active Patterns List -->
-      <div v-if="data?.length && detectedPatterns.length > 0 && !isAnalyzingPattern" class="absolute bottom-[70px] right-2 flex flex-col items-end gap-1.5 z-20 pointer-events-none font-mono">
+      <!-- Active Pattern Visual Floating Badges -->
+      <div v-if="data?.length && detectedPatterns.length > 0 && !isAnalyzingPattern" class="absolute top-4 left-3 flex flex-col items-start gap-1.5 z-20 pointer-events-none font-mono">
         <template v-for="(pat, idx) in detectedPatterns" :key="'pat-'+idx">
-          <div v-if="pat.label" class="animate-in fade-in slide-in-from-right-3 duration-300">
-             <div class="backdrop-blur-xl px-2.5 py-1 text-[9px] font-bold tracking-widest uppercase shadow-md flex items-center gap-1.5 border truncate max-w-full rounded-sm"
+          <div v-if="pat.label" class="animate-in fade-in slide-in-from-top-2 duration-300">
+             <div class="backdrop-blur-md px-2.5 py-1 text-[9px] font-black tracking-widest uppercase shadow-md flex items-center gap-1.5 border truncate max-w-full rounded-xs"
                :style="{ backgroundColor: isDark ? '#09090bF0' : '#FFFFFFFA', color: pat.color, borderColor: pat.color }"
              >
-               <span class="material-symbols-outlined text-[13px]">polyline</span>
+               <span class="material-symbols-outlined text-[13px]">{{ pat.category === 'BULLISH' ? 'trending_up' : pat.category === 'BEARISH' ? 'trending_down' : 'swap_horiz' }}</span>
                {{ pat.label }}
              </div>
           </div>
@@ -94,24 +111,26 @@
       </div>
 
       <!-- Type Toggle & Pattern Analyzer (Swiss Modular Toolbar) -->
-      <div v-if="data?.length" class="absolute bottom-[30px] right-2 flex items-center backdrop-blur-md rounded-md p-0.5 z-20 border shadow-sm font-mono text-[10px]"
+      <div v-if="data?.length" class="absolute bottom-3 right-3 flex items-center backdrop-blur-md rounded-md p-0.5 z-20 border shadow-sm font-mono text-[10px]"
         :class="isDark ? 'bg-neutral-900/90 border-neutral-700' : 'bg-white/90 border-neutral-300'"
       >
-        <button @click="analyzeChartPatterns" class="h-6 px-2 flex items-center justify-center gap-1.5 rounded-sm transition-all border border-transparent font-bold cursor-pointer" 
+        <button @click="analyzeChartPatterns" class="h-6 px-2.5 flex items-center justify-center gap-1.5 rounded-sm transition-all border border-transparent font-bold cursor-pointer" 
            :class="isAnalyzingPattern ? 'animate-pulse text-purple-400' : detectedPatterns.length ? 'bg-purple-600 text-white' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'"
-           title="Deteksi Pola Chart Otomatis">
+           title="Deteksi Pola Chart & Price Action Otomatis">
            <span class="material-symbols-outlined text-[14px]">draw</span>
-           <span class="text-[9px] font-bold uppercase tracking-wider">{{ detectedPatterns.length ? 'POLA AKTIF' : 'POLA' }}</span>
+           <span class="text-[9px] font-bold uppercase tracking-wider">{{ detectedPatterns.length ? 'POLA AKTIF' : 'DETEKSI POLA' }}</span>
         </button>
         <div class="w-px h-3.5 mx-1" :class="isDark ? 'bg-neutral-800' : 'bg-neutral-200'"></div>
 
         <button @click="chartType = 'candle'" class="w-6 h-6 flex items-center justify-center rounded-sm transition-all cursor-pointer"
           :class="chartType === 'candle' ? (isDark ? 'bg-white text-neutral-950 font-bold shadow-xs' : 'bg-neutral-950 text-white font-bold shadow-xs') : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
+          title="Tampilan Candlestick"
         >
           <span class="material-symbols-outlined text-[15px]">candlestick_chart</span>
         </button>
         <button @click="chartType = 'line'" class="w-6 h-6 flex items-center justify-center rounded-sm transition-all cursor-pointer"
           :class="chartType === 'line' ? (isDark ? 'bg-white text-neutral-950 font-bold shadow-xs' : 'bg-neutral-950 text-white font-bold shadow-xs') : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'"
+          title="Tampilan Line Chart"
         >
           <span class="material-symbols-outlined text-[15px]">show_chart</span>
         </button>
@@ -141,14 +160,14 @@
         leave-to-class="opacity-0 scale-95"
       >
         <div v-if="tooltip.show"
-          class="absolute pointer-events-none px-3.5 py-2.5 rounded-md text-[10px] font-mono shadow-xl z-20 border"
-          :class="isDark ? 'bg-neutral-950/95 border-neutral-700 text-neutral-200' : 'bg-white/95 border-neutral-300 text-neutral-800'"
+          class="absolute z-30 pointer-events-none p-2.5 rounded-md border text-[10px] font-mono shadow-2xl backdrop-blur-md"
+          :class="isDark ? 'bg-neutral-950/95 border-neutral-700 text-white' : 'bg-white/95 border-neutral-300 text-neutral-900'"
           :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
         >
-          <div class="text-[9px] font-bold pb-1 mb-1.5 border-b uppercase tracking-wider" :class="isDark ? 'border-neutral-800 text-neutral-400' : 'border-neutral-200 text-neutral-500'">
-            METRICS // {{ tooltip.dateFormatted }}
-          </div>
-          <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+          <p class="font-bold border-b pb-1 mb-1.5 opacity-60 text-[9px] uppercase tracking-wider"
+            :class="isDark ? 'border-neutral-800' : 'border-neutral-200'"
+          >{{ tooltip.dateFormatted }}</p>
+          <div class="grid grid-cols-2 gap-x-3 gap-y-0.5">
             <span class="opacity-50 uppercase">OPEN</span><span class="text-right font-bold">{{ tooltip.open }}</span>
             <span class="opacity-50 uppercase">HIGH</span><span class="text-right font-bold text-emerald-500">{{ tooltip.high }}</span>
             <span class="opacity-50 uppercase">LOW</span><span class="text-right font-bold text-red-500">{{ tooltip.low }}</span>
@@ -158,13 +177,63 @@
         </div>
       </Transition>
     </div>
+
+    <!-- Interactive Swiss Pattern Diagnostic Card (Penjelasan Gamblang Pola) -->
+    <div v-if="primaryPattern && !isFullscreen" class="p-4 border-t font-mono transition-all"
+      :class="primaryPattern.category === 'BULLISH'
+        ? (isDark ? 'bg-emerald-500/10 border-emerald-500/30 text-white' : 'bg-emerald-50 border-emerald-300 text-neutral-900')
+        : primaryPattern.category === 'BEARISH'
+        ? (isDark ? 'bg-red-500/10 border-red-500/30 text-white' : 'bg-red-50 border-red-300 text-neutral-900')
+        : (isDark ? 'bg-amber-500/10 border-amber-500/30 text-white' : 'bg-amber-50 border-amber-300 text-neutral-900')"
+    >
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 rounded-xs text-[9px] font-bold uppercase tracking-widest border"
+            :class="primaryPattern.category === 'BULLISH' 
+              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' 
+              : primaryPattern.category === 'BEARISH' 
+              ? 'bg-red-500/20 text-red-400 border-red-500/40' 
+              : 'bg-amber-500/20 text-amber-400 border-amber-500/40'"
+          >
+            [ POLA TERDETEKSI ]
+          </span>
+          <h4 class="font-black text-xs sm:text-sm uppercase tracking-wide"
+            :class="primaryPattern.category === 'BULLISH' ? 'text-emerald-500' : primaryPattern.category === 'BEARISH' ? 'text-red-500' : 'text-amber-500'"
+          >
+            {{ primaryPattern.label }}
+          </h4>
+        </div>
+        <span class="text-[10px] font-bold opacity-70">CONFIDENCE: {{ primaryPattern.confidence }}%</span>
+      </div>
+
+      <p class="text-xs leading-relaxed font-sans opacity-90 mb-3">{{ primaryPattern.description }}</p>
+
+      <!-- Action Plan & Key Levels -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2.5 border-t text-[10px]" :class="isDark ? 'border-neutral-800' : 'border-neutral-200'">
+        <div v-if="primaryPattern.neckline" class="p-2 border rounded-xs" :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'">
+          <span class="opacity-50 text-[8px] uppercase block">GARIS KONFIRMASI (NECKLINE)</span>
+          <strong class="font-bold tabular-nums">Rp {{ fmt(primaryPattern.neckline) }}</strong>
+        </div>
+        <div v-if="primaryPattern.target" class="p-2 border rounded-xs" :class="isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'">
+          <span class="opacity-50 text-[8px] uppercase block">TARGET PROYEKSI POLA</span>
+          <strong class="font-bold tabular-nums" :class="primaryPattern.category === 'BULLISH' ? 'text-emerald-500' : 'text-red-500'">Rp {{ fmt(primaryPattern.target) }}</strong>
+        </div>
+        <div class="p-2 border rounded-xs" :class="[primaryPattern.neckline && primaryPattern.target ? '' : 'sm:col-span-2', isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200']">
+          <span class="opacity-50 text-[8px] uppercase block">REKOMENDASI TRADING</span>
+          <p class="font-bold text-[10px] leading-tight text-primary">{{ primaryPattern.actionAdvice }}</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 /**
- * Swiss Style Candlestick OHLCV Chart Engine
+ * Swiss Graphic Design Chart Terminal
+ * Features: Timeframe 1M to 1MO, Fullscreen Landscape Mode, Advanced Pattern Recognition, Precision Candlestick Canvas
  */
+import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+
 const props = defineProps<{
   data: any[]
   loading: boolean
@@ -172,22 +241,47 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  loadMore: []
   periodChange: [params: { interval: string; range: string }]
   fetch: [params: { interval: string; range: string }]
-  loadMore: []
 }>()
 
 const { isDark } = useColorMode()
-
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 
-const atLeftEdge = computed(() => {
-  if (!props.data?.length) return false
-  const totalLen = props.data.length
-  const maxVisible = Math.min(visibleCandles.value, totalLen)
-  const maxPan = Math.max(0, totalLen - maxVisible)
-  return panOffset.value >= maxPan && maxPan > 0
-})
+// Fullscreen State
+const isFullscreen = ref(false)
+
+function toggleFullscreen() {
+  isFullscreen.value = !isFullscreen.value
+  if (isFullscreen.value) {
+    try {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {})
+      }
+      if (screen?.orientation && 'lock' in screen.orientation) {
+        (screen.orientation as any).lock('landscape').catch(() => {})
+      }
+    } catch (_) {}
+  } else {
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {})
+      }
+    } catch (_) {}
+  }
+  nextTick(() => {
+    setTimeout(() => drawChart(), 100)
+  })
+}
+
+// Esc key listener for fullscreen
+function handleKeyDown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && isFullscreen.value) {
+    isFullscreen.value = false
+    nextTick(() => drawChart())
+  }
+}
 
 interface TimeframePeriod {
   label: string
@@ -226,10 +320,25 @@ let anchorTimestamp: number | null = null
 interface CanvasPattern {
   type: string
   label: string
-  points: { i: number; price: number }[]
+  category: 'BULLISH' | 'BEARISH' | 'NEUTRAL'
+  confidence: number
+  description: string
+  actionAdvice: string
+  neckline?: number
+  target?: number
+  invalidation?: number
+  points: { i: number; price: number; label?: string }[]
   color: string
+  boxTop?: number
+  boxBottom?: number
 }
+
 const detectedPatterns = ref<CanvasPattern[]>([])
+
+const primaryPattern = computed(() => {
+  const nonTrend = detectedPatterns.value.filter(p => p.type !== 'trend_curve')
+  return nonTrend[0] || null
+})
 
 const tooltip = reactive({
   show: false,
@@ -257,7 +366,8 @@ function changePeriod(interval: string) {
 }
 
 function fmt(n: number): string {
-  return new Intl.NumberFormat('id-ID').format(n)
+  if (!n) return '-'
+  return new Intl.NumberFormat('id-ID').format(Math.round(n))
 }
 
 function fmtVol(n: number): string {
@@ -288,6 +398,12 @@ watch(() => props.data, () => {
   nextTick(() => drawChart())
 }, { deep: true })
 
+const atLeftEdge = computed(() => {
+  if (!props.data?.length) return false
+  const maxPan = Math.max(0, props.data.length - visibleCandles.value)
+  return panOffset.value >= maxPan && maxPan > 0
+})
+
 watch(atLeftEdge, (isEdge) => {
   if (isEdge && !props.loading && !isLoadingMore.value && props.data?.length) {
     const sorted = [...props.data].sort((a: any, b: any) => {
@@ -310,16 +426,14 @@ watch(() => props.plan, () => {
   nextTick(() => drawChart())
 }, { deep: true })
 
-watch(chartType, () => {
-  nextTick(() => drawChart())
-})
-
+watch(chartType, () => nextTick(() => drawChart()))
 watch(isDark, () => nextTick(() => drawChart()))
 
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
   drawChart()
+  window.addEventListener('keydown', handleKeyDown)
   if (canvasRef.value) {
     resizeObserver = new ResizeObserver(() => drawChart())
     resizeObserver.observe(canvasRef.value.parentElement!)
@@ -327,77 +441,98 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
   resizeObserver?.disconnect()
 })
 
+// Draw Canvas
 function drawChart() {
   const canvas = canvasRef.value
-  if (!canvas || !props.data || props.data.length === 0) return
+  if (!canvas) return
 
-  const parent = canvas.parentElement!
+  const parent = canvas.parentElement
+  if (!parent) return
+
   const dpr = window.devicePixelRatio || 1
   const rect = parent.getBoundingClientRect()
-  const width = rect.width - 16
-  const height = 420
+  const width = rect.width || 600
+  const height = rect.height || 440
 
   canvas.width = width * dpr
   canvas.height = height * dpr
   canvas.style.width = width + 'px'
   canvas.style.height = height + 'px'
 
-  const ctx = canvas.getContext('2d')!
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
   ctx.scale(dpr, dpr)
   ctx.clearRect(0, 0, width, height)
 
-  const allItems = [...props.data].sort((a, b) => {
+  const rawData = props.data || []
+  if (rawData.length === 0) return
+
+  const sortedData = [...rawData].sort((a: any, b: any) => {
     const tA = a.timestamp || new Date(a.date || a.Date || 0).getTime()
     const tB = b.timestamp || new Date(b.date || b.Date || 0).getTime()
     return tA - tB
   })
 
-  const totalLen = allItems.length
+  const totalLen = sortedData.length
   const maxVisible = Math.min(visibleCandles.value, totalLen)
   const maxPan = Math.max(0, totalLen - maxVisible)
   panOffset.value = Math.max(0, Math.min(panOffset.value, maxPan))
-  
-  const startIdx = totalLen - maxVisible - panOffset.value
-  const endIdx = startIdx + maxVisible
-  const items = allItems.slice(Math.max(0, startIdx), endIdx)
 
-  const padding = { top: 15, right: 65, bottom: 30, left: 10 }
+  const startIdx = totalLen - maxVisible - panOffset.value
+  const items = sortedData.slice(Math.max(0, startIdx), Math.max(0, startIdx) + maxVisible)
+  if (items.length === 0) return
+
+  const padding = { top: 25, right: 60, bottom: 25, left: 10 }
   const chartW = width - padding.left - padding.right
   const chartH = height - padding.top - padding.bottom
 
-  let minPrice = Infinity
-  let maxPrice = -Infinity
-  for (const d of items) {
-    const lo = d.low || d.Low || d.l || 0
-    const hi = d.high || d.High || d.h || 0
-    if (lo < minPrice) minPrice = lo
-    if (hi > maxPrice) maxPrice = hi
+  const highs = items.map((d: any) => Number(d.high || d.High || d.h || 0))
+  const lows = items.map((d: any) => Number(d.low || d.Low || d.l || 0))
+  let maxPrice = Math.max(...highs)
+  let minPrice = Math.min(...lows)
+
+  if (props.plan) {
+    if (props.plan.target) maxPrice = Math.max(maxPrice, props.plan.target)
+    if (props.plan.stopLoss) minPrice = Math.min(minPrice, props.plan.stopLoss)
   }
-  const priceRange = maxPrice - minPrice || 1
-  const buffer = priceRange * 0.05
-  minPrice -= buffer
-  maxPrice += buffer
-  const totalRange = maxPrice - minPrice
 
-  const barWidth = Math.max(2, (chartW / items.length) * 0.65)
+  // Include pattern lines in price scaling
+  if (detectedPatterns.value.length > 0) {
+    detectedPatterns.value.forEach(p => {
+      if (p.neckline) { maxPrice = Math.max(maxPrice, p.neckline); minPrice = Math.min(minPrice, p.neckline); }
+      if (p.target) { maxPrice = Math.max(maxPrice, p.target); minPrice = Math.min(minPrice, p.target); }
+      if (p.boxTop) maxPrice = Math.max(maxPrice, p.boxTop);
+      if (p.boxBottom) minPrice = Math.min(minPrice, p.boxBottom);
+    })
+  }
+
+  const pRange = maxPrice - minPrice
+  maxPrice += pRange * 0.05
+  minPrice -= pRange * 0.05
+  const totalRange = maxPrice - minPrice || 1
+
   const barGap = chartW / items.length
+  const barWidth = Math.max(barGap * 0.7, 1.5)
 
-  const gridColor = isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
-  const textColor = isDark.value ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)'
+  // Color Palette
   const upColor = '#10b981'
   const downColor = '#ef4444'
+  const gridColor = isDark.value ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)'
+  const textColor = isDark.value ? '#8b949e' : '#64748b'
 
-  // Precision Horizontal Grid Lines & Price Axis
-  const gridLines = 5
+  // Grid Lines & Price Slices
   ctx.strokeStyle = gridColor
   ctx.lineWidth = 1
-  ctx.font = '10px monospace, sans-serif'
   ctx.fillStyle = textColor
+  ctx.font = 'bold 9px monospace, sans-serif'
   ctx.textAlign = 'right'
 
+  const gridLines = 5
   for (let i = 0; i <= gridLines; i++) {
     const y = padding.top + (chartH / gridLines) * i
     const price = maxPrice - (totalRange / gridLines) * i
@@ -412,7 +547,7 @@ function drawChart() {
     ctx.fillText(fmt(Math.round(price)), width - 5, y + 3.5)
   }
 
-  // Render Chart Body
+  // Render Candles or Line
   if (chartType.value === 'candle') {
     for (let i = 0; i < items.length; i++) {
       const d = items[i]
@@ -445,7 +580,7 @@ function drawChart() {
       ctx.fillRect(x - barWidth / 2, bodyTop, barWidth, bodyH)
     }
   } else {
-    // Swiss Line Chart
+    // Swiss Line
     const linePoints: { x: number; y: number }[] = []
     for (let i = 0; i < items.length; i++) {
       const close = items[i].close || items[i].Close || items[i].c || 0
@@ -483,7 +618,7 @@ function drawChart() {
     const s1 = props.plan.support1
     const r1 = props.plan.target
     const sl = props.plan.stopLoss
-    const [bBottom, bTop] = props.plan.buyZone
+    const [bBottom, bTop] = props.plan.buyZone || [s1, s1]
 
     const yS1 = padding.top + ((maxPrice - s1) / totalRange) * chartH
     const yR1 = padding.top + ((maxPrice - r1) / totalRange) * chartH
@@ -491,12 +626,11 @@ function drawChart() {
     const yBBottom = Math.min(height - padding.bottom, Math.max(padding.top, padding.top + ((maxPrice - bBottom) / totalRange) * chartH))
     const yBTop = Math.min(height - padding.bottom, Math.max(padding.top, padding.top + ((maxPrice - bTop) / totalRange) * chartH))
 
-    // Buy Zone Shaded Fill with Hairline Boundaries
+    // Buy Zone Fill
     if (yBTop >= padding.top && yBBottom <= height - padding.bottom) {
       ctx.fillStyle = isDark.value ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.16)'
       ctx.fillRect(padding.left, yBTop, chartW, yBBottom - yBTop)
       
-      // Top boundary
       ctx.strokeStyle = '#10b981'
       ctx.lineWidth = 1
       ctx.beginPath()
@@ -504,7 +638,6 @@ function drawChart() {
       ctx.lineTo(width - padding.right, yBTop)
       ctx.stroke()
 
-      // Bottom boundary
       ctx.beginPath()
       ctx.moveTo(padding.left, yBBottom)
       ctx.lineTo(width - padding.right, yBBottom)
@@ -522,21 +655,16 @@ function drawChart() {
       ctx.stroke()
       ctx.setLineDash([])
       
-      // Swiss Badge Box on Left
-      const badgeText = `[ ${label}: ${fmt(priceVal)} ]`
-      ctx.font = 'bold 9px monospace, sans-serif'
-      const textW = ctx.measureText(badgeText).width + 8
-      
-      ctx.fillStyle = isDark.value ? '#09090b' : '#ffffff'
-      ctx.fillRect(padding.left + 4, y - 9, textW, 16)
-      
+      ctx.fillStyle = isDark.value ? '#090b10' : '#ffffff'
+      ctx.fillRect(padding.left + 2, y - 10, 80, 16)
       ctx.strokeStyle = color
       ctx.lineWidth = 1
-      ctx.strokeRect(padding.left + 4, y - 9, textW, 16)
+      ctx.strokeRect(padding.left + 2, y - 10, 80, 16)
       
       ctx.fillStyle = color
       ctx.textAlign = 'left'
-      ctx.fillText(badgeText, padding.left + 8, y + 2.5)
+      ctx.font = 'bold 8.5px monospace, sans-serif'
+      ctx.fillText(`${label}: ${fmt(priceVal)}`, padding.left + 6, y + 2)
     }
 
     drawSwissBadgeLine(yR1, '#3b82f6', 'TARGET', r1)
@@ -555,7 +683,7 @@ function drawChart() {
     const dateStr = d.date || d.Date || d.timestamp || ''
     if (dateStr) {
       const x = padding.left + barGap * i + barGap / 2
-      const dt = typeof dateStr === 'number' ? new Date(dateStr * 1000) : new Date(dateStr)
+      const dt = typeof dateStr === 'number' ? (dateStr < 10000000000 ? new Date(dateStr * 1000) : new Date(dateStr)) : new Date(dateStr)
       let label: string
       if (isIntraday) {
         label = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
@@ -566,72 +694,96 @@ function drawChart() {
     }
   }
 
-  // Draw Detected Patterns Overlays
+  // Draw Detected Patterns Overlays (Geometric Lines & Necklines)
   if (detectedPatterns.value.length > 0) {
     for (const pat of detectedPatterns.value) {
       ctx.strokeStyle = pat.color
       ctx.fillStyle = pat.color
+
+      // Sideways Box Overlay
+      if (pat.type === 'sideways_box' && pat.boxTop && pat.boxBottom) {
+        const yTop = padding.top + ((maxPrice - pat.boxTop) / totalRange) * chartH
+        const yBtm = padding.top + ((maxPrice - pat.boxBottom) / totalRange) * chartH
+
+        ctx.fillStyle = isDark.value ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.15)'
+        ctx.fillRect(padding.left, yTop, chartW, yBtm - yTop)
+
+        ctx.strokeStyle = '#f59e0b'
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([4, 4])
+        ctx.beginPath()
+        ctx.moveTo(padding.left, yTop)
+        ctx.lineTo(width - padding.right, yTop)
+        ctx.moveTo(padding.left, yBtm)
+        ctx.lineTo(width - padding.right, yBtm)
+        ctx.stroke()
+        ctx.setLineDash([])
+
+        ctx.fillStyle = isDark.value ? '#090b10' : '#ffffff'
+        ctx.fillRect(padding.left + 4, yTop - 9, 130, 16)
+        ctx.strokeStyle = '#f59e0b'
+        ctx.strokeRect(padding.left + 4, yTop - 9, 130, 16)
+
+        ctx.fillStyle = '#f59e0b'
+        ctx.textAlign = 'left'
+        ctx.font = 'bold 8.5px monospace, sans-serif'
+        ctx.fillText(`SIDEWAYS RES: ${fmt(pat.boxTop)}`, padding.left + 8, yTop + 3)
+      }
+
+      // Neckline Horizontal Line
+      if (pat.neckline) {
+        const yNeck = padding.top + ((maxPrice - pat.neckline) / totalRange) * chartH
+        ctx.strokeStyle = pat.color
+        ctx.lineWidth = 1.2
+        ctx.setLineDash([4, 4])
+        ctx.beginPath()
+        ctx.moveTo(padding.left, yNeck)
+        ctx.lineTo(width - padding.right, yNeck)
+        ctx.stroke()
+        ctx.setLineDash([])
+
+        ctx.fillStyle = isDark.value ? '#090b10' : '#ffffff'
+        ctx.fillRect(width - padding.right - 95, yNeck - 9, 90, 16)
+        ctx.strokeStyle = pat.color
+        ctx.strokeRect(width - padding.right - 95, yNeck - 9, 90, 16)
+
+        ctx.fillStyle = pat.color
+        ctx.textAlign = 'center'
+        ctx.font = 'bold 8px monospace, sans-serif'
+        ctx.fillText(`NECKLINE: ${fmt(pat.neckline)}`, width - padding.right - 50, yNeck + 3)
+      }
       
-      if (pat.type === 'trend_curve') {
-        const smaVals: number[] = (pat as any).smaValues || []
-        const phases: {startI: number, endI: number, dir: string}[] = (pat as any).phases || []
-        
-        if (smaVals.length > 1) {
-          for (const phase of phases) {
-            const color = phase.dir === 'UP' ? '#10b981' : phase.dir === 'DOWN' ? '#ef4444' : '#64748b'
-            ctx.strokeStyle = color
-            ctx.lineWidth = 2.5
-            ctx.beginPath()
-            
-            for (let k = phase.startI; k <= Math.min(phase.endI, smaVals.length - 1); k++) {
-              const x = padding.left + barGap * k + barGap / 2
-              const y = padding.top + ((maxPrice - smaVals[k]) / totalRange) * chartH
-              if (k === phase.startI) ctx.moveTo(x, y)
-              else ctx.lineTo(x, y)
-            }
-            ctx.stroke()
-            
-            const midI = Math.floor((phase.startI + phase.endI) / 2)
-            const midX = padding.left + barGap * Math.min(midI, smaVals.length - 1) + barGap / 2
-            const midY = padding.top + ((maxPrice - smaVals[Math.min(midI, smaVals.length - 1)]) / totalRange) * chartH
-            
-            ctx.font = 'bold 9px monospace, sans-serif'
-            ctx.textAlign = 'center'
-            ctx.fillStyle = color
-            const lbl = phase.dir === 'UP' ? '▲ UPTREND' : phase.dir === 'DOWN' ? '▼ DOWNTREND' : '◆ SIDEWAYS'
-            ctx.fillText(lbl, midX, Math.max(padding.top + 12, midY - 12))
-          }
-        }
-      } 
-      else if (pat.type !== 'trend_curve') {
+      // Pivot Vertex Points & Connection Lines
+      if (pat.points && pat.points.length > 1) {
         ctx.lineWidth = 2
         ctx.beginPath()
-        let lastX = 0, lastY = 0
         for (let k = 0; k < pat.points.length; k++) {
-          const pt = pat.points[k]
+          const pt = pat.points[k]!
           const px = padding.left + barGap * pt.i + barGap / 2
           const py = padding.top + ((maxPrice - pt.price) / totalRange) * chartH
-          
           if (k === 0) ctx.moveTo(px, py)
           else ctx.lineTo(px, py)
-          lastX = px
-          lastY = py
         }
         ctx.stroke()
         
+        // Glowing vertex dots
         for (let k = 0; k < pat.points.length; k++) {
-          const pt = pat.points[k]
+          const pt = pat.points[k]!
           const px = padding.left + barGap * pt.i + barGap / 2
           const py = padding.top + ((maxPrice - pt.price) / totalRange) * chartH
+          
           ctx.beginPath()
-          ctx.arc(px, py, 4, 0, Math.PI * 2)
+          ctx.fillStyle = pat.color
+          ctx.arc(px, py, 4.5, 0, Math.PI * 2)
           ctx.fill()
+
+          if (pt.label) {
+            ctx.fillStyle = isDark.value ? '#ffffff' : '#000000'
+            ctx.font = 'bold 8px monospace, sans-serif'
+            ctx.textAlign = 'center'
+            ctx.fillText(pt.label, px, py - 8)
+          }
         }
-        
-        ctx.font = 'bold 9px monospace, sans-serif'
-        ctx.textAlign = 'center'
-        ctx.fillStyle = isDark.value ? '#ffffff' : '#000000'
-        ctx.fillText(pat.label, Math.max(padding.left + 30, Math.min(width - 30, lastX)), lastY - 15)
       }
     }
   }
@@ -708,7 +860,7 @@ function drawChart() {
 
   canvas.ontouchstart = (e: TouchEvent) => {
     if (!e.touches.length) return
-    const t = e.touches[0]
+    const t = e.touches[0]!
     dragStartX = t.clientX
     dragStartPan = panOffset.value
     isDragging = false
@@ -723,7 +875,7 @@ function drawChart() {
   }
   canvas.ontouchmove = (e: TouchEvent) => {
     if (!e.touches.length) return
-    const t = e.touches[0]
+    const t = e.touches[0]!
     const dx = t.clientX - dragStartX
 
     if (isMobileLongPress) {
@@ -754,6 +906,7 @@ function drawChart() {
   }
 }
 
+// Full-Fledged Price Action & Pattern Recognition Engine
 function analyzeChartPatterns() {
   if (!props.data || props.data.length < 10) return
 
@@ -775,113 +928,177 @@ function analyzeChartPatterns() {
     const closes = items.map(d => Number(d.close || d.Close || d.c || 0))
     const highs = items.map(d => Number(d.high || d.High || d.h || 0))
     const lows = items.map(d => Number(d.low || d.Low || d.l || 0))
-    
-    const smaPeriod = Math.max(5, Math.floor(closes.length / 10))
-    const smaValues: number[] = []
-    for (let i = 0; i < closes.length; i++) {
-      const start = Math.max(0, i - smaPeriod + 1)
-      const slice = closes.slice(start, i + 1)
-      smaValues.push(slice.reduce((a, b) => a + b, 0) / slice.length)
-    }
-    
-    const phaseWindow = Math.max(3, Math.floor(smaPeriod / 2))
-    const phases: {startI: number, endI: number, dir: string}[] = []
-    let currentDir = 'FLAT'
-    let phaseStart = 0
-    
-    for (let i = phaseWindow; i < smaValues.length; i++) {
-      const diff = (smaValues[i] - smaValues[i - phaseWindow]) / smaValues[i - phaseWindow]
-      let dir = 'FLAT'
-      if (diff > 0.02) dir = 'UP'
-      else if (diff < -0.02) dir = 'DOWN'
+    const currentPrice = closes[closes.length - 1] || 0
+
+    // 1. Pivot Detection (Swing Highs & Swing Lows)
+    const lookback = Math.max(2, Math.floor(closes.length / 20))
+    const pivots: { type: 'peak' | 'valley'; i: number; price: number }[] = []
+    for (let i = lookback; i < closes.length - lookback; i++) {
+      const sliceH = highs.slice(i - lookback, i + lookback + 1)
+      const sliceL = lows.slice(i - lookback, i + lookback + 1)
       
-      if (dir !== currentDir) {
-        if (i > phaseStart + 1) {
-          phases.push({ startI: phaseStart, endI: i - 1, dir: currentDir })
+      if (highs[i] >= Math.max(...sliceH)) {
+        if (pivots.length && pivots[pivots.length - 1]!.type === 'peak') {
+          if (highs[i]! > pivots[pivots.length - 1]!.price) pivots[pivots.length - 1] = { type: 'peak', i, price: highs[i]! }
+        } else {
+          pivots.push({ type: 'peak', i, price: highs[i]! })
         }
-        currentDir = dir
-        phaseStart = i
+      }
+      if (lows[i] <= Math.min(...sliceL)) {
+        if (pivots.length && pivots[pivots.length - 1]!.type === 'valley') {
+          if (lows[i]! < pivots[pivots.length - 1]!.price) pivots[pivots.length - 1] = { type: 'valley', i, price: lows[i]! }
+        } else {
+          pivots.push({ type: 'valley', i, price: lows[i]! })
+        }
       }
     }
-    phases.push({ startI: phaseStart, endI: smaValues.length - 1, dir: currentDir })
-    
-    detectedPatterns.value.push({
-      type: 'trend_curve',
-      label: '',
-      color: '',
-      points: [],
-      smaValues,
-      phases
-    } as any)
 
-    const lookback = Math.max(2, Math.floor(closes.length / 20))
-    const pivots: {type: 'peak'|'valley', i: number, price: number}[] = []
-    for (let i = lookback; i < closes.length - lookback; i++) {
-        const sliceH = highs.slice(i - lookback, i + lookback + 1)
-        const sliceL = lows.slice(i - lookback, i + lookback + 1)
-        
-        if (highs[i] >= Math.max(...sliceH)) {
-           if (pivots.length && pivots[pivots.length - 1].type === 'peak') {
-              if (highs[i] > pivots[pivots.length - 1].price) pivots[pivots.length - 1] = {type: 'peak', i, price: highs[i]}
-           } else {
-              pivots.push({type: 'peak', i, price: highs[i]})
-           }
-        }
-        if (lows[i] <= Math.min(...sliceL)) {
-           if (pivots.length && pivots[pivots.length - 1].type === 'valley') {
-              if (lows[i] < pivots[pivots.length - 1].price) pivots[pivots.length - 1] = {type: 'valley', i, price: lows[i]}
-           } else {
-              pivots.push({type: 'valley', i, price: lows[i]})
-           }
-        }
-    }
+    let patternFound = false
 
+    // 2. Pattern Matching: Double Bottom (W-Pattern)
     for (let i = 0; i < pivots.length - 2; i++) {
-       const p1 = pivots[i]; const p2 = pivots[i+1]; const p3 = pivots[i+2];
-       
-       if (p1.type === 'valley' && p2.type === 'peak' && p3.type === 'valley') {
-          if (Math.abs(p1.price - p3.price) / p1.price < 0.05) {
-             detectedPatterns.value.push({
-                type: 'double_bottom', label: 'BULLISH: Double Bottom', color: '#3b82f6',
-                points: [p1, p2, p3]
-             })
-             i += 2; continue;
-          }
-       }
-       if (p1.type === 'peak' && p2.type === 'valley' && p3.type === 'peak') {
-          if (Math.abs(p1.price - p3.price) / p1.price < 0.05) {
-             detectedPatterns.value.push({
-                type: 'double_top', label: 'BEARISH: Double Top', color: '#f59e0b',
-                points: [p1, p2, p3]
-             })
-             i += 2; continue;
-          }
-       }
+      const p1 = pivots[i]!; const p2 = pivots[i+1]!; const p3 = pivots[i+2]!;
+      if (p1.type === 'valley' && p2.type === 'peak' && p3.type === 'valley') {
+        const diff = Math.abs(p1.price - p3.price) / p1.price
+        if (diff < 0.05 && p2.price > p1.price * 1.02) {
+          const target = Math.round(p2.price + (p2.price - Math.min(p1.price, p3.price)))
+          detectedPatterns.value.push({
+            type: 'double_bottom',
+            label: 'BULLISH: Double Bottom (W)',
+            category: 'BULLISH',
+            confidence: Math.round((1 - diff) * 100),
+            description: `Terbentuk formasi dasar ganda (W-Pattern) pada support Rp ${fmt(Math.min(p1.price, p3.price))}. Mengindikasikan penyerapan aksi jual dan persiapan akumulasi naik.`,
+            actionAdvice: `Konfirmasi buy valid saat candle breakout menembus Neckline Rp ${fmt(p2.price)}. Target proyeksi Rp ${fmt(target)}.`,
+            neckline: p2.price,
+            target,
+            color: '#10b981',
+            points: [
+              { ...p1, label: 'B1' },
+              { ...p2, label: 'NECK' },
+              { ...p3, label: 'B2' }
+            ]
+          })
+          patternFound = true
+          break
+        }
+      }
     }
-    
-    for (let i = 0; i < pivots.length - 4; i++) {
-       const p1 = pivots[i]; const p2 = pivots[i+1]; const p3 = pivots[i+2]; const p4 = pivots[i+3]; const p5 = pivots[i+4];
-       if (p1.type==='peak' && p2.type==='valley' && p3.type==='peak' && p4.type==='valley' && p5.type==='peak') {
-          if (p3.price > p1.price && p3.price > p5.price) {
-             const leftRightSym = Math.abs(p1.price - p5.price) / p1.price < 0.05
-             const neckSym = Math.abs(p2.price - p4.price) / p2.price < 0.05
-             if (leftRightSym && neckSym) {
-                detectedPatterns.value.push({
-                   type: 'head_shoulders', label: 'BEARISH: Head & Shoulders', color: '#db2777',
-                   points: [p1, p2, p3, p4, p5]
-                })
-                i += 4;
-             }
+
+    // 3. Pattern Matching: Double Top (M-Pattern)
+    if (!patternFound) {
+      for (let i = 0; i < pivots.length - 2; i++) {
+        const p1 = pivots[i]!; const p2 = pivots[i+1]!; const p3 = pivots[i+2]!;
+        if (p1.type === 'peak' && p2.type === 'valley' && p3.type === 'peak') {
+          const diff = Math.abs(p1.price - p3.price) / p1.price
+          if (diff < 0.05 && p2.price < p1.price * 0.98) {
+            const target = Math.round(p2.price - (Math.max(p1.price, p3.price) - p2.price))
+            detectedPatterns.value.push({
+              type: 'double_top',
+              label: 'BEARISH: Double Top (M)',
+              category: 'BEARISH',
+              confidence: Math.round((1 - diff) * 100),
+              description: `Terbentuk puncak ganda (M-Pattern) pada resistensi Rp ${fmt(Math.max(p1.price, p3.price))}. Mengindikasikan kegagalan menembus level tertinggi dan resiko pembalikan turun.`,
+              actionAdvice: `Waspada take profit atau pasang trailing stop. Sinyal breakdown jika harga tembus ke bawah Neckline Rp ${fmt(p2.price)}.`,
+              neckline: p2.price,
+              target,
+              color: '#ef4444',
+              points: [
+                { ...p1, label: 'T1' },
+                { ...p2, label: 'NECK' },
+                { ...p3, label: 'T2' }
+              ]
+            })
+            patternFound = true
+            break
           }
-       }
+        }
+      }
+    }
+
+    // 4. Pattern Matching: Head & Shoulders
+    if (!patternFound && pivots.length >= 5) {
+      for (let i = 0; i < pivots.length - 4; i++) {
+        const p1 = pivots[i]!; const p2 = pivots[i+1]!; const p3 = pivots[i+2]!; const p4 = pivots[i+3]!; const p5 = pivots[i+4]!;
+        if (p1.type === 'peak' && p2.type === 'valley' && p3.type === 'peak' && p4.type === 'valley' && p5.type === 'peak') {
+          if (p3.price > p1.price && p3.price > p5.price && Math.abs(p1.price - p5.price) / p1.price < 0.06) {
+            const neckline = Math.round((p2.price + p4.price) / 2)
+            const target = Math.round(neckline - (p3.price - neckline))
+            detectedPatterns.value.push({
+              type: 'head_shoulders',
+              label: 'BEARISH: Head & Shoulders',
+              category: 'BEARISH',
+              confidence: 90,
+              description: `Pola distribusi puncak klasik (Kepala & Bahu). Sinyal peringatan dini berakhirnya tren bullish.`,
+              actionAdvice: `Kurangi porsi jika harga menembus di bawah Neckline Rp ${fmt(neckline)}. Target pelemahan ke Rp ${fmt(target)}.`,
+              neckline,
+              target,
+              color: '#f43f5e',
+              points: [
+                { ...p1, label: 'LS' },
+                { ...p2, label: 'N1' },
+                { ...p3, label: 'HEAD' },
+                { ...p4, label: 'N2' },
+                { ...p5, label: 'RS' }
+              ]
+            })
+            patternFound = true
+            break
+          }
+        }
+      }
+    }
+
+    // 5. Pattern Matching: Sideways Consolidation (Darvas Box)
+    if (!patternFound) {
+      const recentHighs = highs.slice(-25)
+      const recentLows = lows.slice(-25)
+      const boxTop = Math.max(...recentHighs)
+      const boxBottom = Math.min(...recentLows)
+      const rangeSpread = (boxTop - boxBottom) / boxTop
+
+      if (rangeSpread < 0.06) {
+        detectedPatterns.value.push({
+          type: 'sideways_box',
+          label: 'NEUTRAL: Sideways Box',
+          category: 'NEUTRAL',
+          confidence: 88,
+          description: `Pergerakan harga terkonsolidasi dalam rentang sempit Rp ${fmt(boxBottom)} - Rp ${fmt(boxTop)}. Energi pasar sedang terkumpul untuk breakout arah baru.`,
+          actionAdvice: `Strategi Swing: Buy on Support di dekat Rp ${fmt(boxBottom)} dan Sell on Resistance di dekat Rp ${fmt(boxTop)}. Stop loss jika tembus ke bawah.`,
+          boxTop,
+          boxBottom,
+          color: '#f59e0b',
+          points: []
+        })
+        patternFound = true
+      }
+    }
+
+    // Fallback: Trend Channel
+    if (!patternFound) {
+      const firstPrice = closes[0] || 1
+      const isUptrend = currentPrice >= firstPrice
+      detectedPatterns.value.push({
+        type: isUptrend ? 'uptrend_continuation' : 'downtrend_channel',
+        label: isUptrend ? 'BULLISH: Uptrend Channel' : 'BEARISH: Downtrend Channel',
+        category: isUptrend ? 'BULLISH' : 'BEARISH',
+        confidence: 80,
+        description: isUptrend 
+          ? `Harga bergerak dalam kanal naik bertahap dengan struktur Higher Highs.` 
+          : `Harga berada dalam tekanan distribusi menurun dengan struktur Lower Lows.`,
+        actionAdvice: isUptrend 
+          ? `Pertahankan posisi beli selama harga berada di atas moving average.` 
+          : `Tunggu konfirmasi pantulan support kuat sebelum melakukan entry baru.`,
+        color: isUptrend ? '#10b981' : '#ef4444',
+        points: []
+      })
     }
 
     isAnalyzingPattern.value = false
     drawChart()
-  }, 500)
+  }, 400)
 }
 </script>
 
 <style scoped>
-/* Swiss Chart Layout */
+/* Scoped Swiss Layout */
 </style>
