@@ -1,81 +1,74 @@
 <template>
-  <!-- Sleek Minimalist Footer with Safe Mobile Dock Padding -->
-  <footer class="w-full border-t transition-colors duration-200 pb-28 md:pb-12 pt-12 mt-12"
-    :class="isDark ? 'border-white/[0.08] bg-[#08090d]/80 text-slate-400' : 'border-slate-200 bg-white/80 text-slate-600'"
+  <!-- Footer minimalis tipografi murni bergaya Geist tanpa card button -->
+  <footer class="w-full border-t transition-colors duration-200 pb-28 md:pb-10 pt-10 mt-16"
+    :class="isDark ? 'border-white/[0.08] bg-[#050608]/90 text-neutral-400' : 'border-neutral-200 bg-white/90 text-neutral-600'"
   >
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
       
-      <!-- Top Section: Brand + Support Pill -->
-      <div class="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b"
-        :class="isDark ? 'border-white/[0.06]' : 'border-slate-100'"
+      <!-- Baris atas: Identitas brand di kiri, tautan teks murni di kanan -->
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-8 border-b"
+        :class="isDark ? 'border-white/[0.08]' : 'border-neutral-100'"
       >
-        <!-- Brand -->
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm bg-gradient-to-br from-primary to-blue-600 text-white shadow-md shadow-primary/20">
-            F
+        <!-- Identitas brand -->
+        <div class="flex flex-col items-start gap-1">
+          <div class="flex items-center gap-2">
+            <span class="font-headline font-bold text-base tracking-tight" :class="isDark ? 'text-white' : 'text-neutral-900'">
+              Fi<span class="text-primary">Go</span> Engine
+            </span>
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="font-headline font-black text-base tracking-tight" :class="isDark ? 'text-white' : 'text-slate-900'">
-                Fi<span class="text-primary">Go</span> Engine
-              </span>
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            </div>
-            <p class="text-xs opacity-65 font-sans">
-              High-precision utilities &amp; quantitative stock suite.
-            </p>
-          </div>
+          <p class="text-xs text-neutral-500 font-sans max-w-sm">
+            High-precision utilities &amp; quantitative stock suite.
+          </p>
         </div>
 
-        <!-- Quick Links Pills -->
-        <div class="flex flex-wrap items-center justify-center gap-2 text-xs font-medium">
-          <NuxtLink to="/stocks" class="px-3 py-1.5 rounded-xl border transition-all hover:text-primary"
-            :class="isDark ? 'bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'"
+        <!-- Tautan navigasi teks murni (tanpa kotak / card button) -->
+        <nav class="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs">
+          <NuxtLink to="/stocks" class="transition-colors hover:text-primary"
+            :class="isDark ? 'text-neutral-400 hover:text-white' : 'text-neutral-600 hover:text-neutral-900'"
           >
             Stocks Quant
           </NuxtLink>
-          <NuxtLink to="/tradingplan" class="px-3 py-1.5 rounded-xl border transition-all hover:text-primary"
-            :class="isDark ? 'bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'"
+          <NuxtLink to="/tradingplan" class="transition-colors hover:text-primary"
+            :class="isDark ? 'text-neutral-400 hover:text-white' : 'text-neutral-600 hover:text-neutral-900'"
           >
             Trading Plan
           </NuxtLink>
-          <NuxtLink to="/download" class="px-3 py-1.5 rounded-xl border transition-all hover:text-primary"
-            :class="isDark ? 'bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'"
+          <NuxtLink to="/download" class="transition-colors hover:text-primary"
+            :class="isDark ? 'text-neutral-400 hover:text-white' : 'text-neutral-600 hover:text-neutral-900'"
           >
             Downloader
           </NuxtLink>
-          <NuxtLink to="/convert" class="px-3 py-1.5 rounded-xl border transition-all hover:text-primary"
-            :class="isDark ? 'bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'"
+          <NuxtLink to="/convert" class="transition-colors hover:text-primary"
+            :class="isDark ? 'text-neutral-400 hover:text-white' : 'text-neutral-600 hover:text-neutral-900'"
           >
             Converter
           </NuxtLink>
-          <NuxtLink to="/compress" class="px-3 py-1.5 rounded-xl border transition-all hover:text-primary"
-            :class="isDark ? 'bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'"
+          <NuxtLink to="/compress" class="transition-colors hover:text-primary"
+            :class="isDark ? 'text-neutral-400 hover:text-white' : 'text-neutral-600 hover:text-neutral-900'"
           >
             Compressor
           </NuxtLink>
-        </div>
-
-        <!-- Support CTA -->
-        <button @click="openSupport"
-          class="px-4 py-2 text-xs font-semibold rounded-xl border transition-all flex items-center gap-2 cursor-pointer shadow-xs"
-          :class="isDark ? 'bg-white/[0.05] border-white/[0.12] text-white hover:bg-white/[0.1]' : 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800'"
-        >
-          <span class="material-symbols-outlined text-sm text-rose-400 fill-current animate-pulse">favorite</span>
-          <span>Dukung FiGo</span>
-        </button>
+          <button @click="openSupport"
+            class="transition-colors flex items-center gap-1.5 cursor-pointer font-medium"
+            :class="isDark ? 'text-neutral-300 hover:text-rose-400' : 'text-neutral-700 hover:text-rose-600'"
+          >
+            <span class="material-symbols-outlined text-[14px] text-rose-500 fill-current">favorite</span>
+            <span>Dukung FiGo</span>
+          </button>
+        </nav>
       </div>
 
-      <!-- Bottom Meta -->
-      <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs opacity-65">
-        <p>© {{ currentYear }} FiGo. Crafted with precision.</p>
-        <div class="flex items-center gap-4">
-          <a href="https://fikfikk.my.id/" target="_blank" rel="noopener noreferrer" class="hover:text-primary transition-colors flex items-center gap-1 font-mono text-[11px]">
+      <!-- Baris bawah: Metadata hak cipta dan lokasi -->
+      <div class="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-neutral-500">
+        <p class="font-sans">© {{ currentYear }} FiGo. Crafted with precision.</p>
+        <div class="flex items-center gap-3 font-mono text-[11px]">
+          <a href="https://fikfikk.my.id/" target="_blank" rel="noopener noreferrer" class="hover:text-primary transition-colors flex items-center gap-1">
             <span>Creator: fikfikk.my.id</span>
-            <span class="material-symbols-outlined text-xs">open_in_new</span>
+            <span class="material-symbols-outlined text-[13px]">north_east</span>
           </a>
-          <span>•</span>
-          <span class="font-mono text-[11px]">Jakarta, ID</span>
+          <span class="opacity-40">•</span>
+          <span>Surabaya, ID</span>
         </div>
       </div>
 
@@ -90,5 +83,5 @@ const { open: openSupport } = useSupportModal()
 </script>
 
 <style scoped>
-/* Scoped footer */
+/* Gaya CSS footer terisolasi */
 </style>

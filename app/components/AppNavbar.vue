@@ -1,21 +1,16 @@
 <template>
-  <!-- Linear / Vercel Dark Minimalist Navigation Header -->
+  <!-- Header navigasi minimalis dark/light -->
   <nav class="fixed top-0 w-full z-50 backdrop-blur-xl transition-colors duration-200 border-b"
     :class="isDark ? 'bg-[#08090d]/85 border-white/[0.08] text-slate-100' : 'bg-white/85 border-slate-200/80 text-slate-900 shadow-xs'"
   >
     <div class="flex justify-between items-center px-4 sm:px-6 md:px-8 py-3 max-w-7xl mx-auto">
-      <!-- Brand Logo -->
+      <!-- Logo brand teks tanpa ikon F -->
       <div class="flex items-center gap-3">
         <NuxtLink to="/" class="flex items-center gap-2.5 group">
-          <div class="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm transition-all shadow-md"
-            :class="isDark ? 'bg-gradient-to-br from-primary to-blue-600 text-white shadow-primary/25 group-hover:shadow-primary/40' : 'bg-slate-900 text-white group-hover:bg-slate-800 shadow-slate-900/20'"
-          >
-            F
-          </div>
-          <span class="font-headline font-black text-base tracking-tight" :class="isDark ? 'text-white' : 'text-slate-900'">
+          <span class="font-headline font-black text-lg tracking-tight transition-colors" :class="isDark ? 'text-white group-hover:text-primary' : 'text-slate-900 group-hover:text-primary'">
             Fi<span class="text-primary">Go</span>
           </span>
-          <span class="px-2 py-0.5 rounded-lg text-[9px] font-mono font-semibold tracking-wide border hidden sm:inline"
+          <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold tracking-wide border hidden sm:inline"
             :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'"
           >
             v2.6
@@ -23,7 +18,7 @@
         </NuxtLink>
       </div>
 
-      <!-- Desktop Nav Links (Linear Minimalist Pills) -->
+      <!-- Tautan navigasi desktop dengan pill 2xl -->
       <div class="hidden md:flex items-center p-1 rounded-2xl border backdrop-blur-md"
         :class="isDark ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-100/80 border-slate-200/60'"
       >
@@ -31,7 +26,7 @@
           v-for="link in navLinks"
           :key="link.to"
           :to="link.to"
-          class="px-4 py-1.5 rounded-xl text-xs font-medium tracking-tight transition-all relative flex items-center gap-1.5"
+          class="px-4 py-1.5 rounded-2xl text-xs font-medium tracking-tight transition-all relative flex items-center gap-1.5"
           :class="isActive(link.to)
             ? (isDark ? 'bg-white/[0.1] text-white font-semibold shadow-xs' : 'bg-white text-slate-900 font-semibold shadow-xs')
             : (isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.04]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60')"
@@ -41,70 +36,67 @@
         </NuxtLink>
       </div>
 
-      <!-- Header Controls: Support + Theme Toggle + Launch CTA -->
-      <div class="flex items-center gap-2">
-        <!-- Support Button -->
+      <!-- Kontrol header: Dukungan + Toggle Tema (Tanpa tombol redundan Tools) -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <!-- Tombol dukungan ghost tanpa border kotak -->
         <button
-          class="px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight transition-all border flex items-center gap-1.5 cursor-pointer"
+          class="h-9 px-2.5 sm:px-3 rounded-xl text-xs font-medium tracking-tight transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
           :class="isDark 
-            ? 'bg-white/[0.04] border-white/[0.08] text-slate-300 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15]' 
-            : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 shadow-xs'"
+            ? 'text-neutral-400 hover:text-white hover:bg-white/[0.08]' 
+            : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'"
           @click="open()"
+          aria-label="Support FiGo"
         >
-          <span class="material-symbols-outlined text-[14px] text-rose-500 fill-current animate-pulse">favorite</span>
+          <span class="material-symbols-outlined text-[18px] text-rose-500 fill-current">favorite</span>
           <span class="hidden sm:inline">Support</span>
         </button>
 
-        <!-- Theme Toggle Button -->
+        <!-- Tombol toggle tema ghost tanpa border kotak -->
         <button
-          class="w-8 h-8 rounded-xl flex items-center justify-center transition-all border cursor-pointer"
-          :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-amber-400 hover:bg-white/[0.08]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs'"
+          class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer"
+          :class="isDark 
+            ? 'text-neutral-400 hover:text-amber-400 hover:bg-white/[0.08]' 
+            : 'text-neutral-600 hover:text-amber-600 hover:bg-neutral-100'"
           @click="toggle"
           :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
         >
-          <span class="material-symbols-outlined text-[16px]">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
+          <span class="material-symbols-outlined text-[18px]">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
         </button>
-
-        <!-- Get Started / Tools CTA -->
-        <NuxtLink
-          to="/tools"
-          class="px-4 py-1.5 rounded-xl text-xs font-semibold tracking-tight transition-all border hidden sm:flex items-center gap-1 shadow-sm"
-          :class="isDark
-            ? 'bg-gradient-to-r from-primary to-blue-600 text-white border-primary/40 hover:brightness-110 shadow-primary/20'
-            : 'bg-slate-900 text-white border-slate-800 hover:bg-slate-800 shadow-slate-900/10'"
-        >
-          <span>Tools</span>
-          <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-        </NuxtLink>
       </div>
     </div>
   </nav>
 
-  <!-- Mobile Bottom Navigation (Linear Floating Dock) -->
-  <nav class="md:hidden fixed bottom-3 left-4 right-4 z-[60] backdrop-blur-2xl rounded-2xl border transition-all duration-200 shadow-2xl p-1"
-    :class="isDark ? 'bg-[#0d0f17]/90 border-white/[0.12] shadow-black/80' : 'bg-white/90 border-slate-200/90 shadow-slate-400/20'"
+  <!-- Navigasi bawah mobile edge-to-edge (bukan card melayang) -->
+  <nav class="md:hidden fixed bottom-0 inset-x-0 z-[60] backdrop-blur-2xl border-t transition-all duration-200 py-1.5 px-3"
+    :class="isDark ? 'bg-[#050608]/95 border-white/[0.08] text-neutral-400' : 'bg-white/95 border-neutral-200 text-neutral-600'"
   >
-    <div class="grid grid-cols-5 gap-1">
+    <div class="grid grid-cols-5 max-w-md mx-auto">
       <NuxtLink
         v-for="link in navLinks"
         :key="link.to"
         :to="link.to"
-        class="flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all"
+        class="flex flex-col items-center justify-center py-1 px-1 transition-colors relative group"
         :class="isActive(link.to) 
-          ? (isDark ? 'bg-primary/20 text-primary font-bold shadow-xs' : 'bg-primary/10 text-primary font-bold shadow-xs')
-          : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900')"
+          ? (isDark ? 'text-white font-semibold' : 'text-neutral-900 font-semibold')
+          : (isDark ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900')"
       >
-        <span class="material-symbols-outlined text-[19px] mb-0.5" 
-          :class="isActive(link.to) ? 'text-primary' : ''"
+        <span class="material-symbols-outlined text-[20px] mb-0.5 transition-transform group-active:scale-95" 
+          :class="isActive(link.to) ? (isDark ? 'text-white' : 'text-neutral-900') : 'opacity-70'"
         >
           {{ link.icon }}
         </span>
-        <span class="text-[9.5px] tracking-tight truncate max-w-full font-sans">{{ link.label }}</span>
+        <span class="text-[10px] tracking-tight truncate max-w-full font-sans leading-tight">{{ link.label }}</span>
+        <!-- Indikator aktif minimalis -->
+        <span v-if="isActive(link.to)" 
+          class="w-3.5 h-0.5 rounded-full mt-1"
+          :class="isDark ? 'bg-white' : 'bg-neutral-900'"
+        ></span>
+        <span v-else class="w-3.5 h-0.5 mt-1 opacity-0"></span>
       </NuxtLink>
     </div>
   </nav>
 
-  <!-- Support Modal (Linear / Vercel Minimalist Card) -->
+  <!-- Modal dukungan donasi kartu minimalis -->
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="isOpen" 
@@ -115,18 +107,18 @@
           class="relative w-full max-w-sm p-6 rounded-2xl shadow-2xl transition-all border"
           :class="isDark ? 'bg-[#0d0f17] border-white/[0.1] text-slate-100' : 'bg-white border-slate-200 text-slate-900'"
         >
-          <!-- Close Button -->
+          <!-- Tombol tutup modal -->
           <button 
             @click="close()"
-            class="absolute top-4 right-4 w-8 h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer"
+            class="absolute top-4 right-4 w-8 h-8 rounded-2xl border flex items-center justify-center transition-all cursor-pointer"
             :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.08]' : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'"
           >
             <span class="material-symbols-outlined text-sm">close</span>
           </button>
 
-          <!-- Modal Header -->
+          <!-- Header modal -->
           <div class="mb-4 text-center">
-            <div class="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center bg-rose-500/10 border border-rose-500/20 text-rose-500">
+            <div class="w-10 h-10 rounded-2xl mx-auto mb-2 flex items-center justify-center bg-rose-500/10 border border-rose-500/20 text-rose-500">
               <span class="material-symbols-outlined text-xl animate-pulse">favorite</span>
             </div>
             <h3 class="font-headline text-base font-bold tracking-tight">Support FiGo Ecosystem</h3>
@@ -135,13 +127,13 @@
             </p>
           </div>
 
-          <!-- Tabs (Linear Segmented Selector) -->
-          <div class="grid grid-cols-2 gap-1 p-1 border rounded-xl mb-3" :class="isDark ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-100 border-slate-200'">
+          <!-- Tab pemilih platform donasi -->
+          <div class="grid grid-cols-2 gap-1 p-1 border rounded-2xl mb-3" :class="isDark ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-100 border-slate-200'">
             <button 
               v-for="tab in supportTabs"
               :key="tab.id"
               @click="activeTab = tab.id"
-              class="py-2 px-3 text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 cursor-pointer rounded-lg"
+              class="py-2 px-3 text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 cursor-pointer rounded-xl"
               :class="activeTab === tab.id 
                 ? (isDark ? 'bg-white/[0.12] text-white shadow-xs' : 'bg-white text-slate-900 shadow-xs') 
                 : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900')"
@@ -155,15 +147,15 @@
             {{ currentTab.description }}
           </p>
 
-          <!-- QR Code Container -->
+          <!-- Kontainer QR code -->
           <div class="flex justify-center py-1 mb-4">
             <div 
-              class="p-3.5 rounded-xl bg-white border border-slate-200 shadow-lg flex flex-col items-center justify-center"
+              class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-lg flex flex-col items-center justify-center"
             >
               <img 
                 :src="qrUrl" 
                 :alt="currentTab.name + ' QR Code'" 
-                class="w-44 h-44 rounded-lg"
+                class="w-44 h-44 rounded-xl"
                 loading="lazy"
               />
               <span class="text-[9px] text-slate-400 font-mono font-semibold tracking-wider uppercase mt-1.5">
@@ -172,13 +164,13 @@
             </div>
           </div>
 
-          <!-- Actions -->
+          <!-- Tombol aksi donasi -->
           <div class="flex flex-col gap-2">
             <a 
               :target="_blank"
               :href="donationUrl"
               rel="noopener noreferrer"
-              class="w-full py-2.5 rounded-xl text-xs font-bold tracking-tight text-center flex items-center justify-center gap-1.5 text-white transition-all shadow-md cursor-pointer"
+              class="w-full py-2.5 rounded-2xl text-xs font-bold tracking-tight text-center flex items-center justify-center gap-1.5 text-white transition-all shadow-md cursor-pointer"
               :class="activeTab === 'trakteer' 
                 ? 'bg-gradient-to-r from-[#FF3850] to-[#ff5d72] hover:brightness-105 shadow-[#FF3850]/20' 
                 : 'bg-gradient-to-r from-[#FF5E5B] to-[#ff8481] hover:brightness-105 shadow-[#FF5E5B]/20'"
@@ -189,7 +181,7 @@
             
             <button 
               @click="copyDonationLink"
-              class="w-full py-2 rounded-xl text-xs font-semibold tracking-tight border transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              class="w-full py-2 rounded-2xl text-xs font-semibold tracking-tight border transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               :class="isDark 
                 ? 'border-white/[0.08] hover:bg-white/[0.04] text-slate-300 hover:text-white' 
                 : 'border-slate-200 hover:bg-slate-50 text-slate-700'"
@@ -199,13 +191,13 @@
             </button>
           </div>
 
-          <!-- Creator Portfolio -->
+          <!-- Tautan portofolio pembuat -->
           <div class="mt-4 pt-3 border-t" :class="isDark ? 'border-white/[0.08]' : 'border-slate-100'">
             <a 
               href="https://fikfikk.my.id/" 
               target="_blank" 
               rel="noopener noreferrer"
-              class="flex items-center justify-between p-2 rounded-xl border transition-all"
+              class="flex items-center justify-between p-2 rounded-2xl border transition-all"
               :class="isDark 
                 ? 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06] text-slate-200' 
                 : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-800'"
