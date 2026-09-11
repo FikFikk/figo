@@ -1,7 +1,7 @@
 <template>
   <!-- Footer minimalis tipografi murni bergaya Geist tanpa card button -->
   <footer class="w-full border-t transition-colors duration-200 pb-28 md:pb-10 pt-10 mt-16"
-    :class="isDark ? 'border-white/[0.08] bg-[#050608]/90 text-neutral-400' : 'border-neutral-200 bg-white/90 text-neutral-600'"
+    :class="isDark ? 'border-white/[0.08] bg-[#08090d]/90 text-neutral-400' : 'border-neutral-200 bg-white/90 text-neutral-600'"
   >
     <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
       

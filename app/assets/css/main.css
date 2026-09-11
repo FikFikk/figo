@@ -48,6 +48,39 @@
   z-index: -1;
 }
 
+/* Latar belakang Obsidian gelap ringan tanpa beban komposisi GPU */
+body {
+  min-height: 100vh;
+}
+.dark body {
+  background-color: #08090d;
+  background-image: radial-gradient(circle at 50% -20px, rgba(0, 88, 190, 0.12) 0%, rgba(8, 9, 13, 0) 600px);
+  background-attachment: fixed;
+}
+html.light body {
+  background-color: #fafafa;
+  background-image: radial-gradient(circle at 50% -20px, rgba(0, 88, 190, 0.05) 0%, rgba(250, 250, 250, 0) 600px);
+  background-attachment: fixed;
+}
+
+/* Card modular bento - cepat dirender di browser mobile */
+.bento-card {
+  background-color: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 1rem;
+}
+.dark .bento-card {
+  background-color: #0e1017;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.bento-card-hover {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.dark .bento-card-hover:hover {
+  background-color: #131620;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
 /* Base */
 html {
   scroll-behavior: smooth;
@@ -55,7 +88,7 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Keep keyboard navigation visible across the landing page and tools. */
+/* Pertahankan indikator fokus keyboard untuk aksesibilitas */
 :focus-visible {
   outline: 2px solid #0058be;
   outline-offset: 3px;
@@ -79,14 +112,14 @@ html.light {
   color: #d8e2ff;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: #f7f9fb; }
+/* Scrollbar transparan - mencegah garis track bocor di sudut container melengkung */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #c2c6d6; border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: #727785; }
-.dark ::-webkit-scrollbar-track { background: #0f1117; }
-.dark ::-webkit-scrollbar-thumb { background: #3a3f52; }
-.dark ::-webkit-scrollbar-thumb:hover { background: #5a5f7a; }
+.dark ::-webkit-scrollbar-track { background: transparent; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 9999px; }
+.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
 
 /* Transisi halaman instan dan halus (snappy & non-lagging) */
 .page-enter-active,

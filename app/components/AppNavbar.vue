@@ -66,9 +66,9 @@
     </div>
   </nav>
 
-  <!-- Navigasi bawah mobile edge-to-edge (bukan card melayang) -->
-  <nav class="md:hidden fixed bottom-0 inset-x-0 z-[60] backdrop-blur-2xl border-t transition-all duration-200 py-1.5 px-3"
-    :class="isDark ? 'bg-[#050608]/95 border-white/[0.08] text-neutral-400' : 'bg-white/95 border-neutral-200 text-neutral-600'"
+  <!-- Navigasi bawah mobile edge-to-edge (hemat komputasi GPU & safe-area presisi) -->
+  <nav class="md:hidden fixed bottom-0 inset-x-0 z-[60] backdrop-blur-md border-t transition-all duration-200 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] px-3"
+    :class="isDark ? 'bg-[#08090d]/95 border-white/[0.08] text-neutral-400' : 'bg-white/95 border-neutral-200 text-neutral-600'"
   >
     <div class="grid grid-cols-5 max-w-md mx-auto">
       <NuxtLink

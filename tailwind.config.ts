@@ -48,12 +48,6 @@ export default <Config>{
         body: ['Inter', 'sans-serif'],
         label: ['Inter', 'sans-serif'],
       },
-      borderRadius: {
-        DEFAULT: '1rem',
-        lg: '2rem',
-        xl: '3rem',
-        full: '9999px',
-      },
       scale: {
         '102': '1.02',
       },
