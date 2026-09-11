@@ -20,7 +20,13 @@ export default defineEventHandler(async (event) => {
     })
     return data
   } catch (error: any) {
-    if (error.response) return error.response._data
-    return { error: 'ZPI Fetch failed' }
+    const status = error.statusCode || error.response?.status || 500
+    const errData = error.response?._data || {}
+    const msg = errData?.message || (status === 429 ? 'Kuota bulanan TradingView (ZPI) telah habis (600/600 request). Reset pada tanggal 1.' : 'Gagal mengambil data dari TradingView (ZPI)')
+    throw createError({
+      statusCode: status,
+      statusMessage: msg,
+      data: errData
+    })
   }
 })

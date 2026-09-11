@@ -4,8 +4,8 @@
  * State apiSource disimpan secara global agar konsisten antar komponen
  */
 
-// State global: sumber API yang aktif (persisten antar komponen) — Default: TradingView (ZPI), opsi kedua: Yahoo Finance (RapidAPI dinonaktifkan karena rate-limit)
-const apiSource = ref<'zpi' | 'yahoo'>('zpi')
+// State global: sumber API yang aktif (persisten antar komponen) — Default: Yahoo Finance, opsi kedua: TradingView (ZPI)
+const apiSource = ref<'zpi' | 'yahoo'>('yahoo')
 
 interface UseStockApiReturn {
   // Loading & error state
@@ -85,7 +85,9 @@ export function useStockApi(): UseStockApiReturn {
        // symbols di ZPI perlu format (IDX:BBCA)
        const ticker = symbol.startsWith('IDX:') ? symbol : `IDX:${symbol}`
        const data = await fetchWithState('/api/stock/zpi', { endpoint: 'symbol', symbol: ticker, market: 'indonesia' })
-       return data
+       if (data && !(data as any)?.error && !(data as any)?.content?.code) return data
+       // Fallback otomatis ke Yahoo Finance jika ZPI gagal atau kuota habis
+       return fetchWithState('/api/stock/yahoo-info', { symbol })
     }
     if (apiSource.value === 'yahoo') {
       return fetchWithState('/api/stock/yahoo-info', { symbol })
@@ -115,13 +117,21 @@ export function useStockApi(): UseStockApiReturn {
          resolution: resZpi,
          count: params?.limit || 100
        })
-       return data?.data?.candles || []
+       if (data?.data?.candles && data.data.candles.length > 0) {
+         return data.data.candles
+       }
+       // Fallback otomatis ke Yahoo Finance jika ZPI gagal atau kuota habis
+       return fetchWithState('/api/stock/yahoo-chart', {
+         symbol,
+         interval: params?.interval || '1d',
+         range: params?.range || '2y'
+       })
     }
     if (apiSource.value === 'yahoo') {
       return fetchWithState('/api/stock/yahoo-chart', {
         symbol,
         interval: params?.interval || '1d',
-        range: params?.range || '3mo'
+        range: params?.range || '2y'
       })
     }
     return fetchWithState('/api/stock/chart', { symbol, limit: params?.limit || 63 })

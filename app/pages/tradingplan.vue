@@ -256,7 +256,7 @@ const moversData = ref<any>(null)
 const moversTab = ref('gainers')
 const moversOpen = ref(true)
 const tradingPlan = ref<any>(null)
-const currentChartParams = ref({ interval: '1d', range: '3mo' })
+const currentChartParams = ref({ interval: '1d', range: '2y' })
 
 const loadingInfo = ref(false)
 const loadingChart = ref(false)

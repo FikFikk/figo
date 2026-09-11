@@ -1,14 +1,18 @@
 <template>
-  <div class="border overflow-hidden transition-all duration-200"
-    :class="[
-      isFullscreen ? 'fixed inset-0 z-[99999] w-screen h-screen flex flex-col p-2 sm:p-4 bg-[#08090d] rounded-none border-none' : 'relative rounded-2xl',
-      isDark ? 'bg-[#0d0f17]/90 border-white/[0.08] shadow-2xl' : 'bg-white border-slate-200 shadow-sm'
-    ]"
-  >
-    <!-- Linear Terminal Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 border-b"
-      :class="isDark ? 'border-white/[0.06]' : 'border-slate-100'"
+  <Teleport to="body" :disabled="!isFullscreen">
+    <div class="border overflow-hidden transition-all duration-200"
+      :class="[
+        isFullscreen ? 'fixed inset-0 z-[99999] w-screen h-[100dvh] flex flex-col p-0 m-0 bg-[#08090d] rounded-none border-none' : 'relative rounded-2xl',
+        isDark ? 'bg-[#0d0f17]/90 border-white/[0.08] shadow-2xl' : 'bg-white border-slate-200 shadow-sm'
+      ]"
     >
+      <!-- Linear Terminal Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b"
+        :class="[
+          isDark ? 'border-white/[0.06]' : 'border-slate-100',
+          isFullscreen ? 'px-4 py-2.5 sm:px-6 sm:py-3' : 'px-4 sm:px-5 pt-4 sm:pt-5 pb-3'
+        ]"
+      >
       <div class="flex items-center gap-2.5 shrink-0">
         <span class="px-2 py-0.5 rounded-xl text-[9px] font-mono font-bold uppercase tracking-widest border"
           :class="isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'"
@@ -64,7 +68,7 @@
     </div>
 
     <!-- Chart Canvas Container -->
-    <div v-else class="relative px-2 pb-2 pt-2 flex-1 w-full flex flex-col min-h-0" :style="{ height: isFullscreen ? 'calc(100vh - 85px)' : '440px' }">
+    <div v-else class="relative px-2 pb-2 pt-2 flex-1 w-full flex flex-col min-h-0" :style="isFullscreen ? undefined : { height: '440px' }">
       <!-- Loading -->
       <div v-if="loading && !isLoadingMore" class="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-xs z-10 font-mono text-xs">
         <div class="flex items-center gap-2 px-4 py-2 rounded-xl border bg-neutral-900 border-neutral-700 text-white">
@@ -245,6 +249,7 @@
       </div>
     </div>
   </div>
+</Teleport>
 </template>
 
 <script setup lang="ts">
@@ -295,10 +300,23 @@ function toggleFullscreen() {
   })
 }
 
-// Esc key listener for fullscreen
+// Sinkronisasi status saat keluar dari fullscreen browser (misal lewat Escape atau F11)
+function onFullscreenChange() {
+  if (!document.fullscreenElement && isFullscreen.value) {
+    isFullscreen.value = false
+    nextTick(() => {
+      setTimeout(() => drawChart(), 100)
+    })
+  }
+}
+
+// Esc key listener untuk mode fullscreen
 function handleKeyDown(e: KeyboardEvent) {
   if (e.key === 'Escape' && isFullscreen.value) {
     isFullscreen.value = false
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {})
+    }
     nextTick(() => drawChart())
   }
 }
@@ -311,14 +329,14 @@ interface TimeframePeriod {
 }
 
 const periods: TimeframePeriod[] = [
-  { label: '1M', interval: '1m', range: '1d', candleLabel: '1 Menit' },
-  { label: '5M', interval: '5m', range: '1d', candleLabel: '5 Menit' },
-  { label: '15M', interval: '15m', range: '5d', candleLabel: '15 Menit' },
-  { label: '30M', interval: '30m', range: '5d', candleLabel: '30 Menit' },
-  { label: '1H', interval: '60m', range: '1mo', candleLabel: '1 Jam' },
-  { label: '1D', interval: '1d', range: '3mo', candleLabel: '1 Hari' },
-  { label: '1W', interval: '1wk', range: '1y', candleLabel: '1 Minggu' },
-  { label: '1MO', interval: '1mo', range: '5y', candleLabel: '1 Bulan' },
+  { label: '1M', interval: '1m', range: '5d', candleLabel: '1 Menit' },
+  { label: '5M', interval: '5m', range: '1mo', candleLabel: '5 Menit' },
+  { label: '15M', interval: '15m', range: '1mo', candleLabel: '15 Menit' },
+  { label: '30M', interval: '30m', range: '3mo', candleLabel: '30 Menit' },
+  { label: '1H', interval: '60m', range: '1y', candleLabel: '1 Jam' },
+  { label: '1D', interval: '1d', range: '2y', candleLabel: '1 Hari' },
+  { label: '1W', interval: '1wk', range: '5y', candleLabel: '1 Minggu' },
+  { label: '1MO', interval: '1mo', range: '10y', candleLabel: '1 Bulan' },
 ]
 
 const activePeriod = ref('1d')
@@ -332,6 +350,8 @@ const visibleCandles = ref(60)
 let isDragging = false
 let dragStartX = 0
 let dragStartPan = 0
+let currentBarGap = 10
+let maxPanState = 0
 let isPinching = false
 let initialPinchDist = 0
 let initialVisibleCandles = 60
@@ -379,7 +399,7 @@ const tooltip = reactive({
 
 function getActivePeriodParams(): { interval: string; range: string } {
   const p = periods.find(p => p.interval === activePeriod.value)
-  return { interval: p?.interval || '1d', range: p?.range || '3mo' }
+  return { interval: p?.interval || '1d', range: p?.range || '2y' }
 }
 
 function changePeriod(interval: string) {
@@ -452,11 +472,28 @@ watch(() => props.plan, () => {
 watch(chartType, () => nextTick(() => drawChart()))
 watch(isDark, () => nextTick(() => drawChart()))
 
+// Handler mouse drag di window agar panning tetap berjalan saat kursor melewati batas canvas
+function onWindowMouseUp() {
+  isDragging = false
+}
+
+function onWindowMouseMove(e: MouseEvent) {
+  if (isDragging && currentBarGap > 0) {
+    const dx = e.clientX - dragStartX
+    const candlesMoved = Math.round(dx / currentBarGap)
+    panOffset.value = Math.max(0, Math.min(dragStartPan + candlesMoved, maxPanState))
+    drawChart()
+  }
+}
+
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
   drawChart()
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('mouseup', onWindowMouseUp)
+  window.addEventListener('mousemove', onWindowMouseMove)
+  document.addEventListener('fullscreenchange', onFullscreenChange)
   if (canvasRef.value) {
     resizeObserver = new ResizeObserver(() => drawChart())
     resizeObserver.observe(canvasRef.value.parentElement!)
@@ -465,6 +502,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('mouseup', onWindowMouseUp)
+  window.removeEventListener('mousemove', onWindowMouseMove)
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
   resizeObserver?.disconnect()
 })
 
@@ -504,6 +544,7 @@ function drawChart() {
   const totalLen = sortedData.length
   const maxVisible = Math.min(visibleCandles.value, totalLen)
   const maxPan = Math.max(0, totalLen - maxVisible)
+  maxPanState = maxPan
   panOffset.value = Math.max(0, Math.min(panOffset.value, maxPan))
 
   const startIdx = totalLen - maxVisible - panOffset.value
@@ -513,6 +554,9 @@ function drawChart() {
   const padding = { top: 25, right: 60, bottom: 25, left: 10 }
   const chartW = width - padding.left - padding.right
   const chartH = height - padding.top - padding.bottom
+
+  const barGap = chartW / items.length
+  currentBarGap = barGap
 
   const highs = items.map((d: any) => Number(d.high || d.High || d.h || 0))
   const lows = items.map((d: any) => Number(d.low || d.Low || d.l || 0))
@@ -539,7 +583,6 @@ function drawChart() {
   minPrice -= pRange * 0.05
   const totalRange = maxPrice - minPrice || 1
 
-  const barGap = chartW / items.length
   const barWidth = Math.max(barGap * 0.7, 1.5)
 
   // Color Palette
@@ -869,10 +912,10 @@ function drawChart() {
     tooltip.show = false
   }
   canvas.onmousemove = (e: MouseEvent) => {
-    if (isDragging) {
+    if (isDragging && currentBarGap > 0) {
       const dx = e.clientX - dragStartX
-      const candlesMoved = Math.round(dx / barGap)
-      panOffset.value = Math.max(0, Math.min(dragStartPan + candlesMoved, maxPan))
+      const candlesMoved = Math.round(dx / currentBarGap)
+      panOffset.value = Math.max(0, Math.min(dragStartPan + candlesMoved, maxPanState))
       drawChart()
     } else {
       showTooltipAt(e.clientX, e.clientY, false)
@@ -880,7 +923,6 @@ function drawChart() {
   }
   canvas.onmouseup = () => { isDragging = false }
   canvas.onmouseleave = () => {
-    isDragging = false
     tooltip.show = false
   }
 

@@ -7,10 +7,10 @@ const { isDark } = useColorMode()
     :class="isDark ? 'text-slate-100 antialiased' : 'text-slate-900 antialiased'"
   >
     <AppNavbar />
-    <main class="flex-1 relative z-10">
+    <main class="flex-1 relative">
       <slot />
     </main>
-    <AppFooter class="md:pb-0 pb-6 relative z-10" />
+    <AppFooter class="md:pb-0 pb-6 relative" />
   </div>
 </template>
 
