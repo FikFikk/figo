@@ -199,6 +199,20 @@
             <span class="hidden sm:inline">{{ viewMode === 'catalog' ? 'Kembali Membaca' : 'Semua Surah' }}</span>
           </button>
 
+          <!-- Tombol Mode Smart TV / Layar Penuh -->
+          <button
+            type="button"
+            class="inline-flex min-h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition cursor-pointer"
+            :class="isDark
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
+              : 'border-emerald-500/30 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'"
+            title="Tampilkan Mode Smart TV / Layar Penuh (Ambient Player)"
+            @click="openTvMode"
+          >
+            <span class="material-symbols-outlined text-[17px]">tv</span>
+            <span class="hidden sm:inline">Mode TV</span>
+          </button>
+
           <!-- Tombol Panel Pengaturan Font -->
           <button
             ref="settingsButtonRef"
@@ -867,8 +881,22 @@
             </button>
           </div>
 
-          <!-- Sisi Kanan: Pemilih Qari -->
-          <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+          <!-- Sisi Kanan: Mode TV & Pemilih Qari -->
+          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <!-- Tombol Buka Mode TV Layar Penuh -->
+            <button
+              type="button"
+              class="h-9 px-2.5 rounded-xl border flex items-center gap-1.5 text-xs font-semibold transition cursor-pointer select-none"
+              :class="isDark
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
+                : 'border-emerald-500/30 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'"
+              title="Tampilkan Mode Smart TV (Layar Penuh)"
+              @click="openTvMode"
+            >
+              <span class="material-symbols-outlined text-[18px]">tv</span>
+              <span class="hidden sm:inline">TV</span>
+            </button>
+
             <!-- Pemilih Qari (Offline Ready & Studio Smooth) -->
             <div ref="qariDropdownRef" class="relative shrink-0">
               <!-- Tombol Pemicu Popover Qari -->
@@ -991,6 +1019,17 @@
         <span>{{ toastMessage }}</span>
       </div>
     </Transition>
+
+    <!-- Mode Smart TV Ambient Quran Player (Display Layar Penuh) -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <QuranTvMode
+          v-if="isTvModeOpen && currentSurah"
+          @close="isTvModeOpen = false"
+          @open-surah-list="isTvModeOpen = false; viewMode = 'catalog'"
+        />
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -998,6 +1037,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useQuran, toArabicDigits } from '~/composables/useQuran'
+import QuranTvMode from '~/components/quran/QuranTvMode.vue'
 import type { AyatItem } from '~/types/quran'
 
 const { isDark } = useColorMode()
@@ -1070,6 +1110,17 @@ const handleSeekChange = (val: number) => {
 // Mode Tampilan: 'reader' (baca surah) atau 'catalog' (daftar 114 surah & 30 juz)
 const viewMode = ref<'reader' | 'catalog'>('reader')
 const catalogTab = ref<'surah' | 'juz'>('surah')
+
+// Mode Smart TV Ambient Display (Layar Penuh Pemutar Tilawah)
+const isTvModeOpen = ref(false)
+
+const openTvMode = async () => {
+  if (!currentSurah.value) {
+    await loadSurah(1)
+  }
+  viewMode.value = 'reader'
+  isTvModeOpen.value = true
+}
 
 // Format Tampilan Membaca: 'verse' (ayat demi ayat dengan terjemahan) atau 'mushaf' (teks mengalir utuh)
 const readFormat = ref<'verse' | 'mushaf'>('verse')
@@ -1341,6 +1392,7 @@ watch(
 
 // Hentikan pemutaran audio saat navigasi keluar dari halaman Quran (pindah ke rute lain)
 onBeforeRouteLeave(() => {
+  isTvModeOpen.value = false
   stopAudio()
 })
 
@@ -1399,7 +1451,8 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 onUnmounted(() => {
-  // Matikan audio total saat keluar dari halaman Quran
+  // Matikan audio total dan tutup mode TV saat keluar dari halaman Quran
+  isTvModeOpen.value = false
   stopAudio()
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('click', handleGlobalClick)
