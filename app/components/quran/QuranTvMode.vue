@@ -376,6 +376,7 @@ const emit = defineEmits<{
 
 const {
   currentSurah: composableSurah,
+  currentFullSurahNumber,
   playingAyat,
   isPlaying,
   playMode,
@@ -487,7 +488,7 @@ const togglePlay = () => {
   if (!s) return
   if (isPlaying.value) {
     pauseAudio()
-  } else if (playingAyat.value) {
+  } else if (playingAyat.value && currentFullSurahNumber.value === s.nomor) {
     resumeAudio()
   } else {
     playFullSurah(s.nomor)
@@ -548,7 +549,7 @@ onMounted(() => {
   // Otomatis mulai putar tilawah saat masuk Mode TV jika belum berputar
   const s = activeSurah.value
   if (!isPlaying.value && s) {
-    if (playingAyat.value) {
+    if (playingAyat.value && currentFullSurahNumber.value === s.nomor) {
       resumeAudio()
     } else {
       playFullSurah(s.nomor)

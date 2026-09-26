@@ -25,7 +25,7 @@ export interface AyatTimestamp {
 
 // 1. Pemutar Audio Surah Utuh (Full Continuous Studio Audio - 100% Gapless & Smooth Tanpa Nyandet)
 let fullAudioPlayer: HTMLAudioElement | null = null
-let currentFullSurahNumber: number | null = null
+const currentFullSurahNumber = ref<number | null>(null)
 let yasserTimestamps: Record<string, AyatTimestamp[]> = {}
 let targetSingleAyat: number | null = null
 
@@ -70,13 +70,18 @@ export function useQuran() {
 
       fullAudioPlayer.ontimeupdate = () => {
         if (!fullAudioPlayer || isSeeking.value) return
+        if (!currentSurah.value) return
+
+        // Validasi ketat: pastikan berkas audio yang sedang berputar adalah surah yang aktif
+        const surahStr = String(currentSurah.value.nomor).padStart(3, '0')
+        if (!fullAudioPlayer.src.includes(`/full/${surahStr}.mp3`)) return
+
         const cur = fullAudioPlayer.currentTime
         currentTime.value = cur
-        if (fullAudioPlayer.duration && !isNaN(fullAudioPlayer.duration)) {
+        if (fullAudioPlayer.duration && !isNaN(fullAudioPlayer.duration) && fullAudioPlayer.duration > 0) {
           duration.value = fullAudioPlayer.duration
         }
 
-        if (!currentSurah.value) return
         const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
         const matched = segList.find((s) => cur >= s.start && cur < s.end)
 
@@ -283,6 +288,7 @@ export function useQuran() {
         deckB.currentTime = 0
       } catch { /* Abaikan */ }
     }
+    currentFullSurahNumber.value = null
     playingAyat.value = null
     isPlaying.value = false
     hasTriggeredEarly = false
@@ -305,7 +311,16 @@ export function useQuran() {
 
   const resumeAudio = () => {
     initDecks()
-    if (selectedQari.value === '06' && fullAudioPlayer && fullAudioPlayer.src) {
+    if (selectedQari.value === '06') {
+      if (!currentSurah.value) return
+      const surahStr = String(currentSurah.value.nomor).padStart(3, '0')
+
+      // Pastikan berkas audio yang terpasang memang benar surah yang aktif
+      if (!fullAudioPlayer || !fullAudioPlayer.src.includes(`/full/${surahStr}.mp3`) || currentFullSurahNumber.value !== currentSurah.value.nomor) {
+        playAyat(currentSurah.value.nomor, playingAyat.value || 1)
+        return
+      }
+
       fullAudioPlayer.play().then(() => {
         isPlaying.value = true
       }).catch((err) => {
@@ -325,12 +340,16 @@ export function useQuran() {
   }
 
   // Fungsi utilitas seek aman yang menunggu metadata siap jika audio baru dimuat
-  const seekAndPlayFull = (targetTime: number) => {
+  const seekAndPlayFull = (targetTime: number, isNewSrc = false) => {
     if (!fullAudioPlayer) return
 
     const doSeekAndPlay = () => {
       try {
-        fullAudioPlayer!.currentTime = targetTime
+        if (targetTime > 0) {
+          fullAudioPlayer!.currentTime = targetTime
+        } else {
+          fullAudioPlayer!.currentTime = 0
+        }
       } catch (e) {
         console.warn('Gagal set currentTime audio studio:', e)
       }
@@ -342,13 +361,20 @@ export function useQuran() {
       })
     }
 
-    if (fullAudioPlayer.readyState >= 1) {
+    // Jika sumber berkas audio baru diganti, tunggu metadata baru agar tidak memakai cache berkas sebelumnya
+    if (!isNewSrc && fullAudioPlayer.readyState >= 1) {
       doSeekAndPlay()
     } else {
-      const onMetadata = () => {
+      let isHandled = false
+      const onReady = () => {
+        if (isHandled) return
+        isHandled = true
+        fullAudioPlayer?.removeEventListener('loadedmetadata', onReady)
+        fullAudioPlayer?.removeEventListener('canplay', onReady)
         doSeekAndPlay()
       }
-      fullAudioPlayer.addEventListener('loadedmetadata', onMetadata, { once: true })
+      fullAudioPlayer.addEventListener('loadedmetadata', onReady, { once: true })
+      fullAudioPlayer.addEventListener('canplay', onReady, { once: true })
       fullAudioPlayer.load()
     }
   }
@@ -376,10 +402,11 @@ export function useQuran() {
       if (!currentSurah.value) return
       const surahStr = String(currentSurah.value.nomor).padStart(3, '0')
       const targetFullSrc = `/audio/quran/06/full/${surahStr}.mp3`
+      const isNewSurah = currentFullSurahNumber.value !== currentSurah.value.nomor || !fullAudioPlayer!.src.includes(`/full/${surahStr}.mp3`)
 
-      if (currentFullSurahNumber !== currentSurah.value.nomor || !fullAudioPlayer!.src.includes(`/full/${surahStr}.mp3`)) {
+      if (isNewSurah) {
         fullAudioPlayer!.src = targetFullSrc
-        currentFullSurahNumber = currentSurah.value.nomor
+        currentFullSurahNumber.value = currentSurah.value.nomor
       }
 
       const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
@@ -393,7 +420,7 @@ export function useQuran() {
         }
       }
 
-      seekAndPlayFull(targetSeconds)
+      seekAndPlayFull(targetSeconds, isNewSurah)
       return
     }
 
@@ -414,12 +441,14 @@ export function useQuran() {
     if (!currentSurah.value) return
     initDecks()
 
-    // 1. Toggle Jeda / Lanjutkan jika menekan tombol pada ayat yang sama
-    if (playingAyat.value === ayatNumber && isPlaying.value) {
+    // 1. Toggle Jeda / Lanjutkan HANYA jika surah yang diputar SAMA PERSIS dan nomor ayat sama
+    const isSameSurahAndAyat = currentFullSurahNumber.value === surahNumber && playingAyat.value === ayatNumber
+
+    if (isSameSurahAndAyat && isPlaying.value) {
       pauseAudio()
       return
     }
-    if (playingAyat.value === ayatNumber && !isPlaying.value) {
+    if (isSameSurahAndAyat && !isPlaying.value) {
       resumeAudio()
       return
     }
@@ -432,10 +461,12 @@ export function useQuran() {
       if (deckA && !deckA.paused) deckA.pause()
       if (deckB && !deckB.paused) deckB.pause()
 
-      // Pasang berkas rekaman surah penuh jika belum aktif
-      if (currentFullSurahNumber !== surahNumber || !fullAudioPlayer!.src.includes(`/full/${surahStr}.mp3`)) {
+      const isNewSurah = currentFullSurahNumber.value !== surahNumber || !fullAudioPlayer!.src.includes(`/full/${surahStr}.mp3`)
+
+      // Pasang berkas rekaman surah penuh jika belum aktif atau berganti surah
+      if (isNewSurah) {
         fullAudioPlayer!.src = targetFullSrc
-        currentFullSurahNumber = surahNumber
+        currentFullSurahNumber.value = surahNumber
       }
 
       // Cari titik awal (detik) ayat ini pada rekaman utuh
@@ -456,7 +487,7 @@ export function useQuran() {
         targetSingleAyat = null
       }
 
-      seekAndPlayFull(seekTarget)
+      seekAndPlayFull(seekTarget, isNewSurah)
       return
     }
 
@@ -541,6 +572,7 @@ export function useQuran() {
     surahs,
     juzs,
     currentSurah,
+    currentFullSurahNumber,
     loading,
     selectedQari,
     availableQaris,

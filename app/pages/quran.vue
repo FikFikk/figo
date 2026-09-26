@@ -1049,6 +1049,7 @@ const {
   surahs,
   juzs,
   currentSurah,
+  currentFullSurahNumber,
   loading,
   selectedQari,
   availableQaris,
@@ -1314,7 +1315,7 @@ const togglePlaySurah = () => {
   if (!currentSurah.value) return
   if (isPlaying.value) {
     pauseAudio()
-  } else if (playingAyat.value) {
+  } else if (playingAyat.value && currentFullSurahNumber.value === currentSurah.value.nomor) {
     resumeAudio()
   } else {
     playFullSurah(currentSurah.value.nomor)
