@@ -11,8 +11,15 @@
 name: Build & Deploy to Server
 
 on:
-  #   push:
-  #     branches: ["main"] # otomatis jalan kalau push ke branch main
+  push:
+    branches: ["main"]
+    paths-ignore:
+      - "android/**"
+      - "capacitor.config.ts"
+      - "ANDROID-WIDGET.md"
+      - "README.md"
+      - "documentation.md"
+      - "documentation-api.md"
   workflow_dispatch: # bisa dijalankan manual dari tab Actions
 
 # Hanya butuh read repo; deploy lewat self-hosted runner.
