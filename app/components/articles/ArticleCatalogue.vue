@@ -1,6 +1,6 @@
 <template>
-  <section aria-label="Katalog artikel">
-    <div v-if="articles.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+  <section class="w-full min-w-0" aria-label="Katalog artikel">
+    <div v-if="articles.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 w-full min-w-0">
       <ArticleCard
         v-for="article in articles"
         :key="article.id"
