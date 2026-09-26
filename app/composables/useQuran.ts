@@ -17,7 +17,18 @@ export interface LastReadItem {
   timestamp: number
 }
 
-// Dual-Deck Ping-Pong Engine untuk pemutaran audio gapless tanpa jeda (seamless transition)
+export interface AyatTimestamp {
+  ayat: number
+  start: number
+  end: number
+}
+
+// 1. Pemutar Audio Surah Utuh (Full Continuous Studio Audio - 100% Gapless & Smooth Tanpa Nyandet)
+let fullAudioPlayer: HTMLAudioElement | null = null
+let currentFullSurahNumber: number | null = null
+let yasserTimestamps: Record<string, AyatTimestamp[]> = {}
+
+// 2. Dual-Deck Audio Engine untuk Qari Streaming Online
 let deckA: HTMLAudioElement | null = null
 let deckB: HTMLAudioElement | null = null
 let activeDeckKey: 'A' | 'B' = 'A'
@@ -40,10 +51,21 @@ export function useQuran() {
   // Status Pemutaran Audio
   const playingAyat = ref<number | null>(null)
   const isPlaying = ref(false)
-  const isContinuous = ref(true)
+  const playMode = ref<'continuous' | 'single'>('continuous')
+
+  const togglePlayMode = () => {
+    playMode.value = playMode.value === 'continuous' ? 'single' : 'continuous'
+    if (import.meta.client) {
+      localStorage.setItem('figo_quran_playmode', playMode.value)
+    }
+  }
 
   const initDecks = () => {
     if (!import.meta.client) return
+    if (!fullAudioPlayer) {
+      fullAudioPlayer = new Audio()
+      fullAudioPlayer.preload = 'auto'
+    }
     if (!deckA) {
       deckA = new Audio()
       deckA.preload = 'auto'
@@ -63,14 +85,12 @@ export function useQuran() {
       })
       window.addEventListener('offline', () => {
         isOnline.value = false
-        // Otomatis kembalikan ke Syeikh Yasser Al-Dosari yang tersimpan lokal saat offline
         selectedQari.value = '06'
       })
     }
   }
 
-  // Daftar Qari yang tersedia secara dinamis:
-  // Jika offline atau API online gagal, pilihan qari lain otomatis hilang dan hanya menyisakan Syeikh Yasser Al-Dosari (Lokal)
+  // Daftar Qari yang tersedia secara dinamis
   const availableQaris = computed<QariOption[]>(() => {
     if (!isOnline.value || onlineApiFailed.value) {
       return [
@@ -78,7 +98,7 @@ export function useQuran() {
           id: '06',
           code: '06',
           name: 'Syeikh Yasser Al-Dosari',
-          role: 'Imam Masjidil Haram (Lokal / Offline Ready)'
+          role: 'Imam Masjidil Haram (Lokal • Studio Smooth)'
         }
       ]
     }
@@ -93,12 +113,14 @@ export function useQuran() {
 
   const loadIndices = async () => {
     try {
-      const [surahRes, juzRes] = await Promise.all([
+      const [surahRes, juzRes, timeRes] = await Promise.all([
         $fetch<SurahSummary[]>('/dataset/quran/surah_index.json'),
-        $fetch<JuzItem[]>('/dataset/quran/juz_index.json')
+        $fetch<JuzItem[]>('/dataset/quran/juz_index.json'),
+        $fetch<Record<string, AyatTimestamp[]>>('/dataset/quran/yasser_timestamps.json')
       ])
       surahs.value = surahRes || []
       juzs.value = juzRes || []
+      yasserTimestamps = timeRes || {}
     } catch (e) {
       console.error('Gagal memuat indeks Al-Qur\'an:', e)
     }
@@ -125,6 +147,10 @@ export function useQuran() {
       if (savedQari && QARI_OPTIONS.some((q) => q.code === savedQari)) {
         selectedQari.value = savedQari
       }
+      const savedMode = localStorage.getItem('figo_quran_playmode')
+      if (savedMode === 'continuous' || savedMode === 'single') {
+        playMode.value = savedMode
+      }
       const savedLastRead = localStorage.getItem('figo_quran_last_read')
       if (savedLastRead) {
         try {
@@ -132,27 +158,6 @@ export function useQuran() {
         } catch { /* Abaikan error parsing JSON */ }
       }
     }
-  }
-
-  // Mendapatkan URL audio: Syeikh Yasser Al-Dosari dari sistem lokal kita (/audio/quran/06/),
-  // sedangkan qari lainnya streaming dari CDN resmi
-  const resolveAyatAudioUrl = (surahNumber: number, ayatNumber: number): string => {
-    if (!currentSurah.value) return ''
-    const surahStr = String(surahNumber).padStart(3, '0')
-    const ayatStr = String(ayatNumber).padStart(3, '0')
-
-    // Bawaan lokal di sistem kita untuk Syeikh Yasser Al-Dosari
-    if (selectedQari.value === '06') {
-      return `/audio/quran/06/${surahStr}${ayatStr}.mp3`
-    }
-
-    // Untuk qari lainnya: streaming dari CDN resmi
-    const target = currentSurah.value.ayat.find((a) => a.nomorAyat === ayatNumber)
-    if (target?.audio?.[selectedQari.value]) {
-      return target.audio[selectedQari.value]
-    }
-    const qariCode = selectedQari.value === '05' ? 'Alafasy_128kbps' : 'Yasser_Ad-Dussary_128kbps'
-    return `https://everyayah.com/data/${qariCode}/${surahStr}${ayatStr}.mp3`
   }
 
   const setQari = (code: string) => {
@@ -187,6 +192,9 @@ export function useQuran() {
       clearInterval(checkTimer)
       checkTimer = null
     }
+    if (fullAudioPlayer) {
+      fullAudioPlayer.pause()
+    }
     if (deckA) {
       deckA.pause()
       deckA.onended = null
@@ -203,144 +211,186 @@ export function useQuran() {
   }
 
   const pauseAudio = () => {
-    if (checkTimer) {
-      clearInterval(checkTimer)
-      checkTimer = null
+    if (fullAudioPlayer && !fullAudioPlayer.paused) {
+      fullAudioPlayer.pause()
     }
-    const curDeck = activeDeckKey === 'A' ? deckA : deckB
-    if (curDeck) {
-      curDeck.pause()
-      isPlaying.value = false
+    if (deckA && !deckA.paused) {
+      deckA.pause()
     }
+    if (deckB && !deckB.paused) {
+      deckB.pause()
+    }
+    isPlaying.value = false
   }
 
   const resumeAudio = () => {
     initDecks()
+    if (selectedQari.value === '06' && playMode.value === 'continuous' && fullAudioPlayer && fullAudioPlayer.src) {
+      fullAudioPlayer.play().then(() => {
+        isPlaying.value = true
+      }).catch((err) => {
+        console.warn('Gagal melanjutkan full audio:', err)
+      })
+      return
+    }
+
     const curDeck = activeDeckKey === 'A' ? deckA : deckB
     if (curDeck && playingAyat.value && currentSurah.value) {
       curDeck.play().then(() => {
         isPlaying.value = true
-        startPrecisionMonitor(currentSurah.value!.nomor, playingAyat.value!)
       }).catch((err) => {
-        console.warn('Gagal melanjutkan audio:', err)
+        console.warn('Gagal melanjutkan online audio:', err)
       })
     }
   }
 
-  // Fade out halus agar pergantian deck tidak menimbulkan letupan suara
-  const fadeOutAndPause = (deck: HTMLAudioElement) => {
-    let vol = deck.volume
-    const fadeTimer = setInterval(() => {
-      vol -= 0.25
-      if (vol <= 0.05) {
-        clearInterval(fadeTimer)
-        deck.pause()
-        deck.volume = 1.0
-      } else {
-        deck.volume = Math.max(0, vol)
+  // Fungsi utilitas seek aman yang menunggu metadata siap jika audio baru dimuat
+  const seekAndPlayFull = (targetTime: number) => {
+    if (!fullAudioPlayer) return
+
+    const doSeekAndPlay = () => {
+      try {
+        fullAudioPlayer!.currentTime = targetTime
+      } catch (e) {
+        console.warn('Gagal set currentTime audio studio:', e)
       }
-    }, 30)
+      fullAudioPlayer!.play().then(() => {
+        isPlaying.value = true
+      }).catch((err) => {
+        console.warn('Autoplay audio studio ditolak peramban:', err)
+        isPlaying.value = false
+      })
+    }
+
+    if (fullAudioPlayer.readyState >= 1) {
+      doSeekAndPlay()
+    } else {
+      const onMetadata = () => {
+        doSeekAndPlay()
+      }
+      fullAudioPlayer.addEventListener('loadedmetadata', onMetadata, { once: true })
+      fullAudioPlayer.load()
+    }
   }
 
-  // Monitor presisi tinggi (30ms polling) untuk memangkas jeda senyap (dead air tail) antarberkas MP3
-  const startPrecisionMonitor = (surahNumber: number, ayatNumber: number) => {
-    if (checkTimer) clearInterval(checkTimer)
-    hasTriggeredEarly = false
-
-    checkTimer = setInterval(() => {
-      const curDeck = activeDeckKey === 'A' ? deckA : deckB
-      if (!curDeck || !isPlaying.value) return
-
-      const nextAyat = ayatNumber + 1
-      const hasNext = currentSurah.value && nextAyat <= currentSurah.value.jumlahAyat
-
-      // Jika durasi valid dan tersisa 240ms (posisi hening bawaan encoder MP3), picu ayat berikutnya langsung
-      if (hasNext && !hasTriggeredEarly && curDeck.duration && curDeck.duration > 0.6) {
-        const remaining = curDeck.duration - curDeck.currentTime
-        if (remaining <= 0.24) {
-          hasTriggeredEarly = true
-          clearInterval(checkTimer)
-          checkTimer = null
-
-          // Lakukan transisi mulus ke deck pasangan
-          fadeOutAndPause(curDeck)
-          activeDeckKey = activeDeckKey === 'A' ? 'B' : 'A'
-          playAyat(surahNumber, nextAyat)
-        }
-      }
-    }, 30)
-  }
-
+  // Pemutaran Utama: Membedakan Mode Lanjut-Lanjut (Studio Gapless) vs Mode Per Ayat (Hafalan)
   const playAyat = (surahNumber: number, ayatNumber: number) => {
     if (!currentSurah.value) return
     initDecks()
 
-    const currentDeck = activeDeckKey === 'A' ? deckA! : deckB!
-    const standByDeck = activeDeckKey === 'A' ? deckB! : deckA!
-
-    // Toggle jeda / lanjutkan jika menekan ayat yang sama
+    // 1. Toggle Jeda / Lanjutkan jika menekan tombol pada ayat yang sama
     if (playingAyat.value === ayatNumber && isPlaying.value) {
       pauseAudio()
       return
     }
-
     if (playingAyat.value === ayatNumber && !isPlaying.value) {
       resumeAudio()
       return
     }
 
-    // Pasang URL berkas ayat saat ini ke deck aktif jika belum terpasang
-    const currentUrl = resolveAyatAudioUrl(surahNumber, ayatNumber)
-    if (currentDeck.src !== currentUrl) {
-      currentDeck.src = currentUrl
-      currentDeck.load()
-    }
-
-    currentDeck.volume = 1.0
-    playingAyat.value = ayatNumber
-    isPlaying.value = true
-    isContinuous.value = true
-
-    // Pasang fallback onended jika interval presisi tidak terpicu
-    currentDeck.onended = () => {
-      if (!hasTriggeredEarly) {
-        hasTriggeredEarly = true
-        if (checkTimer) clearInterval(checkTimer)
-        const nextAyat = ayatNumber + 1
-        if (currentSurah.value && nextAyat <= currentSurah.value.jumlahAyat) {
-          activeDeckKey = activeDeckKey === 'A' ? 'B' : 'A'
-          playAyat(surahNumber, nextAyat)
-        } else {
-          stopAudio()
-        }
-      }
-    }
-
-    // Penanganan error cerdas: Jika audio online gagal, otomatis beralih ke Syeikh Yasser Al-Dosari lokal
-    currentDeck.onerror = () => {
-      console.warn(`Gagal memuat audio ayat ${surahNumber}:${ayatNumber}`)
-
-      // Jika qari online yang gagal, alihkan ke audio lokal aman Syeikh Yasser Al-Dosari dan sembunyikan qari online
-      if (selectedQari.value !== '06') {
-        console.warn('API qari online gagal atau tidak dapat diakses. Mengalihkan ke audio lokal Syeikh Yasser Al-Dosari.')
-        onlineApiFailed.value = true
-        selectedQari.value = '06'
-        playAyat(surahNumber, ayatNumber)
-        return
-      }
-
-      // Jika berkas lokal 06 masih dalam antrean unduh, coba fallback ke CDN Yasser Al-Dosari
+    // 2. KELOMPOK UTAMA: Syeikh Yasser Al-Dosari (Audio Lokal Studio)
+    if (selectedQari.value === '06') {
       const surahStr = String(surahNumber).padStart(3, '0')
       const ayatStr = String(ayatNumber).padStart(3, '0')
-      const cdnUrl = `https://cdn.equran.id/audio-partial/Yasser-Al-Dosari/${surahStr}${ayatStr}.mp3`
-      if (currentDeck.src !== cdnUrl) {
-        currentDeck.src = cdnUrl
-        currentDeck.play().catch(() => {
+
+      // OPSI A: MODE PER AYAT (Stell Per Ayat / Muraja'ah Hafalan)
+      // Memutar hanya ayat yang dipilih lalu berhenti secara anggun
+      if (playMode.value === 'single') {
+        if (fullAudioPlayer && !fullAudioPlayer.paused) {
+          fullAudioPlayer.pause()
+        }
+
+        const singleSrc = `/audio/quran/06/${surahStr}${ayatStr}.mp3`
+        const targetDeck = deckA!
+        targetDeck.src = singleSrc
+        playingAyat.value = ayatNumber
+        isPlaying.value = true
+
+        targetDeck.onended = () => {
           stopAudio()
+        }
+        targetDeck.onerror = () => {
+          console.warn('Gagal memutar berkas per ayat:', singleSrc)
+          stopAudio()
+        }
+        targetDeck.play().catch(() => {
+          isPlaying.value = false
         })
         return
       }
 
+      // OPSI B: MODE LANJUT-LANJUT (Continuous Studio Audio - 100% Smooth Tanpa Nyandet)
+      // Menggunakan 1 berkas rekaman surah utuh tanpa potongan, dipadu timestamp presisi milidetik
+      if (deckA && !deckA.paused) deckA.pause()
+      if (deckB && !deckB.paused) deckB.pause()
+
+      const targetFullSrc = `/audio/quran/06/full/${surahStr}.mp3`
+
+      // Pasang berkas rekaman surah penuh jika belum aktif
+      if (currentFullSurahNumber !== surahNumber || !fullAudioPlayer!.src.includes(`/full/${surahStr}.mp3`)) {
+        fullAudioPlayer!.src = targetFullSrc
+        currentFullSurahNumber = surahNumber
+      }
+
+      // Cari titik awal (detik) ayat ini pada rekaman utuh
+      const list = yasserTimestamps[String(surahNumber)] || []
+      const segment = list.find((s) => s.ayat === ayatNumber)
+      const seekTarget = segment ? segment.start : 0
+
+      playingAyat.value = ayatNumber
+      seekAndPlayFull(seekTarget)
+
+      // Sinkronisasi otomatis nomor ayat aktif & auto-scroll mengikuti waktu audio rekaman studio
+      fullAudioPlayer!.ontimeupdate = () => {
+        if (!isPlaying.value || !currentSurah.value) return
+        const cur = fullAudioPlayer!.currentTime
+        const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
+        const matched = segList.find((s) => cur >= s.start && cur < s.end)
+        if (matched && playingAyat.value !== matched.ayat) {
+          playingAyat.value = matched.ayat
+        }
+      }
+
+      fullAudioPlayer!.onended = () => {
+        stopAudio()
+      }
+
+      fullAudioPlayer!.onerror = () => {
+        console.warn('Gagal memuat full audio lokal, mencoba fallback online...')
+        onlineApiFailed.value = true
+        stopAudio()
+      }
+      return
+    }
+
+    // 3. KELOMPOK STREAMING ONLINE (Qari Lain: Alafasy, Sudais, Al-Juhany, dll.)
+    if (fullAudioPlayer && !fullAudioPlayer.paused) {
+      fullAudioPlayer.pause()
+    }
+
+    const currentDeck = activeDeckKey === 'A' ? deckA! : deckB!
+    const standByDeck = activeDeckKey === 'A' ? deckB! : deckA!
+
+    const target = currentSurah.value.ayat.find((a) => a.nomorAyat === ayatNumber)
+    const qariUrl = target?.audio?.[selectedQari.value] || `https://everyayah.com/data/Alafasy_128kbps/${String(surahNumber).padStart(3, '0')}${String(ayatNumber).padStart(3, '0')}.mp3`
+
+    currentDeck.src = qariUrl
+    currentDeck.volume = 1.0
+    playingAyat.value = ayatNumber
+    isPlaying.value = true
+
+    currentDeck.onerror = () => {
+      console.warn('Qari online gagal dimuat, mengalihkan otomatis ke Syeikh Yasser Al-Dosari studio audio.')
+      onlineApiFailed.value = true
+      selectedQari.value = '06'
+      playAyat(surahNumber, ayatNumber)
+    }
+
+    currentDeck.onended = () => {
+      if (playMode.value === 'single') {
+        stopAudio()
+        return
+      }
       const nextAyat = ayatNumber + 1
       if (currentSurah.value && nextAyat <= currentSurah.value.jumlahAyat) {
         activeDeckKey = activeDeckKey === 'A' ? 'B' : 'A'
@@ -350,29 +400,27 @@ export function useQuran() {
       }
     }
 
-    // Jalankan deck aktif
     currentDeck.play().then(() => {
-      // Preload berkas ayat berikutnya ke standby deck secara instan di latar belakang
-      const nextAyat = ayatNumber + 1
-      if (currentSurah.value && nextAyat <= currentSurah.value.jumlahAyat) {
-        const nextUrl = resolveAyatAudioUrl(surahNumber, nextAyat)
-        if (standByDeck.src !== nextUrl) {
-          standByDeck.src = nextUrl
-          standByDeck.preload = 'auto'
-          standByDeck.load()
+      if (playMode.value === 'continuous') {
+        const nextAyat = ayatNumber + 1
+        if (currentSurah.value && nextAyat <= currentSurah.value.jumlahAyat) {
+          const nextTarget = currentSurah.value.ayat.find((a) => a.nomorAyat === nextAyat)
+          const nextUrl = nextTarget?.audio?.[selectedQari.value]
+          if (nextUrl && standByDeck.src !== nextUrl) {
+            standByDeck.src = nextUrl
+            standByDeck.preload = 'auto'
+            standByDeck.load()
+          }
         }
       }
-      startPrecisionMonitor(surahNumber, ayatNumber)
-    }).catch((err) => {
-      console.warn('Pemutaran diblokir peramban:', err)
+    }).catch(() => {
       isPlaying.value = false
     })
   }
 
   const playFullSurah = (surahNumber: number) => {
     if (!currentSurah.value) return
-    isContinuous.value = true
-    activeDeckKey = 'A'
+    playMode.value = 'continuous'
     playAyat(surahNumber, 1)
   }
 
@@ -380,7 +428,15 @@ export function useQuran() {
     if (!currentSurah.value) return
     const next = (playingAyat.value || 0) + 1
     if (next <= currentSurah.value.jumlahAyat) {
-      activeDeckKey = activeDeckKey === 'A' ? 'B' : 'A'
+      if (selectedQari.value === '06' && playMode.value === 'continuous' && fullAudioPlayer) {
+        const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
+        const segment = segList.find((s) => s.ayat === next)
+        if (segment) {
+          playingAyat.value = next
+          seekAndPlayFull(segment.start)
+          return
+        }
+      }
       playAyat(currentSurah.value.nomor, next)
     }
   }
@@ -389,7 +445,15 @@ export function useQuran() {
     if (!currentSurah.value) return
     const prev = (playingAyat.value || 2) - 1
     if (prev >= 1) {
-      activeDeckKey = activeDeckKey === 'A' ? 'B' : 'A'
+      if (selectedQari.value === '06' && playMode.value === 'continuous' && fullAudioPlayer) {
+        const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
+        const segment = segList.find((s) => s.ayat === prev)
+        if (segment) {
+          playingAyat.value = prev
+          seekAndPlayFull(segment.start)
+          return
+        }
+      }
       playAyat(currentSurah.value.nomor, prev)
     }
   }
@@ -406,7 +470,8 @@ export function useQuran() {
     lastRead,
     playingAyat,
     isPlaying,
-    isContinuous,
+    playMode,
+    togglePlayMode,
     loadIndices,
     loadSurah,
     loadStorage,
@@ -427,4 +492,3 @@ export const toArabicDigits = (num: number): string => {
   const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩']
   return String(num).replace(/[0-9]/g, (digit) => arabicDigits[parseInt(digit, 10)])
 }
-

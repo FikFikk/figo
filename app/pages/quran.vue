@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-[100dvh] w-full max-w-full overflow-x-clip px-4 pb-44 pt-24 text-slate-800 transition-colors duration-200 sm:px-6 md:px-8 dark:text-slate-200">
+  <div class="min-h-[100dvh] w-full max-w-full overflow-x-clip px-4 pb-44 pt-32 text-slate-800 transition-colors duration-200 sm:px-6 md:px-8 dark:text-slate-200">
     <!-- ============================================== -->
-    <!-- SMART HEADROOM HEADER (AUTO HIDE/SHOW ON SCROLL) -->
+    <!-- DOCKED STICKY HEADER QURAN (MENGGANTIKAN FIGO NAVBAR SAAT SCROLL) -->
     <!-- ============================================== -->
     <header
-      class="fixed inset-x-0 top-0 z-50 border-b backdrop-blur-xl transition-all duration-300 ease-in-out px-4 py-3 sm:px-6 md:px-8 shadow-sm"
+      class="fixed inset-x-0 z-40 border-b backdrop-blur-xl transition-[top] duration-300 ease-in-out px-4 py-2.5 sm:px-6 md:px-8 shadow-xs"
       :class="[
-        isHeaderVisible ? 'translate-y-0' : '-translate-y-full shadow-none',
+        isFiGoNavbarHidden ? 'top-0' : 'top-14',
         isDark ? 'border-white/[0.08] bg-[#08090d]/90 text-slate-100' : 'border-slate-200/80 bg-white/90 text-slate-900'
       ]"
     >
@@ -105,11 +105,12 @@
         </div>
       </div>
 
-      <!-- Drawer Panel Pengaturan Tampilan Huruf & Terjemahan -->
+      <!-- Floating Drawer Panel Pengaturan Tampilan Huruf & Terjemahan -->
       <Transition name="slide-up">
         <div
           v-if="showSettingsPanel"
-          class="mx-auto max-w-7xl mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.06] grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs"
+          class="absolute top-full right-4 sm:right-6 md:right-8 mt-2 w-80 sm:w-96 rounded-2xl border p-4 shadow-2xl backdrop-blur-2xl z-50 text-xs space-y-3.5"
+          :class="isDark ? 'border-white/10 bg-[#0c0e14]/95 text-slate-200 shadow-black/50' : 'border-slate-200 bg-white/95 text-slate-800 shadow-slate-300/50'"
         >
           <!-- Pengatur Ukuran Huruf Arab -->
           <div class="space-y-1">
@@ -127,30 +128,63 @@
             />
           </div>
 
-          <!-- Toggle Transliterasi Latin -->
-          <div class="flex items-center justify-between sm:justify-center gap-3">
-            <span class="font-semibold">Transliterasi Latin:</span>
-            <button
-              type="button"
-              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
-              :class="showLatin ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
-              @click="showLatin = !showLatin"
-            >
-              <span class="inline-block size-4 transform rounded-full bg-white transition-transform" :class="showLatin ? 'translate-x-6' : 'translate-x-1'" />
-            </button>
+          <!-- Toggle Transliterasi Latin & Terjemahan -->
+          <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-medium text-[11px]">Transliterasi Latin</span>
+              <button
+                type="button"
+                class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer"
+                :class="showLatin ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
+                @click="showLatin = !showLatin"
+              >
+                <span class="inline-block size-3.5 transform rounded-full bg-white transition-transform" :class="showLatin ? 'translate-x-4' : 'translate-x-1'" />
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-medium text-[11px]">Terjemahan RI</span>
+              <button
+                type="button"
+                class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer"
+                :class="showTranslation ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
+                @click="showTranslation = !showTranslation"
+              >
+                <span class="inline-block size-3.5 transform rounded-full bg-white transition-transform" :class="showTranslation ? 'translate-x-4' : 'translate-x-1'" />
+              </button>
+            </div>
           </div>
 
-          <!-- Toggle Terjemahan Bahasa Indonesia -->
-          <div class="flex items-center justify-between sm:justify-end gap-3">
-            <span class="font-semibold">Terjemahan Indonesia:</span>
-            <button
-              type="button"
-              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
-              :class="showTranslation ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
-              @click="showTranslation = !showTranslation"
-            >
-              <span class="inline-block size-4 transform rounded-full bg-white transition-transform" :class="showTranslation ? 'translate-x-6' : 'translate-x-1'" />
-            </button>
+          <!-- Mode Pemutaran Tilawah -->
+          <div class="pt-2 border-t border-slate-100 dark:border-white/[0.06] space-y-1.5">
+            <span class="font-semibold block text-[11px]">Mode Tilawah Audio:</span>
+            <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-white/[0.04]">
+              <button
+                type="button"
+                class="py-1.5 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                :class="playMode === 'continuous'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                @click="playMode !== 'continuous' && togglePlayMode()"
+              >
+                <span class="material-symbols-outlined text-sm">all_inclusive</span>
+                Lanjut Surah
+              </button>
+              <button
+                type="button"
+                class="py-1.5 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                :class="playMode === 'single'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                @click="playMode !== 'single' && togglePlayMode()"
+              >
+                <span class="material-symbols-outlined text-sm">filter_1</span>
+                Per Ayat
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 italic">
+              {{ playMode === 'continuous' ? '• Mulus tanpa jeda (Studio Full Gapless)' : '• Berhenti setelah 1 ayat selesai (Ideal untuk hafalan)' }}
+            </p>
           </div>
         </div>
       </Transition>
@@ -608,7 +642,7 @@
           </div>
         </div>
 
-        <!-- Tombol Kendali Media (Skip Prev, Play/Pause, Skip Next) -->
+        <!-- Tombol Kendali Media (Skip Prev, Play/Pause, Skip Next, Mode Switch) -->
         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <!-- Ayat Sebelumnya -->
           <button
@@ -641,6 +675,22 @@
           >
             <span class="material-symbols-outlined text-[20px]">skip_next</span>
           </button>
+
+          <!-- Pengalih Mode Tilawah: Lanjut-Lanjut vs Per Ayat -->
+          <button
+            type="button"
+            class="h-9 px-2.5 rounded-xl border flex items-center gap-1.5 text-xs font-semibold transition cursor-pointer"
+            :class="playMode === 'continuous'
+              ? (isDark ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-emerald-500/30 bg-emerald-50 text-emerald-700')
+              : (isDark ? 'border-amber-500/30 bg-amber-500/10 text-amber-400' : 'border-amber-500/30 bg-amber-50 text-amber-700')"
+            :title="playMode === 'continuous' ? 'Mode: Lanjut Surah (Klik untuk beralih ke Per Ayat)' : 'Mode: Per Ayat (Klik untuk beralih ke Lanjut Surah)'"
+            @click="onToggleModeClick"
+          >
+            <span class="material-symbols-outlined text-[17px]">
+              {{ playMode === 'continuous' ? 'all_inclusive' : 'filter_1' }}
+            </span>
+            <span class="hidden md:inline">{{ playMode === 'continuous' ? 'Lanjut' : 'Per Ayat' }}</span>
+          </button>
         </div>
 
         <!-- Pemilih Qari (Offline Ready) -->
@@ -649,7 +699,7 @@
             <label class="sr-only">Pilih Qari</label>
             <select
               :value="selectedQari"
-              class="h-9 rounded-xl border bg-transparent pl-2.5 pr-7 text-xs font-semibold outline-none cursor-pointer transition focus:ring-2 focus:ring-emerald-500 max-w-[150px] sm:max-w-[220px] truncate"
+              class="h-9 rounded-xl border bg-transparent pl-2.5 pr-7 text-xs font-semibold outline-none cursor-pointer transition focus:ring-2 focus:ring-emerald-500 max-w-[140px] sm:max-w-[210px] truncate"
               :class="isDark ? 'border-white/10 bg-slate-900 text-slate-200' : 'border-slate-200 bg-white text-slate-800'"
               @change="onQariChange(($event.target as HTMLSelectElement).value)"
             >
@@ -698,7 +748,8 @@ const {
   lastRead,
   playingAyat,
   isPlaying,
-  isContinuous,
+  playMode,
+  togglePlayMode,
   loadIndices,
   loadSurah,
   loadStorage,
@@ -729,33 +780,37 @@ const arabicFontSize = ref(32)
 const showLatin = ref(true)
 const showTranslation = ref(true)
 
-// Smart Headroom: Auto-hide header saat scroll ke bawah, auto-show saat scroll ke atas
-const isHeaderVisible = ref(true)
+// Header Sinkronisasi: FiGo Navbar turun-naik, Quran Header menggantikan di top-0 saat scroll ke bawah
+const isFiGoNavbarHidden = useState('figo_navbar_hidden', () => false)
 let lastScrollY = 0
-const scrollThreshold = 10
+const scrollThreshold = 8
 
 const handleScroll = () => {
   if (typeof window === 'undefined') return
   const currentY = window.scrollY
 
-  // Jika masih di area atas halaman, selalu tampilkan header
-  if (currentY < 60) {
-    isHeaderVisible.value = true
-    lastScrollY = currentY
-    return
-  }
-
-  // Scroll ke bawah: sembunyikan header
-  if (currentY > lastScrollY + scrollThreshold) {
-    isHeaderVisible.value = false
-    showSettingsPanel.value = false // Tutup drawer settings jika sedang terbuka
-  }
-  // Scroll ke atas: tampilkan kembali header
-  else if (currentY < lastScrollY - scrollThreshold) {
-    isHeaderVisible.value = true
+  if (currentY <= 40) {
+    // Di paling atas halaman: FiGo selalu tampil (turun)
+    isFiGoNavbarHidden.value = false
+  } else if (currentY > lastScrollY + scrollThreshold) {
+    // Scroll ke bawah: FiGo naik (sembunyi), Quran Header menggantikan di top-0
+    isFiGoNavbarHidden.value = true
+    showSettingsPanel.value = false // Tutup popup settings jika user sedang menggulir layar
+  } else if (currentY < lastScrollY - scrollThreshold) {
+    // Scroll ke atas: FiGo turun kembali
+    isFiGoNavbarHidden.value = false
   }
 
   lastScrollY = currentY
+}
+
+const onToggleModeClick = () => {
+  togglePlayMode()
+  showToast(
+    playMode.value === 'continuous'
+      ? 'Mode: Lanjut Surah (Studio Smooth Gapless)'
+      : 'Mode: Per Ayat (Berhenti setelah 1 ayat)'
+  )
 }
 
 // Toast Notifikasi
@@ -899,6 +954,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  isFiGoNavbarHidden.value = false
 })
 
 useSeoMeta({

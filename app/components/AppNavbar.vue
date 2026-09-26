@@ -1,7 +1,10 @@
 <template>
   <!-- Header navigasi minimalis dark/light -->
-  <nav class="fixed top-0 w-full z-50 backdrop-blur-xl transition-colors duration-200 border-b"
-    :class="isDark ? 'bg-[#08090d]/85 border-white/[0.08] text-slate-100' : 'bg-white/85 border-slate-200/80 text-slate-900 shadow-xs'"
+  <nav class="fixed top-0 inset-x-0 w-full h-14 z-50 backdrop-blur-xl transition-all duration-300 border-b flex items-center"
+    :class="[
+      isFiGoNavbarHidden && route.path.startsWith('/quran') ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100',
+      isDark ? 'bg-[#08090d]/85 border-white/[0.08] text-slate-100' : 'bg-white/85 border-slate-200/80 text-slate-900 shadow-xs'
+    ]"
   >
     <div class="flex justify-between items-center px-4 sm:px-6 md:px-8 py-3 max-w-7xl mx-auto">
       <!-- Logo brand teks tanpa ikon F -->
@@ -235,6 +238,46 @@ function isActive(path: string): boolean {
   if (path.startsWith('/tools')) return route.path.startsWith('/tools')
   return route.path === path
 }
+
+// Auto-hide FiGo navbar saat berada di rute /quran dan halaman digulir ke bawah (turun naik)
+const isFiGoNavbarHidden = useState('figo_navbar_hidden', () => false)
+let lastScrollY = 0
+const scrollThreshold = 8
+
+const handleNavbarScroll = () => {
+  if (typeof window === 'undefined') return
+  if (!route.path.startsWith('/quran')) {
+    isFiGoNavbarHidden.value = false
+    return
+  }
+
+  const currentY = window.scrollY
+  if (currentY <= 40) {
+    // Di paling atas halaman: FiGo selalu tampil (turun)
+    isFiGoNavbarHidden.value = false
+  } else if (currentY > lastScrollY + scrollThreshold) {
+    // Scroll ke bawah: sembunyikan FiGo navbar (naik ke atas)
+    isFiGoNavbarHidden.value = true
+  } else if (currentY < lastScrollY - scrollThreshold) {
+    // Scroll ke atas: tampilkan kembali FiGo navbar (turun ke bawah)
+    isFiGoNavbarHidden.value = false
+  }
+  lastScrollY = currentY
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleNavbarScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleNavbarScroll)
+})
+
+watch(() => route.path, (path) => {
+  if (!path.startsWith('/quran')) {
+    isFiGoNavbarHidden.value = false
+  }
+})
 
 const { isOpen, close, open } = useSupportModal()
 const isCopied = ref(false)
