@@ -84,8 +84,8 @@
       >
         <template #prose>
           <p v-if="currentSection.teori_akademik" class="mb-7 border-l-2 border-emerald-600 pl-4 text-sm leading-6 text-emerald-900 dark:border-emerald-400 dark:text-emerald-200">{{ currentSection.teori_akademik }}</p>
-          <div :class="[readerSettings.fontFamily, readerSettings.textAlign]" :style="{ fontSize: `${readerSettings.fontSize}px` }" class="space-y-7 leading-[1.9] text-slate-800 selection:bg-emerald-200 dark:text-slate-200 dark:selection:bg-emerald-800">
-            <p v-for="(paragraph, index) in paragraphs" :key="index" :data-pidx="index" class="break-words" v-html="renderParagraph(paragraph, index)" />
+          <div :class="[readerSettings.fontFamily, readerSettings.textAlign]" :style="{ fontSize: `${readerSettings.fontSize}px` }" class="space-y-6 leading-[1.9] text-slate-800 selection:bg-emerald-200 dark:text-slate-200 dark:selection:bg-emerald-800">
+            <div v-for="(paragraph, index) in paragraphs" :key="index" :data-pidx="index" class="break-words reader-block" v-html="renderParagraph(paragraph, index)" />
           </div>
           <p v-if="currentPage === totalPages" class="mt-12 border-t border-slate-200 pt-6 text-center text-xs leading-6 text-slate-500 dark:border-slate-800 dark:text-slate-400">Temukan kekeliruan atau ingin bertanya soal sumber? <a href="mailto:figo@fikfikk.my.id" class="font-semibold text-emerald-800 underline decoration-emerald-300 underline-offset-4 dark:text-emerald-300">figo@fikfikk.my.id</a></p>
         </template>
@@ -194,9 +194,9 @@ const handleTextSelection = () => {
   const selected = window.getSelection()
   const text = selected?.toString().replace(/\s+/g, ' ').trim() || ''
   const node = selected?.anchorNode?.parentElement
-  const paragraph = node?.closest('p[data-pidx]')
+  const paragraph = node?.closest('[data-pidx]')
   if (!selectedDoc.value || text.length < 3 || !paragraph) { showHighlightMenu.value = false; return }
-  selection.value = { text, pIdx: Number(paragraph.dataset.pidx) }
+  selection.value = { text, pIdx: Number((paragraph as HTMLElement).dataset.pidx) }
   showHighlightMenu.value = true
 }
 const applyHighlight = (color: ArticleHighlight['color']) => {
@@ -214,19 +214,58 @@ const safeUrl = (value: string) => {
 }
 const renderParagraph = (value: string, pIdx: number) => {
   let rendered = escapeHtml(value)
+
+  // 1. Terapkan sorotan (highlight) yang tersimpan
   for (const highlight of docHighlights.value.filter((item) => item.page === currentPage.value && item.pIdx === pIdx)) {
     const text = escapeHtml(highlight.text)
     if (rendered.includes(text)) rendered = rendered.replace(text, `<mark data-highlight="${highlight.pIdx}" class="${highlightClass(highlight.color)}">${text}</mark>`)
   }
-  rendered = rendered.replace(/\[IMAGE_ASSET:\s*(https?:\/\/[^\]]+)\]/gi, (_all, value) => {
-    const url = safeUrl(value)
+
+  // 2. Media aset visual
+  rendered = rendered.replace(/\[IMAGE_ASSET:\s*(https?:\/\/[^\]]+)\]/gi, (_all, val) => {
+    const url = safeUrl(val)
     return url ? `<img src="${url}" alt="Ilustrasi pendukung artikel" class="my-8 mx-auto max-w-full rounded-2xl border border-slate-200 dark:border-slate-800" loading="lazy">` : ''
   })
-  rendered = rendered.replace(/\[FLIPBOOK:\s*(https?:\/\/[^\]]+)\]/gi, (_all, value) => {
-    const url = safeUrl(value)
+  rendered = rendered.replace(/\[FLIPBOOK:\s*(https?:\/\/[^\]]+)\]/gi, (_all, val) => {
+    const url = safeUrl(val)
     return url ? `<iframe src="${url}" title="Flipbook artikel" class="my-8 h-[65vh] w-full rounded-2xl border border-slate-200 dark:border-slate-800" loading="lazy"></iframe>` : ''
   })
-  return rendered.replace(/↳\s*Terjemahan:\s*(.*)/gi, '<span class="mt-4 block border-l-2 border-emerald-600 pl-4 text-sm italic text-emerald-900 dark:border-emerald-400 dark:text-emerald-200">Terjemahan: $1</span>')
+
+  // 3. Garis pembatas horizontal (--- atau ***)
+  rendered = rendered.replace(/^(?:---|[*]{3}|_{3})$/gm, '<div class="my-7 flex items-center justify-center gap-2"><span class="h-px flex-1 bg-slate-200 dark:bg-white/[0.08]"></span><span class="text-xs text-slate-400">✦</span><span class="h-px flex-1 bg-slate-200 dark:bg-white/[0.08]"></span></div>')
+
+  // 4. Heading Markdown: ### (H3), #### (H4), ## (H2)
+  rendered = rendered.replace(/^### (.*$)/gm, '<h3 class="font-serif text-lg sm:text-xl font-bold text-emerald-800 dark:text-emerald-400 mt-7 mb-2.5 flex items-center gap-2.5"><span class="w-1.5 h-4 rounded-full bg-emerald-500 inline-block shrink-0"></span><span>$1</span></h3>')
+  rendered = rendered.replace(/^#### (.*$)/gm, '<h4 class="font-sans text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 mt-5 mb-2">$1</h4>')
+  rendered = rendered.replace(/^## (.*$)/gm, '<h2 class="font-serif text-xl sm:text-2xl font-bold text-slate-950 dark:text-white mt-8 mb-3.5 border-b border-slate-200/60 pb-2 dark:border-white/[0.08]">$1</h2>')
+
+  // 5. Blockquotes (> kutipan)
+  rendered = rendered.replace(/^>\s*(.*$)/gm, '<blockquote class="my-3.5 border-l-3 border-emerald-500 bg-emerald-500/5 px-4 py-2.5 rounded-r-xl italic text-slate-700 dark:text-slate-300 text-sm sm:text-base leading-relaxed">$1</blockquote>')
+
+  // 6. Daftar List (* item, - item, 1. item)
+  rendered = rendered.replace(/^[\*\-]\s+(.*$)/gm, '<div class="flex items-start gap-2.5 my-1.5 text-sm sm:text-base"><span class="size-1.5 rounded-full bg-emerald-500 mt-2.5 shrink-0"></span><span class="flex-1">$1</span></div>')
+  rendered = rendered.replace(/^(\d+)\.\s+(.*$)/gm, '<div class="flex items-start gap-2.5 my-1.5 text-sm sm:text-base"><span class="min-w-5 h-5 px-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold inline-flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/20">$1</span><span class="flex-1">$2</span></div>')
+
+  // 7. Format Bold, Italic, Code
+  rendered = rendered.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-slate-950 dark:text-white">$1</strong>')
+  rendered = rendered.replace(/\*(.*?)\*/g, '<em class="italic text-slate-700 dark:text-slate-300">$1</em>')
+  rendered = rendered.replace(/`([^`]+)`/g, '<code class="rounded-md bg-slate-100 dark:bg-white/[0.06] px-1.5 py-0.5 text-xs font-mono text-emerald-700 dark:text-emerald-400 border border-slate-200/60 dark:border-white/[0.08]">$1</code>')
+
+  // 8. Format terjemahan
+  rendered = rendered.replace(/↳\s*Terjemahan:\s*(.*)/gi, '<div class="mt-2.5 mb-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-2 text-xs sm:text-sm italic text-emerald-900 dark:text-emerald-200 leading-relaxed"><span class="font-semibold not-italic text-emerald-700 dark:text-emerald-400">Terjemahan: </span>$1</div>')
+
+  // 9. Format Teks Arab: deteksi baris beraksara Arab dan bungkus dalam kotak kaligrafi ber-RTL
+  const lines = rendered.split('\n')
+  const formatted = lines.map((line) => {
+    const trimmed = line.trim()
+    const arabicMatch = trimmed.match(/[\u0600-\u06FF]/g)
+    if (arabicMatch && arabicMatch.length >= 8 && !trimmed.startsWith('<h') && !trimmed.startsWith('<div') && !trimmed.startsWith('<blockquote')) {
+      return `<div class="my-4 p-3.5 sm:p-5 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/15 dark:bg-emerald-950/20 text-right select-text shadow-xs" dir="rtl"><p class="font-serif text-2xl sm:text-3xl leading-[2.3] tracking-wide text-emerald-900 dark:text-emerald-200 font-medium">${trimmed}</p></div>`
+    }
+    return line
+  })
+
+  return formatted.join('\n')
 }
 const highlightClass = (color: ArticleHighlight['color']) => ({ yellow: 'rounded-sm bg-amber-200 px-1 text-slate-950 dark:bg-amber-500/40 dark:text-white', emerald: 'rounded-sm bg-emerald-200 px-1 text-slate-950 dark:bg-emerald-500/40 dark:text-white', indigo: 'rounded-sm bg-indigo-200 px-1 text-slate-950 dark:bg-indigo-500/40 dark:text-white' }[color])
 const jumpToHighlight = (highlight: ArticleHighlight) => {
