@@ -1,0 +1,204 @@
+name: Build All (Frontend, Backend, Android)
+
+# Workflow otomasi CI/CD untuk membangun seluruh komponen FiGo di GitHub Actions:
+# 1. Backend Go (Multi-arsitektur: Linux AMD64, Linux ARM64, Windows AMD64)
+# 2. Frontend Nuxt 4 (SSR / Nitro server bundle)
+# 3. Android APK (Capacitor + Gradle Wrapper)
+# 4. Otomatis publikasi aset ke GitHub Releases jika dipicu via tag / release
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  # =========================================================================
+  # 1. BUILD BACKEND (GO API)
+  # =========================================================================
+  build-backend:
+    name: Build Backend (Go Binaries)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: backend-go/go.sum
+
+      - name: Kompilasi Binary Multi-Platform
+        run: |
+          set -e
+          cd backend-go
+          mkdir -p ../dist-binaries
+
+          echo "Mengompilasi untuk Linux AMD64..."
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ../dist-binaries/figo-download-api-linux-amd64 .
+
+          echo "Mengompilasi untuk Linux ARM64..."
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ../dist-binaries/figo-download-api-linux-arm64 .
+
+          echo "Mengompilasi untuk Windows AMD64..."
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ../dist-binaries/figo-download-api-windows-amd64.exe .
+
+          cd ../dist-binaries
+          ls -lh
+
+      - name: Unggah Artefak Binary Backend
+        uses: actions/upload-artifact@v4
+        with:
+          name: figo-backend-binaries
+          path: dist-binaries/*
+          if-no-files-found: error
+          retention-days: 14
+
+  # =========================================================================
+  # 2. BUILD FRONTEND (NUXT 4 / NITRO SSR)
+  # =========================================================================
+  build-frontend:
+    name: Build Frontend (Nuxt 4 / Nitro)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Jalankan Pengujian Kontrak UI
+        run: node scripts/test_articles_ui.mjs
+
+      - name: Build Nuxt SSR & Nitro Server
+        run: pnpm run build
+
+      - name: Arsipkan Bundle .output
+        run: |
+          tar -czf figo-frontend-output.tar.gz .output
+
+      - name: Unggah Artefak Frontend
+        uses: actions/upload-artifact@v4
+        with:
+          name: figo-frontend-output
+          path: figo-frontend-output.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  # =========================================================================
+  # 3. BUILD ANDROID APK (CAPACITOR + GRADLE)
+  # =========================================================================
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Setup Java (JDK 21)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setujui Lisensi Android SDK
+        run: yes | sdkmanager --licenses || true
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Web Assets untuk Mobile
+        run: pnpm run build
+
+      - name: Sinkronkan Aset Web ke Proyek Android Capacitor
+        run: pnpm run android:sync
+
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Kompilasi Android Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Temukan dan Salin File APK
+        run: |
+          mkdir -p dist-apk
+          cp android/app/build/outputs/apk/debug/*.apk dist-apk/figo-app-debug.apk
+          ls -lh dist-apk/
+
+      - name: Unggah Artefak Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: figo-android-apk
+          path: dist-apk/figo-app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  # =========================================================================
+  # 4. PUBLIKASI KE GITHUB RELEASE (JIKA TRIGGER TAG v*)
+  # =========================================================================
+  release:
+    name: Publikasi GitHub Release
+    needs: [build-backend, build-frontend, build-android]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Unduh Semua Artefak
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Tampilkan Daftar Aset
+        run: |
+          mkdir -p dist-release
+          cp -r release-assets/figo-backend-binaries/* dist-release/ || true
+          cp -r release-assets/figo-frontend-output/* dist-release/ || true
+          cp -r release-assets/figo-android-apk/* dist-release/ || true
+          ls -lh dist-release/
+
+      - name: Buat GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-release/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
