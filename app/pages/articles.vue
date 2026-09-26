@@ -155,7 +155,7 @@ const loadArticle = async (article: SelectedArticle) => {
   if (article.data) return true
   loading.value = true
   try {
-    const result = await $fetch<ArticleData | string>(article.url)
+    const result = await $fetch<ArticleData | string>(`${article.url}?v=${Date.now()}`)
     article.data = typeof result === 'string' ? JSON.parse(result) as ArticleData : result
     return true
   } catch {
@@ -242,9 +242,14 @@ const renderParagraph = (value: string, pIdx: number) => {
   // 5. Blockquotes (> kutipan)
   rendered = rendered.replace(/^>\s*(.*$)/gm, '<blockquote class="my-3.5 border-l-3 border-emerald-500 bg-emerald-500/5 px-4 py-2.5 rounded-r-xl italic text-slate-700 dark:text-slate-300 text-sm sm:text-base leading-relaxed">$1</blockquote>')
 
-  // 6. Daftar List (* item, - item, 1. item)
-  rendered = rendered.replace(/^[\*\-]\s+(.*$)/gm, '<div class="flex items-start gap-2.5 my-1.5 text-sm sm:text-base"><span class="size-1.5 rounded-full bg-emerald-500 mt-2.5 shrink-0"></span><span class="flex-1">$1</span></div>')
-  rendered = rendered.replace(/^(\d+)\.\s+(.*$)/gm, '<div class="flex items-start gap-2.5 my-1.5 text-sm sm:text-base"><span class="min-w-5 h-5 px-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold inline-flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/20">$1</span><span class="flex-1">$2</span></div>')
+  // Pastikan butir nomor (1., 2., dst.) selalu pindah ke baris baru baik dari awal kalimat maupun yang tersambung
+  rendered = rendered.replace(/(?:^|\n|(?<=[\.\:\;\?\!])\s+|\s{2,})(\d{1,2})\.\s+/g, '\n$1. ')
+  // Pastikan butir bertanda bintang (* ) atau strip (- ) selalu berada di baris baru tersendiri
+  rendered = rendered.replace(/(?:^|\n|(?<=[\.\:\;\?\!])\s+|\s{2,})[\*\-]\s+/g, '\n* ')
+
+  // 6. Daftar List (* item, - item, 1. item) dengan indentasi dan penataan rapi
+  rendered = rendered.replace(/^\s*[\*\-]\s+(.*$)/gm, '<div class="flex items-start gap-3 my-2 text-sm sm:text-base leading-relaxed w-full"><span class="size-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span><div class="flex-1 min-w-0">$1</div></div>')
+  rendered = rendered.replace(/^\s*(\d+)\.\s+(.*$)/gm, '<div class="flex items-start gap-3 my-2.5 text-sm sm:text-base leading-relaxed w-full"><span class="min-w-6 h-6 px-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold inline-flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/25 shadow-2xs">$1</span><div class="flex-1 min-w-0">$2</div></div>')
 
   // 7. Format Bold, Italic, Code
   rendered = rendered.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-slate-950 dark:text-white">$1</strong>')
@@ -254,18 +259,23 @@ const renderParagraph = (value: string, pIdx: number) => {
   // 8. Format terjemahan
   rendered = rendered.replace(/↳\s*Terjemahan:\s*(.*)/gi, '<div class="mt-2.5 mb-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-2 text-xs sm:text-sm italic text-emerald-900 dark:text-emerald-200 leading-relaxed"><span class="font-semibold not-italic text-emerald-700 dark:text-emerald-400">Terjemahan: </span>$1</div>')
 
-  // 9. Format Teks Arab: deteksi baris beraksara Arab dan bungkus dalam kotak kaligrafi ber-RTL
+  // 9. Format Teks Arab dan pemisahan baris teks biasa agar baris baru selalu dihormati browser
   const lines = rendered.split('\n')
   const formatted = lines.map((line) => {
     const trimmed = line.trim()
+    if (!trimmed) return ''
     const arabicMatch = trimmed.match(/[\u0600-\u06FF]/g)
     if (arabicMatch && arabicMatch.length >= 8 && !trimmed.startsWith('<h') && !trimmed.startsWith('<div') && !trimmed.startsWith('<blockquote')) {
       return `<div class="my-4 p-3.5 sm:p-5 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/15 dark:bg-emerald-950/20 text-right select-text shadow-xs" dir="rtl"><p class="font-serif text-2xl sm:text-3xl leading-[2.3] tracking-wide text-emerald-900 dark:text-emerald-200 font-medium">${trimmed}</p></div>`
     }
-    return line
-  })
+    // Jika bukan elemen blok HTML, bungkus dalam paragraf teks biasa agar baris baru selalu dihormati browser
+    if (!trimmed.startsWith('<h') && !trimmed.startsWith('<div') && !trimmed.startsWith('<blockquote') && !trimmed.startsWith('<img') && !trimmed.startsWith('<iframe')) {
+      return `<p class="leading-relaxed my-2">${trimmed}</p>`
+    }
+    return trimmed
+  }).filter(Boolean)
 
-  return formatted.join('\n')
+  return formatted.join('')
 }
 const highlightClass = (color: ArticleHighlight['color']) => ({ yellow: 'rounded-sm bg-amber-200 px-1 text-slate-950 dark:bg-amber-500/40 dark:text-white', emerald: 'rounded-sm bg-emerald-200 px-1 text-slate-950 dark:bg-emerald-500/40 dark:text-white', indigo: 'rounded-sm bg-indigo-200 px-1 text-slate-950 dark:bg-indigo-500/40 dark:text-white' }[color])
 const jumpToHighlight = (highlight: ArticleHighlight) => {
