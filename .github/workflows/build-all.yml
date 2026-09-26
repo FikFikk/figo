@@ -186,7 +186,10 @@ jobs:
         run: pnpm run build
 
       - name: Sinkronkan Aset Web ke Proyek Android Capacitor
-        run: pnpm run android:sync
+        run: |
+          pnpm run android:sync
+          # Bersihkan file .gz dan .br pra-kompresi Nitro agar tidak memicu error 'Duplicate resources' di Gradle AAPT
+          find android/app/src/main/assets/public -type f \( -name "*.gz" -o -name "*.br" \) -delete || true
 
       - name: Setup Gradle Cache
         uses: gradle/actions/setup-gradle@v4

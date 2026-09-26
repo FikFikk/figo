@@ -52,3 +52,18 @@ try {
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
+
+// Hapus file pra-kompresi .gz dan .br dari aset publik Nuxt/Nitro agar tidak terjadi konflik Duplicate resources di AAPT
+tasks.register('cleanCompressedAssets') {
+    doLast {
+        def assetsDir = file("src/main/assets/public")
+        if (assetsDir.exists()) {
+            assetsDir.eachFileRecurse { file ->
+                if (file.name.endsWith('.gz') || file.name.endsWith('.br')) {
+                    file.delete()
+                }
+            }
+        }
+    }
+}
+preBuild.dependsOn cleanCompressedAssets
