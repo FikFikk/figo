@@ -17,24 +17,38 @@ export interface LastReadItem {
   timestamp: number
 }
 
-// Objek audio tunggal & preloader di tingkat modul agar persisten dan hemat memori
-let globalActiveAudio: HTMLAudioElement | null = null
-let globalNextAudio: HTMLAudioElement | null = null
-let preloadedAyatNum: number | null = null
+// Dual-Deck Ping-Pong Engine untuk pemutaran audio gapless tanpa jeda (seamless transition)
+let deckA: HTMLAudioElement | null = null
+let deckB: HTMLAudioElement | null = null
+let activeDeckKey: 'A' | 'B' = 'A'
+let checkTimer: any = null
+let hasTriggeredEarly = false
 
 export function useQuran() {
   const surahs = ref<SurahSummary[]>([])
   const juzs = ref<JuzItem[]>([])
   const currentSurah = ref<SurahDetail | null>(null)
   const loading = ref(false)
-  const selectedQari = ref('06') // Bawaan utama Syeikh Yasser Al-Dosari
+  const selectedQari = ref('06') // Bawaan utama: Syeikh Yasser Al-Dosari
 
   const lastRead = ref<LastReadItem | null>(null)
 
   // Status Pemutaran Audio
   const playingAyat = ref<number | null>(null)
   const isPlaying = ref(false)
-  const isContinuous = ref(true) // Selalu aktif agar otomatis lanjut ke ayat berikutnya tanpa jeda
+  const isContinuous = ref(true)
+
+  const initDecks = () => {
+    if (!import.meta.client) return
+    if (!deckA) {
+      deckA = new Audio()
+      deckA.preload = 'auto'
+    }
+    if (!deckB) {
+      deckB = new Audio()
+      deckB.preload = 'auto'
+    }
+  }
 
   const loadIndices = async () => {
     try {
@@ -78,24 +92,29 @@ export function useQuran() {
     }
   }
 
+  const resolveAyatAudioUrl = (surahNumber: number, ayatNumber: number): string => {
+    if (!currentSurah.value) return ''
+    const target = currentSurah.value.ayat.find((a) => a.nomorAyat === ayatNumber)
+    if (target?.audio?.[selectedQari.value]) {
+      return target.audio[selectedQari.value]
+    }
+    const qariCode = selectedQari.value === '06' ? 'Yasser_Ad-Dussary_128kbps' : 'Alafasy_128kbps'
+    const surahStr = String(surahNumber).padStart(3, '0')
+    const ayatStr = String(ayatNumber).padStart(3, '0')
+    return `https://everyayah.com/data/${qariCode}/${surahStr}${ayatStr}.mp3`
+  }
+
   const setQari = (code: string) => {
     selectedQari.value = code
     if (import.meta.client) {
       localStorage.setItem('figo_quran_qari', code)
     }
-
-    // Bersihkan buffer audio berikutnya agar sesuai dengan qari baru
-    if (globalNextAudio) {
-      globalNextAudio.src = ''
-      globalNextAudio = null
-      preloadedAyatNum = null
-    }
-
-    // Jika sedang memutar, putar ulang ayat saat ini menggunakan suara qari baru
     if (isPlaying.value && currentSurah.value && playingAyat.value) {
-      const cur = playingAyat.value
+      const current = playingAyat.value
       stopAudio()
-      playAyat(currentSurah.value.nomor, cur)
+      playAyat(currentSurah.value.nomor, current)
+    } else {
+      stopAudio()
     }
   }
 
@@ -112,148 +131,166 @@ export function useQuran() {
     }
   }
 
-  // Mendapatkan URL audio resmi dari data lokal atau fallback ke CDN EveryAyah
-  const resolveAyatAudioUrl = (surahNumber: number, ayatNumber: number): string => {
-    if (!currentSurah.value) return ''
-    const target = currentSurah.value.ayat.find((a) => a.nomorAyat === ayatNumber)
-    if (target?.audio?.[selectedQari.value]) {
-      return target.audio[selectedQari.value]
-    }
-    const qariCode = selectedQari.value === '06' ? 'Yasser_Ad-Dussary_128kbps' : 'Alafasy_128kbps'
-    const surahStr = String(surahNumber).padStart(3, '0')
-    const ayatStr = String(ayatNumber).padStart(3, '0')
-    return `https://everyayah.com/data/${qariCode}/${surahStr}${ayatStr}.mp3`
-  }
-
-  // Preload audio ayat berikutnya ke memori agar perpindahan ayat terjadi 0ms tanpa jeda
-  const preloadNextAyat = (surahNumber: number, nextAyatNumber: number) => {
-    if (!currentSurah.value || nextAyatNumber > currentSurah.value.jumlahAyat) {
-      globalNextAudio = null
-      preloadedAyatNum = null
-      return
-    }
-    const nextUrl = resolveAyatAudioUrl(surahNumber, nextAyatNumber)
-    if (!nextUrl) return
-
-    const audio = new Audio()
-    audio.preload = 'auto'
-    audio.src = nextUrl
-    audio.load()
-    globalNextAudio = audio
-    preloadedAyatNum = nextAyatNumber
-  }
-
   const stopAudio = () => {
-    if (globalActiveAudio) {
-      globalActiveAudio.pause()
-      globalActiveAudio.onended = null
-      globalActiveAudio.onerror = null
-      globalActiveAudio.src = ''
-      globalActiveAudio = null
+    if (checkTimer) {
+      clearInterval(checkTimer)
+      checkTimer = null
     }
-    if (globalNextAudio) {
-      globalNextAudio.src = ''
-      globalNextAudio = null
-      preloadedAyatNum = null
+    if (deckA) {
+      deckA.pause()
+      deckA.onended = null
+      deckA.onerror = null
+    }
+    if (deckB) {
+      deckB.pause()
+      deckB.onended = null
+      deckB.onerror = null
     }
     playingAyat.value = null
     isPlaying.value = false
+    hasTriggeredEarly = false
   }
 
   const pauseAudio = () => {
-    if (globalActiveAudio) {
-      globalActiveAudio.pause()
+    if (checkTimer) {
+      clearInterval(checkTimer)
+      checkTimer = null
+    }
+    const curDeck = activeDeckKey === 'A' ? deckA : deckB
+    if (curDeck) {
+      curDeck.pause()
       isPlaying.value = false
     }
   }
 
   const resumeAudio = () => {
-    if (globalActiveAudio && playingAyat.value) {
-      globalActiveAudio.play().then(() => {
+    initDecks()
+    const curDeck = activeDeckKey === 'A' ? deckA : deckB
+    if (curDeck && playingAyat.value && currentSurah.value) {
+      curDeck.play().then(() => {
         isPlaying.value = true
+        startPrecisionMonitor(currentSurah.value!.nomor, playingAyat.value!)
       }).catch((err) => {
-        console.warn('Gagal melanjutkan pemutaran audio:', err)
+        console.warn('Gagal melanjutkan audio:', err)
       })
     }
   }
 
+  // Fade out halus agar pergantian deck tidak menimbulkan letupan suara
+  const fadeOutAndPause = (deck: HTMLAudioElement) => {
+    let vol = deck.volume
+    const fadeTimer = setInterval(() => {
+      vol -= 0.25
+      if (vol <= 0.05) {
+        clearInterval(fadeTimer)
+        deck.pause()
+        deck.volume = 1.0
+      } else {
+        deck.volume = Math.max(0, vol)
+      }
+    }, 30)
+  }
+
+  // Monitor presisi tinggi (30ms polling) untuk memangkas jeda senyap (dead air tail) antarberkas MP3
+  const startPrecisionMonitor = (surahNumber: number, ayatNumber: number) => {
+    if (checkTimer) clearInterval(checkTimer)
+    hasTriggeredEarly = false
+
+    checkTimer = setInterval(() => {
+      const curDeck = activeDeckKey === 'A' ? deckA : deckB
+      if (!curDeck || !isPlaying.value) return
+
+      const nextAyat = ayatNumber + 1
+      const hasNext = currentSurah.value && nextAyat <= currentSurah.value.jumlahAyat
+
+      // Jika durasi valid dan tersisa 240ms (posisi hening bawaan encoder MP3), picu ayat berikutnya langsung
+      if (hasNext && !hasTriggeredEarly && curDeck.duration && curDeck.duration > 0.6) {
+        const remaining = curDeck.duration - curDeck.currentTime
+        if (remaining <= 0.24) {
+          hasTriggeredEarly = true
+          clearInterval(checkTimer)
+          checkTimer = null
+
+          // Lakukan transisi mulus ke deck pasangan
+          fadeOutAndPause(curDeck)
+          activeDeckKey = activeDeckKey === 'A' ? 'B' : 'A'
+          playAyat(surahNumber, nextAyat)
+        }
+      }
+    }, 30)
+  }
+
   const playAyat = (surahNumber: number, ayatNumber: number) => {
     if (!currentSurah.value) return
+    initDecks()
 
-    // Jika menekan ayat yang sedang aktif: lakukan toggle pause / play
-    if (playingAyat.value === ayatNumber && globalActiveAudio) {
-      if (isPlaying.value) {
-        pauseAudio()
-      } else {
-        resumeAudio()
-      }
+    const currentDeck = activeDeckKey === 'A' ? deckA! : deckB!
+    const standByDeck = activeDeckKey === 'A' ? deckB! : deckA!
+
+    // Toggle jeda / lanjutkan jika menekan ayat yang sama
+    if (playingAyat.value === ayatNumber && isPlaying.value) {
+      pauseAudio()
       return
     }
 
-    // Bersihkan audio yang sedang berbunyi sebelumnya
-    if (globalActiveAudio) {
-      globalActiveAudio.pause()
-      globalActiveAudio.onended = null
-      globalActiveAudio.onerror = null
-      globalActiveAudio.src = ''
-      globalActiveAudio = null
+    if (playingAyat.value === ayatNumber && !isPlaying.value) {
+      resumeAudio()
+      return
     }
 
-    // Gunakan audio yang sudah di-preload jika cocok, atau buat instance baru
-    let audio: HTMLAudioElement
-    if (preloadedAyatNum === ayatNumber && globalNextAudio) {
-      audio = globalNextAudio
-      globalNextAudio = null
-      preloadedAyatNum = null
-    } else {
-      const url = resolveAyatAudioUrl(surahNumber, ayatNumber)
-      audio = new Audio(url)
-      audio.preload = 'auto'
+    // Pasang URL berkas ayat saat ini ke deck aktif jika belum terpasang
+    const currentUrl = resolveAyatAudioUrl(surahNumber, ayatNumber)
+    if (currentDeck.src !== currentUrl) {
+      currentDeck.src = currentUrl
+      currentDeck.load()
     }
 
-    globalActiveAudio = audio
+    currentDeck.volume = 1.0
     playingAyat.value = ayatNumber
     isPlaying.value = true
     isContinuous.value = true
 
-    // Segera lakukan buffering untuk ayat berikutnya di latar belakang (tanpa menunggu ayat ini selesai)
-    preloadNextAyat(surahNumber, ayatNumber + 1)
-
-    // Event ketika ayat selesai: langsung lanjut otomatis ke ayat berikutnya tanpa jeda
-    audio.onended = () => {
-      if (!isContinuous.value || !currentSurah.value) {
-        playingAyat.value = null
-        isPlaying.value = false
-        return
-      }
-
-      const nextAyat = ayatNumber + 1
-      if (nextAyat <= currentSurah.value.jumlahAyat) {
-        // Panggil ayat berikutnya secara langsung & instan
-        playAyat(surahNumber, nextAyat)
-      } else {
-        // Surah telah selesai dibacakan seluruhnya
-        playingAyat.value = null
-        isPlaying.value = false
-        globalActiveAudio = null
-        globalNextAudio = null
-        preloadedAyatNum = null
+    // Pasang fallback onended jika interval presisi tidak terpicu
+    currentDeck.onended = () => {
+      if (!hasTriggeredEarly) {
+        hasTriggeredEarly = true
+        if (checkTimer) clearInterval(checkTimer)
+        const nextAyat = ayatNumber + 1
+        if (currentSurah.value && nextAyat <= currentSurah.value.jumlahAyat) {
+          activeDeckKey = activeDeckKey === 'A' ? 'B' : 'A'
+          playAyat(surahNumber, nextAyat)
+        } else {
+          stopAudio()
+        }
       }
     }
 
-    audio.onerror = () => {
+    currentDeck.onerror = () => {
       console.warn(`Gagal memuat audio ayat ${surahNumber}:${ayatNumber}`)
       const nextAyat = ayatNumber + 1
-      if (isContinuous.value && currentSurah.value && nextAyat <= currentSurah.value.jumlahAyat) {
+      if (currentSurah.value && nextAyat <= currentSurah.value.jumlahAyat) {
+        activeDeckKey = activeDeckKey === 'A' ? 'B' : 'A'
         playAyat(surahNumber, nextAyat)
       } else {
         stopAudio()
       }
     }
 
-    // Jalankan pemutaran
-    audio.play().catch((err) => {
-      console.warn('Pemutaran audio diblokir peramban:', err)
+    // Jalankan deck aktif
+    currentDeck.play().then(() => {
+      // Preload berkas ayat berikutnya ke standby deck secara instan di latar belakang
+      const nextAyat = ayatNumber + 1
+      if (currentSurah.value && nextAyat <= currentSurah.value.jumlahAyat) {
+        const nextUrl = resolveAyatAudioUrl(surahNumber, nextAyat)
+        if (standByDeck.src !== nextUrl) {
+          standByDeck.src = nextUrl
+          standByDeck.preload = 'auto'
+          standByDeck.load()
+        }
+      }
+      startPrecisionMonitor(surahNumber, ayatNumber)
+    }).catch((err) => {
+      console.warn('Pemutaran diblokir peramban:', err)
       isPlaying.value = false
     })
   }
@@ -261,6 +298,7 @@ export function useQuran() {
   const playFullSurah = (surahNumber: number) => {
     if (!currentSurah.value) return
     isContinuous.value = true
+    activeDeckKey = 'A'
     playAyat(surahNumber, 1)
   }
 
