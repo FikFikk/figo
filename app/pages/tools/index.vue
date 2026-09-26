@@ -114,6 +114,7 @@ const tools = [
   { slug: 'editor', name: 'Image Studio', description: 'Make quick adjustments to images in your browser.', icon: 'photo_filter', external: '/editor', color: 'bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-500/15 dark:text-fuchsia-300' },
   { slug: 'recipes', name: 'Recipes', description: 'Browse recipes and scale ingredients for your needs.', icon: 'restaurant', external: '/recipes', color: 'bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300' },
   { slug: 'nutrition', name: 'Nutrition Facts', description: 'Look up nutritional information for everyday foods.', icon: 'nutrition', external: '/foods', color: 'bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-300' },
+  { slug: 'quran', name: 'Al-Qur\'an Digital', description: 'Mushaf Rasm Utsmani MSI Kemenag RI, terjemahan lengkap, dan audio Syeikh Yasser Al-Dosari.', icon: 'menu_book', external: '/quran', color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300' },
 ]
 
 const filteredTools = computed(() => {
