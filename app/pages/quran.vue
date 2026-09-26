@@ -1,16 +1,27 @@
 <template>
-  <div class="min-h-[100dvh] w-full max-w-full overflow-x-clip px-4 pb-44 pt-32 text-slate-800 transition-colors duration-200 sm:px-6 md:px-8 dark:text-slate-200">
+  <div class="min-h-[100dvh] w-full max-w-full overflow-x-clip px-4 pb-44 pt-36 sm:pt-40 text-slate-800 transition-colors duration-200 sm:px-6 md:px-8 dark:text-slate-200">
     <!-- ============================================== -->
-    <!-- DOCKED STICKY HEADER QURAN (MENGGANTIKAN FIGO NAVBAR SAAT SCROLL) -->
+    <!-- DOCKED STICKY HEADER QURAN (FLOATING ISLAND -> TOP-0 DOCKED ON SCROLL) -->
     <!-- ============================================== -->
     <header
-      class="fixed inset-x-0 z-40 border-b backdrop-blur-xl transition-[top] duration-300 ease-in-out px-4 py-2.5 sm:px-6 md:px-8 shadow-xs"
+      class="fixed inset-x-0 z-40 transition-all duration-300 ease-in-out pointer-events-none"
       :class="[
-        isFiGoNavbarHidden ? 'top-0' : 'top-[61px]',
-        isDark ? 'border-white/[0.08] bg-[#08090d]/90 text-slate-100' : 'border-slate-200/80 bg-white/90 text-slate-900'
+        isFiGoNavbarHidden
+          ? 'top-0 px-0'
+          : 'top-[68px] sm:top-[72px] px-3 sm:px-6 md:px-8'
       ]"
     >
-      <div class="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-3">
+      <div
+        class="mx-auto max-w-7xl pointer-events-auto transition-all duration-300 border backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 relative shadow-md"
+        :class="[
+          isFiGoNavbarHidden
+            ? 'rounded-none border-x-0 border-t-0 border-b py-2.5 px-4 sm:px-6 md:px-8 shadow-xs'
+            : 'rounded-2xl py-2 px-3 sm:px-4 sm:py-2.5',
+          isDark
+            ? 'border-white/[0.08] bg-[#0c0e14]/90 text-slate-100 shadow-black/40'
+            : 'border-slate-200/90 bg-white/95 text-slate-900 shadow-slate-200/50'
+        ]"
+      >
         <!-- Sisi Kiri: Tombol Beranda & Pemilih Surah Cepat -->
         <div class="flex items-center gap-2 sm:gap-3">
           <NuxtLink
@@ -103,91 +114,91 @@
             <span class="material-symbols-outlined text-[19px]">tune</span>
           </button>
         </div>
+
+        <!-- Floating Drawer Panel Pengaturan Tampilan Huruf & Terjemahan -->
+        <Transition name="slide-up">
+          <div
+            v-if="showSettingsPanel"
+            class="absolute top-full right-2 sm:right-4 mt-2 w-80 sm:w-96 rounded-2xl border p-4 shadow-2xl backdrop-blur-2xl z-50 text-xs space-y-3.5"
+            :class="isDark ? 'border-white/10 bg-[#0c0e14]/95 text-slate-200 shadow-black/50' : 'border-slate-200 bg-white/95 text-slate-800 shadow-slate-300/50'"
+          >
+            <!-- Pengatur Ukuran Huruf Arab -->
+            <div class="space-y-1">
+              <div class="flex justify-between font-semibold">
+                <span>Ukuran Aksara Arab:</span>
+                <span class="font-mono text-emerald-600 dark:text-emerald-400">{{ arabicFontSize }}px</span>
+              </div>
+              <input
+                v-model.number="arabicFontSize"
+                type="range"
+                min="24"
+                max="48"
+                step="2"
+                class="w-full accent-emerald-600 cursor-pointer"
+              />
+            </div>
+
+            <!-- Toggle Transliterasi Latin & Terjemahan -->
+            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-medium text-[11px]">Transliterasi Latin</span>
+                <button
+                  type="button"
+                  class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer"
+                  :class="showLatin ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
+                  @click="showLatin = !showLatin"
+                >
+                  <span class="inline-block size-3.5 transform rounded-full bg-white transition-transform" :class="showLatin ? 'translate-x-4' : 'translate-x-1'" />
+                </button>
+              </div>
+
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-medium text-[11px]">Terjemahan RI</span>
+                <button
+                  type="button"
+                  class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer"
+                  :class="showTranslation ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
+                  @click="showTranslation = !showTranslation"
+                >
+                  <span class="inline-block size-3.5 transform rounded-full bg-white transition-transform" :class="showTranslation ? 'translate-x-4' : 'translate-x-1'" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Mode Pemutaran Tilawah -->
+            <div class="pt-2 border-t border-slate-100 dark:border-white/[0.06] space-y-1.5">
+              <span class="font-semibold block text-[11px]">Mode Tilawah Audio:</span>
+              <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-white/[0.04]">
+                <button
+                  type="button"
+                  class="py-1.5 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                  :class="playMode === 'continuous'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                  @click="playMode !== 'continuous' && togglePlayMode()"
+                >
+                  <span class="material-symbols-outlined text-sm">all_inclusive</span>
+                  Lanjut Surah
+                </button>
+                <button
+                  type="button"
+                  class="py-1.5 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                  :class="playMode === 'single'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                  @click="playMode !== 'single' && togglePlayMode()"
+                >
+                  <span class="material-symbols-outlined text-sm">filter_1</span>
+                  Per Ayat
+                </button>
+              </div>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 italic">
+                {{ playMode === 'continuous' ? '• Mulus tanpa jeda (Studio Full Gapless)' : '• Berhenti setelah 1 ayat selesai (Ideal untuk hafalan)' }}
+              </p>
+            </div>
+          </div>
+        </Transition>
       </div>
-
-      <!-- Floating Drawer Panel Pengaturan Tampilan Huruf & Terjemahan -->
-      <Transition name="slide-up">
-        <div
-          v-if="showSettingsPanel"
-          class="absolute top-full right-4 sm:right-6 md:right-8 mt-2 w-80 sm:w-96 rounded-2xl border p-4 shadow-2xl backdrop-blur-2xl z-50 text-xs space-y-3.5"
-          :class="isDark ? 'border-white/10 bg-[#0c0e14]/95 text-slate-200 shadow-black/50' : 'border-slate-200 bg-white/95 text-slate-800 shadow-slate-300/50'"
-        >
-          <!-- Pengatur Ukuran Huruf Arab -->
-          <div class="space-y-1">
-            <div class="flex justify-between font-semibold">
-              <span>Ukuran Aksara Arab:</span>
-              <span class="font-mono text-emerald-600 dark:text-emerald-400">{{ arabicFontSize }}px</span>
-            </div>
-            <input
-              v-model.number="arabicFontSize"
-              type="range"
-              min="24"
-              max="48"
-              step="2"
-              class="w-full accent-emerald-600 cursor-pointer"
-            />
-          </div>
-
-          <!-- Toggle Transliterasi Latin & Terjemahan -->
-          <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
-            <div class="flex items-center justify-between gap-2">
-              <span class="font-medium text-[11px]">Transliterasi Latin</span>
-              <button
-                type="button"
-                class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer"
-                :class="showLatin ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
-                @click="showLatin = !showLatin"
-              >
-                <span class="inline-block size-3.5 transform rounded-full bg-white transition-transform" :class="showLatin ? 'translate-x-4' : 'translate-x-1'" />
-              </button>
-            </div>
-
-            <div class="flex items-center justify-between gap-2">
-              <span class="font-medium text-[11px]">Terjemahan RI</span>
-              <button
-                type="button"
-                class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer"
-                :class="showTranslation ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
-                @click="showTranslation = !showTranslation"
-              >
-                <span class="inline-block size-3.5 transform rounded-full bg-white transition-transform" :class="showTranslation ? 'translate-x-4' : 'translate-x-1'" />
-              </button>
-            </div>
-          </div>
-
-          <!-- Mode Pemutaran Tilawah -->
-          <div class="pt-2 border-t border-slate-100 dark:border-white/[0.06] space-y-1.5">
-            <span class="font-semibold block text-[11px]">Mode Tilawah Audio:</span>
-            <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-white/[0.04]">
-              <button
-                type="button"
-                class="py-1.5 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
-                :class="playMode === 'continuous'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
-                @click="playMode !== 'continuous' && togglePlayMode()"
-              >
-                <span class="material-symbols-outlined text-sm">all_inclusive</span>
-                Lanjut Surah
-              </button>
-              <button
-                type="button"
-                class="py-1.5 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
-                :class="playMode === 'single'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
-                @click="playMode !== 'single' && togglePlayMode()"
-              >
-                <span class="material-symbols-outlined text-sm">filter_1</span>
-                Per Ayat
-              </button>
-            </div>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400 italic">
-              {{ playMode === 'continuous' ? '• Mulus tanpa jeda (Studio Full Gapless)' : '• Berhenti setelah 1 ayat selesai (Ideal untuk hafalan)' }}
-            </p>
-          </div>
-        </div>
-      </Transition>
     </header>
 
     <div class="mx-auto max-w-5xl">
@@ -275,18 +286,37 @@
             </div>
           </div>
 
-          <!-- Banner Kaligrafi Bismillah (Kecuali Surah At-Taubah no 9 dan Al-Fatihah no 1) -->
+          <!-- Banner Pembuka Kaligrafi Bismillah Agung (Kecuali Surah At-Taubah no 9 dan Al-Fatihah no 1) -->
           <div
             v-if="currentSurah.nomor !== 9 && currentSurah.nomor !== 1"
-            class="my-8 text-center"
+            class="my-7 w-full rounded-3xl border border-slate-200/90 bg-gradient-to-b from-white/95 via-emerald-500/[0.03] to-white/80 p-7 sm:p-9 text-center shadow-xs backdrop-blur-sm dark:border-white/[0.08] dark:from-[#0c0e14]/90 dark:via-emerald-950/[0.15] dark:to-[#0c0e14]/80 relative overflow-hidden"
           >
-            <div class="inline-block rounded-3xl border border-emerald-500/20 bg-white/60 px-8 py-4 shadow-xs backdrop-blur-sm dark:bg-slate-900/60">
-              <p class="font-arabic text-2xl sm:text-3xl text-emerald-800 dark:text-emerald-300 leading-loose">
-                بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ
-              </p>
-              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 italic font-serif">
-                Dengan nama Allah Yang Maha Pengasih lagi Maha Penyayang
-              </p>
+            <!-- Ornamen Garis Arabesque & Bintang Geometris Islami Bagian Atas -->
+            <div class="flex items-center justify-center gap-3 mb-3.5 opacity-60">
+              <div class="h-px w-16 sm:w-28 bg-gradient-to-r from-transparent to-emerald-500/60" />
+              <svg class="size-4 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" opacity="0.8"/>
+              </svg>
+              <div class="h-px w-16 sm:w-28 bg-gradient-to-l from-transparent to-emerald-500/60" />
+            </div>
+
+            <!-- Kaligrafi Rasm Utsmani Agung Berukuran Besar & Proporsional -->
+            <p
+              class="font-arabic font-normal text-3xl sm:text-4xl md:text-5xl text-emerald-900 dark:text-emerald-200 leading-[2.2] sm:leading-[2.4] tracking-wide select-text drop-shadow-xs"
+            >
+              بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ
+            </p>
+
+            <!-- Terjemahan Resmi Kemenag RI yang Anggun -->
+            <p class="font-serif italic text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 max-w-md mx-auto leading-relaxed">
+              "Dengan nama Allah Yang Maha Pengasih lagi Maha Penyayang"
+            </p>
+
+            <!-- Aksen Pembatas Halus Bagian Bawah -->
+            <div class="flex items-center justify-center gap-2 mt-4 opacity-50">
+              <div class="h-px w-12 sm:w-20 bg-gradient-to-r from-transparent to-emerald-500/40" />
+              <span class="size-1.5 rotate-45 bg-emerald-500/60 rounded-xs" />
+              <div class="h-px w-12 sm:w-20 bg-gradient-to-l from-transparent to-emerald-500/40" />
             </div>
           </div>
 
