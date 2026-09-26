@@ -100,4 +100,5 @@ jobs:
           cd "$APP_PATH"
           pm2 startOrReload ecosystem.config.cjs --update-env
           pm2 save
+          pm2 status
           echo "Deploy & reload selesai."
