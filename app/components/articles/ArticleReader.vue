@@ -1,10 +1,17 @@
 <template>
   <section class="relative">
-    <div class="mb-6 flex items-center justify-between gap-4">
-      <NuxtLink to="/articles" class="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-600 hover:text-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:text-emerald-300">
-        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>Kembali ke katalog
+    <!-- Navigasi atas mode baca: ringkas & elegan -->
+    <div class="mb-5 flex items-center justify-between gap-3">
+      <NuxtLink to="/articles" class="inline-flex min-h-10 sm:min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 transition hover:border-emerald-600 hover:text-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:text-emerald-300">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+        <span class="hidden sm:inline">Kembali ke katalog</span>
+        <span class="sm:hidden">Katalog</span>
       </NuxtLink>
-      <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"><span>Bagian {{ currentPage }} dari {{ totalPages }}</span><span class="hidden sm:inline">·</span><span class="hidden sm:inline">{{ progressPercent }}%</span></div>
+      <div class="flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs text-slate-500 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/80 dark:text-slate-400">
+        <span>Bagian {{ currentPage }} dari {{ totalPages }}</span>
+        <span>·</span>
+        <span class="font-medium text-emerald-600 dark:text-emerald-400">{{ progressPercent }}%</span>
+      </div>
     </div>
 
     <div class="lg:grid lg:grid-cols-12 lg:gap-8">
@@ -13,16 +20,16 @@
       </aside>
 
       <main class="min-w-0 lg:col-span-6">
-        <header class="border-b border-slate-200 pb-6 dark:border-slate-800">
+        <header class="border-b border-slate-200 pb-5 dark:border-slate-800">
           <p class="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-800 dark:text-emerald-300">{{ category }}</p>
-          <h1 class="mt-3 font-serif text-3xl font-semibold leading-tight text-slate-950 md:text-4xl dark:text-white">{{ title }}</h1>
-          <p v-if="author" class="mt-3 text-sm font-medium text-slate-600 dark:text-slate-300">{{ author }}</p>
+          <h1 class="mt-2.5 font-serif text-2xl sm:text-3xl lg:text-4xl font-semibold leading-tight text-slate-950 dark:text-white">{{ title }}</h1>
+          <p v-if="author" class="mt-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">Oleh: {{ author }}</p>
         </header>
 
-        <article id="baca-top" class="mt-6 rounded-2xl border border-amber-100 bg-amber-50/30 px-5 py-7 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:px-8 sm:py-10">
+        <article id="baca-top" class="mt-6 rounded-2xl border border-amber-100 bg-amber-50/30 px-4 py-6 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:px-8 sm:py-10">
           <div class="mx-auto max-w-[680px]">
-            <div class="mb-8 flex flex-wrap items-start justify-between gap-3 border-b border-amber-100 pb-5 dark:border-slate-800">
-              <div><p class="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-800 dark:text-emerald-300">Bagian {{ currentPage }}</p><h2 class="mt-2 font-serif text-2xl font-semibold leading-snug text-slate-900 dark:text-slate-100">{{ sectionTitle }}</h2></div>
+            <div class="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-amber-100/80 pb-4 dark:border-slate-800">
+              <div><p class="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-800 dark:text-emerald-300">Bagian {{ currentPage }}</p><h2 class="mt-1.5 font-serif text-xl sm:text-2xl font-semibold leading-snug text-slate-900 dark:text-slate-100">{{ sectionTitle }}</h2></div>
               <span class="rounded-2xl bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">{{ progressPercent }}% selesai</span>
             </div>
             <slot name="prose" />

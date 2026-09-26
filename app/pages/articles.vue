@@ -8,7 +8,8 @@
         </div>
       </Transition>
 
-      <header class="mb-8 flex flex-wrap items-end justify-between gap-5 border-b border-slate-200 pb-6 dark:border-slate-800">
+      <!-- Header katalog koleksi utama: hanya tampil saat berada di katalog, disembunyikan saat mode baca aktif -->
+      <header v-if="!selectedDoc" class="mb-8 flex flex-wrap items-end justify-between gap-5 border-b border-slate-200 pb-6 dark:border-slate-800">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800 dark:text-emerald-300">FiGo · Koleksi terbuka</p>
           <h1 class="mt-2 font-serif text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl dark:text-white">Pengetahuan Nusantara</h1>
