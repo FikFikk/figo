@@ -1,5 +1,5 @@
 <template>
-  <article class="group relative flex h-full w-full min-w-0 flex-col rounded-2xl border border-slate-200/90 bg-white p-4.5 sm:p-5 shadow-sm hover:shadow-md transition-all duration-300 dark:border-slate-800/90 dark:bg-[#10131c] dark:hover:border-emerald-500/40 dark:hover:bg-[#131724]">
+  <article class="group relative flex h-full w-full min-w-0 flex-col rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 dark:border-slate-800/90 dark:bg-[#10131c] dark:hover:border-emerald-500/40 dark:hover:bg-[#131724]">
     <div class="flex items-start justify-between gap-3 w-full">
       <span class="max-w-[80%] rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 shrink-0">
         {{ article.kategori }}
