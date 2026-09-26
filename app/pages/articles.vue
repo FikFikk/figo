@@ -21,24 +21,19 @@
       <div v-if="loading" class="grid min-h-64 place-items-center" role="status"><div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300"><span class="size-4 animate-pulse rounded-full bg-emerald-600" />Memuat arsip…</div></div>
 
       <template v-else-if="!selectedDoc">
-        <section class="mb-8 rounded-2xl border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-900/30">
-          <div class="max-w-4xl">
-            <h2 class="font-serif text-2xl font-semibold text-slate-950 dark:text-white">Telusuri koleksi</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Gunakan pencarian, kategori, atau daftar simpanan untuk menemukan bacaan.</p>
-            <ArticleFilters
-              class="mt-5"
-              :categories="categories"
-              :search-query="searchQuery"
-              :selected-category="selectedCategory"
-              :sort-mode="sortMode"
-              :result-count="filteredDocuments.length"
-              @update:search-query="searchQuery = $event"
-              @update:selected-category="selectedCategory = $event"
-              @update:sort-mode="sortMode = $event"
-              @reset="resetFilters"
-            />
-          </div>
-        </section>
+        <!-- Filter katalog terpadu: langsung menyatu tanpa kotak/judul duplikat -->
+        <ArticleFilters
+          class="mb-6 md:mb-8"
+          :categories="categories"
+          :search-query="searchQuery"
+          :selected-category="selectedCategory"
+          :sort-mode="sortMode"
+          :result-count="filteredDocuments.length"
+          @update:search-query="searchQuery = $event"
+          @update:selected-category="selectedCategory = $event"
+          @update:sort-mode="sortMode = $event"
+          @reset="resetFilters"
+        />
         <ArticleCatalogue
           :articles="paginatedDocuments"
           :pinned-ids="pinnedIds"
