@@ -208,7 +208,8 @@ const applyHighlight = (color: ArticleHighlight['color']) => {
 const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 const safeUrl = (value: string) => {
   try {
-    const url = new URL(value)
+    const unescaped = value.replace(/&amp;/g, '&')
+    const url = new URL(unescaped)
     return ['http:', 'https:'].includes(url.protocol) ? url.href : ''
   } catch { return '' }
 }
@@ -256,7 +257,16 @@ const renderParagraph = (value: string, pIdx: number) => {
   rendered = rendered.replace(/\*(.*?)\*/g, '<em class="italic text-slate-700 dark:text-slate-300">$1</em>')
   rendered = rendered.replace(/`([^`]+)`/g, '<code class="rounded-md bg-slate-100 dark:bg-white/[0.06] px-1.5 py-0.5 text-xs font-mono text-emerald-700 dark:text-emerald-400 border border-slate-200/60 dark:border-white/[0.08]">$1</code>')
 
-  // 8. Format terjemahan
+  // 8. Format Tautan Markdown: [label](url) dengan lencana ringkas dan ikon tautan eksternal
+  rendered = rendered.replace(/\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)/g, (_match, label, url) => {
+    const cleanUrl = safeUrl(url)
+    if (!cleanUrl) return label || ''
+    const displayText = label.trim()
+    const isIconOnly = !displayText || displayText === '↗' || displayText.toLowerCase() === 'icon'
+    return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 dark:text-emerald-300 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 dark:border-emerald-500/30 transition-all select-none no-underline ml-1.5 align-middle" title="Buka rujukan validasi: ${cleanUrl}">${isIconOnly ? '' : `<span>${displayText}</span>`}<svg class="size-3 shrink-0 inline-block opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></a>`
+  })
+
+  // 9. Format terjemahan
   rendered = rendered.replace(/↳\s*Terjemahan:\s*(.*)/gi, '<div class="mt-2.5 mb-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-2 text-xs sm:text-sm italic text-emerald-900 dark:text-emerald-200 leading-relaxed"><span class="font-semibold not-italic text-emerald-700 dark:text-emerald-400">Terjemahan: </span>$1</div>')
 
   // 9. Format Teks Arab dan pemisahan baris teks biasa agar baris baru selalu dihormati browser
