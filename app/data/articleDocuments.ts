@@ -2,6 +2,16 @@ import type { ArticleSummary } from '~/types/articles'
 
 export const ARTICLE_DOCUMENTS: ArticleSummary[] = [
   {
+    id: 'filsafat_dan_makna_bacaan_sholat',
+    judul: 'Hakikat & Rahasia Bacaan Sholat (Sejarah, Fiqih, & Asrarus Shalah)',
+    tokoh: 'IMAM AL-GHAZALI, IBNUL QAYYIM & ULAMA MADZHAB',
+    kategori: 'Artikel Kajian',
+    tags: ['Asrarus Shalah', 'Filsafat Ibadah', 'Tafsir Bacaan Sholat', 'Isra Mi\'raj'],
+    deskripsi: 'Kajian tuntas sejarah pensyariatan sholat di Sidratul Muntaha, makna harfiah dan rahasia batin bacaan dari Takbiratul Ihram hingga Salam berdasarkan kitab muktabar.',
+    url: '/dataset/filsafat_dan_makna_bacaan_sholat.json',
+    data: null
+  },
+  {
     id: 'syaichona_kholil_bangkalan',
     judul: 'Syaichona Kholil Bangkalan (Biografi, Manuskrip, & Fiqih)',
     tokoh: 'LAJNAH TUROTS & SYEKH YASIN PADANG',
