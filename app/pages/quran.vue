@@ -1025,6 +1025,7 @@
       <Transition name="fade">
         <QuranTvMode
           v-if="isTvModeOpen && currentSurah"
+          :current-surah="currentSurah"
           @close="isTvModeOpen = false"
           @open-surah-list="isTvModeOpen = false; viewMode = 'catalog'"
         />

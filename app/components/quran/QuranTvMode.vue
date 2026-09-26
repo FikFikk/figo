@@ -101,11 +101,11 @@
               <div class="size-full rounded-full bg-gradient-to-br from-slate-900 to-black border border-emerald-500/30 flex flex-col items-center justify-center p-4 relative shadow-inner">
                 <!-- Kaligrafi Nama Surah Arab -->
                 <span class="font-arabic text-3xl sm:text-4xl text-emerald-400 drop-shadow-md select-text">
-                  {{ currentSurah?.nama }}
+                  {{ activeSurah?.nama }}
                 </span>
                 <!-- Nomor Surah -->
                 <span class="mt-1 font-mono text-[11px] font-bold text-emerald-500/90 tracking-wider">
-                  SURAH {{ currentSurah?.nomor }}
+                  SURAH {{ activeSurah?.nomor }}
                 </span>
                 <!-- Titik Lubang Tengah Vinyl -->
                 <div class="size-4 rounded-full bg-slate-950 border border-emerald-500/60 mt-1 shadow-inner" />
@@ -127,19 +127,19 @@
         <div class="space-y-2 w-full max-w-sm">
           <div class="flex items-center justify-center lg:justify-start gap-2 flex-wrap">
             <span class="rounded-xl bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 text-xs font-bold text-emerald-300">
-              QS {{ currentSurah?.nomor }}:{{ playingAyat || 1 }}
+              QS {{ activeSurah?.nomor }}:{{ playingAyat || 1 }}
             </span>
             <span class="rounded-xl border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-slate-300">
-              {{ currentSurah?.tempatTurun }} • {{ currentSurah?.jumlahAyat }} Ayat
+              {{ activeSurah?.tempatTurun }} • {{ activeSurah?.jumlahAyat }} Ayat
             </span>
           </div>
 
           <h2 class="text-2xl sm:text-3xl font-serif font-black tracking-tight text-white">
-            Surah {{ currentSurah?.namaLatin }}
+            Surah {{ activeSurah?.namaLatin }}
           </h2>
 
           <p class="text-xs text-slate-400">
-            Arti: <strong class="text-slate-200">{{ currentSurah?.arti }}</strong>
+            Arti: <strong class="text-slate-200">{{ activeSurah?.arti }}</strong>
           </p>
 
           <!-- Qari Aktif -->
@@ -253,7 +253,7 @@
                 AYAT {{ activeAyatNumber }}
               </span>
               <span class="text-xs text-slate-400 font-medium">
-                dari {{ currentSurah?.jumlahAyat }} Ayat
+                dari {{ activeSurah?.jumlahAyat }} Ayat
               </span>
             </div>
 
@@ -333,7 +333,7 @@
             <button
               type="button"
               class="flex items-center gap-1 hover:text-white transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-              :disabled="activeAyatNumber >= (currentSurah?.jumlahAyat || 1)"
+              :disabled="activeAyatNumber >= (activeSurah?.jumlahAyat || 1)"
               @click="skipNextAyat"
             >
               <span>Selanjutnya</span>
@@ -363,6 +363,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useQuran, toArabicDigits } from '~/composables/useQuran'
+import type { SurahDetail } from '~/types/quran'
+
+const props = defineProps<{
+  currentSurah?: SurahDetail | null
+}>()
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -370,7 +375,7 @@ const emit = defineEmits<{
 }>()
 
 const {
-  currentSurah,
+  currentSurah: composableSurah,
   playingAyat,
   isPlaying,
   playMode,
@@ -389,6 +394,11 @@ const {
   previewSeek,
   formatAudioTime
 } = useQuran()
+
+// Surah Aktif (Menggabungkan Prop dan Composable State)
+const activeSurah = computed(() => {
+  return props.currentSurah || composableSurah.value
+})
 
 // Referensi Kontainer untuk Browser Fullscreen API
 const tvContainerRef = ref<HTMLElement | null>(null)
@@ -432,9 +442,10 @@ const activeAyatNumber = computed(() => {
 })
 
 const activeAyatData = computed(() => {
-  if (!currentSurah.value || !currentSurah.value.ayat) return null
+  const s = activeSurah.value
+  if (!s || !s.ayat || s.ayat.length === 0) return null
   const num = activeAyatNumber.value
-  return currentSurah.value.ayat.find((a) => a.nomorAyat === num) || currentSurah.value.ayat[0]
+  return s.ayat.find((a) => a.nomorAyat === num) || s.ayat[0]
 })
 
 const currentQariName = computed(() => {
@@ -472,13 +483,14 @@ const handleSeekChange = (val: number) => {
 }
 
 const togglePlay = () => {
-  if (!currentSurah.value) return
+  const s = activeSurah.value
+  if (!s) return
   if (isPlaying.value) {
     pauseAudio()
   } else if (playingAyat.value) {
     resumeAudio()
   } else {
-    playFullSurah(currentSurah.value.nomor)
+    playFullSurah(s.nomor)
   }
 }
 
@@ -533,12 +545,13 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 
-  // Otomatis mulai putar tilawah jika belum berputar saat masuk TV mode
-  if (!isPlaying.value && currentSurah.value) {
+  // Otomatis mulai putar tilawah saat masuk Mode TV jika belum berputar
+  const s = activeSurah.value
+  if (!isPlaying.value && s) {
     if (playingAyat.value) {
       resumeAudio()
     } else {
-      playFullSurah(currentSurah.value.nomor)
+      playFullSurah(s.nomor)
     }
   }
 })

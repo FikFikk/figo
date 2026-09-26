@@ -41,24 +41,20 @@ let activeDeckKey: 'A' | 'B' = 'A'
 let checkTimer: any = null
 let hasTriggeredEarly = false
 
+// State Singleton Global untuk Al-Qur'an (Dibagikan ke Halaman & Mode Smart TV)
+const surahs = ref<SurahSummary[]>([])
+const juzs = ref<JuzItem[]>([])
+const currentSurah = ref<SurahDetail | null>(null)
+const loading = ref(false)
+const selectedQari = ref('06') // Bawaan utama: Syeikh Yasser Al-Dosari (Lokal)
+const lastRead = ref<LastReadItem | null>(null)
+const isOnline = ref(true)
+const onlineApiFailed = ref(false)
+const playingAyat = ref<number | null>(null)
+const isPlaying = ref(false)
+const playMode = ref<'continuous' | 'single'>('continuous')
+
 export function useQuran() {
-  const surahs = ref<SurahSummary[]>([])
-  const juzs = ref<JuzItem[]>([])
-  const currentSurah = ref<SurahDetail | null>(null)
-  const loading = ref(false)
-  const selectedQari = ref('06') // Bawaan utama: Syeikh Yasser Al-Dosari (Lokal)
-
-  const lastRead = ref<LastReadItem | null>(null)
-
-  // Status Konektivitas Jaringan & Ketersediaan API Online
-  const isOnline = ref(true)
-  const onlineApiFailed = ref(false)
-
-  // Status Pemutaran Audio
-  const playingAyat = ref<number | null>(null)
-  const isPlaying = ref(false)
-  const playMode = ref<'continuous' | 'single'>('continuous')
-
   const togglePlayMode = () => {
     playMode.value = playMode.value === 'continuous' ? 'single' : 'continuous'
     if (import.meta.client) {
