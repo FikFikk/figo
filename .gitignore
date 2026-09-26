@@ -42,3 +42,6 @@ fix.py
 fix_patterns.py
 fix_type.py
 update_patterns.py
+
+# Audio datasets (local media cache)
+public/audio/
