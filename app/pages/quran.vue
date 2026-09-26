@@ -33,18 +33,116 @@
           </NuxtLink>
 
           <!-- Dropdown Pemilih Cepat Surah (1–114) Saat Mode Baca Aktif -->
-          <div v-if="viewMode === 'reader' && currentSurah" class="relative">
-            <label class="sr-only">Pilih Surah Cepat</label>
-            <select
-              :value="currentSurah.nomor"
-              class="h-9 rounded-xl border bg-transparent pl-3 pr-8 text-xs font-bold outline-none cursor-pointer transition focus:ring-2 focus:ring-emerald-500 font-serif"
-              :class="isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900 shadow-2xs'"
-              @change="selectSurah(parseInt(($event.target as HTMLSelectElement).value, 10))"
+          <div v-if="viewMode === 'reader' && currentSurah" ref="surahDropdownRef" class="relative">
+            <!-- Tombol Pemicu Dropdown Surah -->
+            <button
+              type="button"
+              class="h-9 rounded-xl border px-2.5 sm:px-3 text-xs font-bold outline-none cursor-pointer transition flex items-center gap-1.5 sm:gap-2 group shadow-2xs select-none max-w-[190px] xs:max-w-[240px] sm:max-w-none"
+              :class="isDark
+                ? (isSurahDropdownOpen ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300' : 'border-white/10 bg-slate-900/90 hover:bg-slate-800 text-slate-100')
+                : (isSurahDropdownOpen ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800')"
+              :title="'Surah ' + currentSurah.nomor + ': ' + currentSurah.namaLatin"
+              @click="toggleSurahDropdown"
             >
-              <option v-for="s in surahs" :key="s.nomor" :value="s.nomor">
-                {{ s.nomor }}. {{ s.namaLatin }} ({{ s.nama }})
-              </option>
-            </select>
+              <span class="truncate">{{ currentSurah.nomor }}. {{ currentSurah.namaLatin }}</span>
+              <span class="font-amiri font-normal text-emerald-500 dark:text-emerald-400 hidden md:inline shrink-0">({{ currentSurah.nama }})</span>
+              <span
+                class="material-symbols-outlined text-[18px] transition-transform duration-200 text-slate-400 group-hover:text-emerald-500 shrink-0"
+                :class="{ 'rotate-180 text-emerald-500': isSurahDropdownOpen }"
+              >
+                keyboard_arrow_down
+              </span>
+            </button>
+
+            <!-- Menu Popover Pilihan Surah (1–114) -->
+            <Transition name="dropdown-fade">
+              <div
+                v-if="isSurahDropdownOpen"
+                class="absolute top-full left-0 mt-2 w-[calc(100vw-32px)] sm:w-84 max-w-[340px] rounded-2xl border shadow-2xl backdrop-blur-2xl z-50 overflow-hidden flex flex-col"
+                :class="isDark
+                  ? 'border-white/10 bg-[#0c0e14]/95 text-slate-200 shadow-black/70'
+                  : 'border-slate-200 bg-white/95 text-slate-800 shadow-slate-300/70'"
+              >
+                <!-- Kotak Pencarian Cepat Surah -->
+                <div class="p-2.5 border-b" :class="isDark ? 'border-white/10 bg-white/[0.02]' : 'border-slate-100 bg-slate-50/50'">
+                  <div class="relative flex items-center">
+                    <span class="material-symbols-outlined absolute left-2.5 text-slate-400 text-[18px]">search</span>
+                    <input
+                      ref="surahSearchInputRef"
+                      v-model="surahDropdownSearch"
+                      type="text"
+                      placeholder="Cari nama atau nomor surah..."
+                      class="w-full h-8 pl-8 pr-7 rounded-lg text-xs outline-none transition"
+                      :class="isDark
+                        ? 'bg-slate-900 border border-white/10 text-white placeholder-slate-500 focus:border-emerald-500'
+                        : 'bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-emerald-500'"
+                      @keydown.esc="isSurahDropdownOpen = false"
+                    />
+                    <button
+                      v-if="surahDropdownSearch"
+                      type="button"
+                      class="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 grid place-items-center cursor-pointer"
+                      @click="surahDropdownSearch = ''"
+                    >
+                      <span class="material-symbols-outlined text-[16px]">close</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Daftar Item Surah (1–114) -->
+                <div
+                  ref="surahListRef"
+                  class="max-h-72 sm:max-h-84 overflow-y-auto p-1.5 space-y-0.5 overscroll-contain"
+                >
+                  <button
+                    v-for="s in filteredDropdownSurahs"
+                    :id="'surah-opt-' + s.nomor"
+                    :key="s.nomor"
+                    type="button"
+                    class="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between gap-2 transition cursor-pointer group"
+                    :class="s.nomor === currentSurah.nomor
+                      ? (isDark ? 'bg-emerald-500/20 text-emerald-300 font-semibold' : 'bg-emerald-50 text-emerald-800 font-semibold')
+                      : (isDark ? 'hover:bg-white/5 text-slate-300 hover:text-white' : 'hover:bg-slate-100 text-slate-700 hover:text-slate-900')"
+                    @click="handleSelectSurahFromDropdown(s.nomor)"
+                  >
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <span
+                        class="size-6 rounded-lg grid place-items-center text-[10px] font-bold shrink-0 font-mono"
+                        :class="s.nomor === currentSurah.nomor
+                          ? 'bg-emerald-500 text-white shadow-xs'
+                          : (isDark ? 'bg-slate-800 text-slate-400 group-hover:bg-slate-700' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200')"
+                      >
+                        {{ s.nomor }}
+                      </span>
+                      <div class="truncate">
+                        <div class="truncate font-semibold">{{ s.namaLatin }}</div>
+                        <div class="text-[10px] text-slate-400 truncate">{{ s.tempatTurun }} • {{ s.jumlahAyat }} Ayat</div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                      <span class="font-amiri text-sm font-normal text-emerald-600 dark:text-emerald-400">
+                        {{ s.nama }}
+                      </span>
+                      <span
+                        v-if="s.nomor === currentSurah.nomor"
+                        class="material-symbols-outlined text-[16px] text-emerald-500"
+                      >
+                        check
+                      </span>
+                    </div>
+                  </button>
+
+                  <div
+                    v-if="filteredDropdownSurahs.length === 0"
+                    class="py-8 text-center text-xs text-slate-400 space-y-1"
+                  >
+                    <span class="material-symbols-outlined text-2xl text-slate-500">search_off</span>
+                    <div>Surah tidak ditemukan</div>
+                  </div>
+                </div>
+              </div>
+            </Transition>
           </div>
 
           <!-- Lencana Info Kontekstual -->
@@ -103,13 +201,14 @@
 
           <!-- Tombol Panel Pengaturan Font -->
           <button
+            ref="settingsButtonRef"
             type="button"
             class="grid size-9 place-items-center rounded-xl border transition cursor-pointer"
             :class="showSettingsPanel
               ? 'border-emerald-500 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
               : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'"
             title="Pengaturan Tampilan Baca"
-            @click="showSettingsPanel = !showSettingsPanel"
+            @click="toggleSettingsPanel"
           >
             <span class="material-symbols-outlined text-[19px]">tune</span>
           </button>
@@ -119,6 +218,7 @@
         <Transition name="slide-up">
           <div
             v-if="showSettingsPanel"
+            ref="settingsPanelRef"
             class="absolute top-full right-2 sm:right-4 mt-2 w-80 sm:w-96 rounded-2xl border p-4 shadow-2xl backdrop-blur-2xl z-50 text-xs space-y-3.5"
             :class="isDark ? 'border-white/10 bg-[#0c0e14]/95 text-slate-200 shadow-black/50' : 'border-slate-200 bg-white/95 text-slate-800 shadow-slate-300/50'"
           >
@@ -653,94 +753,232 @@
     <!-- ============================================== -->
     <div
       v-if="viewMode === 'reader' && currentSurah"
-      class="fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-xl transition-all duration-200 px-4 py-2.5 sm:px-6 md:px-8 shadow-2xl"
+      class="fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-xl transition-all duration-200 shadow-2xl select-none group/player"
       :class="isDark ? 'border-white/[0.08] bg-[#08090d]/95 text-slate-100' : 'border-slate-200 bg-white/95 text-slate-900'"
     >
-      <div class="mx-auto max-w-5xl flex items-center justify-between gap-3">
-        <!-- Informasi Ayat & Qari Aktif -->
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="hidden sm:grid size-10 place-items-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 shrink-0">
-            <span class="material-symbols-outlined text-xl">graphic_eq</span>
-          </div>
-          <div class="min-w-0">
-            <p class="text-xs font-bold truncate text-slate-900 dark:text-white">
-              QS {{ currentSurah.nomor }}:{{ playingAyat || 1 }} • {{ currentSurah.namaLatin }}
-            </p>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-              {{ availableQaris.find(q => q.code === selectedQari)?.name || 'Syeikh Yasser Al-Dosari' }}
-            </p>
-          </div>
+      <!-- Garis Waktu Seekbar Interaktif Quran.com Style (Bisa Digeser & Loncat ke Menit Tertentu) -->
+      <div class="relative w-full h-3 -top-1.5 cursor-pointer flex items-center group/seek">
+        <!-- Input range tersembunyi untuk drag & touch lancar di desktop maupun ponsel -->
+        <input
+          type="range"
+          min="0"
+          :max="audioDuration || 100"
+          step="0.1"
+          :value="currentAudioTime"
+          class="absolute inset-0 w-full h-full opacity-0 z-30 cursor-pointer"
+          title="Geser untuk lompat ke menit tilawah"
+          @input="handleSeekInput(Number(($event.target as HTMLInputElement).value))"
+          @change="handleSeekChange(Number(($event.target as HTMLInputElement).value))"
+        />
+
+        <!-- Rel Latar Belakang (Track) -->
+        <div
+          class="absolute inset-x-0 h-1 sm:h-1.5 transition-all duration-150 group-hover/seek:h-2 rounded-full overflow-hidden"
+          :class="isDark ? 'bg-white/10' : 'bg-slate-200'"
+        >
+          <!-- Track Progress Terisi (Progress Fill) -->
+          <div
+            class="h-full bg-emerald-500 rounded-full transition-[width] duration-75"
+            :style="{ width: `${audioProgressPercent}%` }"
+          />
         </div>
 
-        <!-- Tombol Kendali Media (Skip Prev, Play/Pause, Skip Next, Mode Switch) -->
-        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <!-- Ayat Sebelumnya -->
-          <button
-            type="button"
-            class="grid size-9 place-items-center rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition cursor-pointer"
-            title="Ayat Sebelumnya"
-            @click="skipPreviousAyat"
-          >
-            <span class="material-symbols-outlined text-[20px]">skip_previous</span>
-          </button>
+        <!-- Thumb Scrubber Bulat (Mengikuti Menit Audio & Posisi Drag) -->
+        <div
+          class="absolute size-3.5 sm:size-4 rounded-full bg-white shadow-lg ring-2 ring-emerald-500 -translate-x-1/2 pointer-events-none transition-transform duration-75 group-hover/seek:scale-125 z-20"
+          :style="{ left: `${audioProgressPercent}%` }"
+        />
+      </div>
 
-          <!-- Tombol Utama Play / Pause -->
-          <button
-            type="button"
-            class="flex items-center justify-center size-10 rounded-2xl bg-emerald-600 text-white shadow-md transition hover:bg-emerald-700 active:scale-95 cursor-pointer"
-            :title="isPlaying ? 'Jeda Tilawah' : 'Putar Tilawah'"
-            @click="togglePlaySurah"
-          >
-            <span class="material-symbols-outlined text-[24px]">
-              {{ isPlaying ? 'pause' : 'play_arrow' }}
-            </span>
-          </button>
+      <!-- Konten Utama Player Dock -->
+      <div class="px-3 pb-2.5 pt-0.5 sm:px-6 md:px-8">
+        <div class="mx-auto max-w-5xl flex items-center justify-between gap-2 sm:gap-3">
+          <!-- Sisi Kiri: Info Ayat, Qari, & Waktu Berjalan (Quran.com Style) -->
+          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div class="hidden sm:grid size-10 place-items-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 shrink-0">
+              <span class="material-symbols-outlined text-xl">graphic_eq</span>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <p class="text-xs font-bold truncate text-slate-900 dark:text-white">
+                  QS {{ currentSurah.nomor }}:{{ playingAyat || 1 }} • {{ currentSurah.namaLatin }}
+                </p>
+                <!-- Indikator Waktu Berjalan / Maksimal Durasi (cth: 46:39 / 1:12:54 atau 1:08:35 / 1:12:54) -->
+                <span class="font-mono text-[11px] shrink-0 font-medium text-slate-400 dark:text-slate-400 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 px-2 py-0.5 border border-emerald-500/20 flex items-center gap-1">
+                  <span class="font-bold text-emerald-700 dark:text-emerald-400">{{ formatAudioTime(currentAudioTime) }}</span>
+                  <span class="opacity-40">/</span>
+                  <span>{{ formatAudioTime(audioDuration) }}</span>
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                {{ availableQaris.find(q => q.code === selectedQari)?.name || 'Syeikh Yasser Al-Dosari' }}
+              </p>
+            </div>
+          </div>
 
-          <!-- Ayat Berikutnya -->
-          <button
-            type="button"
-            class="grid size-9 place-items-center rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition cursor-pointer"
-            title="Ayat Berikutnya"
-            @click="skipNextAyat"
-          >
-            <span class="material-symbols-outlined text-[20px]">skip_next</span>
-          </button>
-
-          <!-- Pengalih Mode Tilawah: Lanjut-Lanjut vs Per Ayat -->
-          <button
-            type="button"
-            class="h-9 px-2.5 rounded-xl border flex items-center gap-1.5 text-xs font-semibold transition cursor-pointer"
-            :class="playMode === 'continuous'
-              ? (isDark ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-emerald-500/30 bg-emerald-50 text-emerald-700')
-              : (isDark ? 'border-amber-500/30 bg-amber-500/10 text-amber-400' : 'border-amber-500/30 bg-amber-50 text-amber-700')"
-            :title="playMode === 'continuous' ? 'Mode: Lanjut Surah (Klik untuk beralih ke Per Ayat)' : 'Mode: Per Ayat (Klik untuk beralih ke Lanjut Surah)'"
-            @click="onToggleModeClick"
-          >
-            <span class="material-symbols-outlined text-[17px]">
-              {{ playMode === 'continuous' ? 'all_inclusive' : 'filter_1' }}
-            </span>
-            <span class="hidden md:inline">{{ playMode === 'continuous' ? 'Lanjut' : 'Per Ayat' }}</span>
-          </button>
-        </div>
-
-        <!-- Pemilih Qari (Offline Ready) -->
-        <div class="flex items-center gap-2 shrink-0">
-          <div class="relative">
-            <label class="sr-only">Pilih Qari</label>
-            <select
-              :value="selectedQari"
-              class="h-9 rounded-xl border bg-transparent pl-2.5 pr-7 text-xs font-semibold outline-none cursor-pointer transition focus:ring-2 focus:ring-emerald-500 max-w-[140px] sm:max-w-[210px] truncate"
-              :class="isDark ? 'border-white/10 bg-slate-900 text-slate-200' : 'border-slate-200 bg-white text-slate-800'"
-              @change="onQariChange(($event.target as HTMLSelectElement).value)"
+          <!-- Bagian Tengah: Tombol Kendali Media -->
+          <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+            <!-- Ayat Sebelumnya -->
+            <button
+              type="button"
+              class="grid size-9 place-items-center rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition cursor-pointer"
+              title="Ayat Sebelumnya"
+              @click="skipPreviousAyat"
             >
-              <option v-for="qari in availableQaris" :key="qari.code" :value="qari.code">
-                {{ qari.name }} ({{ qari.role }})
-              </option>
-            </select>
+              <span class="material-symbols-outlined text-[20px]">skip_previous</span>
+            </button>
+
+            <!-- Tombol Utama Play / Pause -->
+            <button
+              type="button"
+              class="flex items-center justify-center size-10 rounded-2xl bg-emerald-600 text-white shadow-md transition hover:bg-emerald-700 active:scale-95 cursor-pointer"
+              :title="isPlaying ? 'Jeda Tilawah' : 'Putar Tilawah'"
+              @click="togglePlaySurah"
+            >
+              <span class="material-symbols-outlined text-[24px]">
+                {{ isPlaying ? 'pause' : 'play_arrow' }}
+              </span>
+            </button>
+
+            <!-- Ayat Berikutnya -->
+            <button
+              type="button"
+              class="grid size-9 place-items-center rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition cursor-pointer"
+              title="Ayat Berikutnya"
+              @click="skipNextAyat"
+            >
+              <span class="material-symbols-outlined text-[20px]">skip_next</span>
+            </button>
+
+            <!-- Pengalih Mode Tilawah: Lanjut-Lanjut vs Per Ayat -->
+            <button
+              type="button"
+              class="h-9 px-2.5 rounded-xl border flex items-center gap-1.5 text-xs font-semibold transition cursor-pointer"
+              :class="playMode === 'continuous'
+                ? (isDark ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-emerald-500/30 bg-emerald-50 text-emerald-700')
+                : (isDark ? 'border-amber-500/30 bg-amber-500/10 text-amber-400' : 'border-amber-500/30 bg-amber-50 text-amber-700')"
+              :title="playMode === 'continuous' ? 'Mode: Lanjut Surah (Klik untuk beralih ke Per Ayat)' : 'Mode: Per Ayat (Klik untuk beralih ke Lanjut Surah)'"
+              @click="onToggleModeClick"
+            >
+              <span class="material-symbols-outlined text-[17px]">
+                {{ playMode === 'continuous' ? 'all_inclusive' : 'filter_1' }}
+              </span>
+              <span class="hidden md:inline">{{ playMode === 'continuous' ? 'Lanjut' : 'Per Ayat' }}</span>
+            </button>
           </div>
+
+          <!-- Sisi Kanan: Pemilih Qari -->
+          <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+            <!-- Pemilih Qari (Offline Ready & Studio Smooth) -->
+            <div ref="qariDropdownRef" class="relative shrink-0">
+              <!-- Tombol Pemicu Popover Qari -->
+              <button
+                type="button"
+                class="h-9 px-2.5 sm:px-3 rounded-xl border flex items-center gap-1.5 sm:gap-2 text-xs font-semibold transition cursor-pointer select-none group"
+                :class="isDark
+                  ? (isQariDropdownOpen ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300' : 'border-white/10 bg-slate-900/90 hover:bg-slate-800 text-slate-200')
+                  : (isQariDropdownOpen ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800')"
+                title="Pilih Qari Tilawah"
+                @click="toggleQariDropdown"
+              >
+            <span class="material-symbols-outlined text-[17px] text-emerald-500">record_voice_over</span>
+            <span class="max-w-[100px] sm:max-w-[150px] truncate">
+              {{ currentQariShortName }}
+            </span>
+            <span
+              v-if="selectedQari === '06'"
+              class="hidden sm:inline-flex px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+            >
+              Lokal
+            </span>
+            <span
+              class="material-symbols-outlined text-[18px] transition-transform duration-200 text-slate-400 group-hover:text-emerald-500 shrink-0"
+              :class="{ 'rotate-180 text-emerald-500': isQariDropdownOpen }"
+            >
+              keyboard_arrow_up
+            </span>
+          </button>
+
+          <!-- Dropdown Menu Qari (Membuka ke Atas / Upward) -->
+          <Transition name="dropdown-up">
+            <div
+              v-if="isQariDropdownOpen"
+              class="absolute bottom-full right-0 mb-2 w-[calc(100vw-32px)] sm:w-84 max-w-[340px] rounded-2xl border shadow-2xl backdrop-blur-2xl z-50 overflow-hidden flex flex-col"
+              :class="isDark
+                ? 'border-white/10 bg-[#0c0e14]/95 text-slate-200 shadow-black/70'
+                : 'border-slate-200 bg-white/95 text-slate-800 shadow-slate-300/70'"
+            >
+              <!-- Judul Panel Qari -->
+              <div class="px-3.5 py-2.5 border-b flex items-center justify-between" :class="isDark ? 'border-white/10 bg-white/[0.02]' : 'border-slate-100 bg-slate-50/50'">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[18px] text-emerald-500">graphic_eq</span>
+                  <span class="text-xs font-bold text-slate-800 dark:text-slate-100">Pilih Qari Tilawah</span>
+                </div>
+                <span class="text-[10px] text-slate-400 font-mono">{{ availableQaris.length }} Pilihan</span>
+              </div>
+
+              <!-- Daftar Item Qari -->
+              <div class="max-h-72 overflow-y-auto p-1.5 space-y-1">
+                <button
+                  v-for="qari in availableQaris"
+                  :key="qari.code"
+                  type="button"
+                  class="w-full text-left p-2 rounded-xl text-xs flex items-center justify-between gap-2.5 transition cursor-pointer group"
+                  :class="qari.code === selectedQari
+                    ? (isDark ? 'bg-emerald-500/20 text-emerald-300 font-semibold' : 'bg-emerald-50 text-emerald-800 font-semibold')
+                    : (isDark ? 'hover:bg-white/5 text-slate-300 hover:text-white' : 'hover:bg-slate-100 text-slate-700 hover:text-slate-900')"
+                  @click="handleSelectQariFromDropdown(qari.code)"
+                >
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span
+                      class="size-8 rounded-xl grid place-items-center text-sm shrink-0 transition"
+                      :class="qari.code === selectedQari
+                        ? 'bg-emerald-500 text-white shadow-xs'
+                        : (isDark ? 'bg-slate-800 text-slate-400 group-hover:bg-slate-700' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200')"
+                    >
+                      <span class="material-symbols-outlined text-[18px]">
+                        {{ qari.code === '06' ? 'offline_bolt' : 'record_voice_over' }}
+                      </span>
+                    </span>
+                    <div class="min-w-0">
+                      <div class="font-bold truncate text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                        <span class="truncate">{{ qari.name }}</span>
+                      </div>
+                      <div class="text-[10px] text-slate-400 truncate">
+                        {{ qari.role }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <span
+                      v-if="qari.code === '06'"
+                      class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400"
+                    >
+                      Lokal
+                    </span>
+                    <span
+                      v-else
+                      class="rounded-full border border-slate-500/20 bg-slate-500/10 px-2 py-0.5 text-[9px] font-medium text-slate-500 dark:text-slate-400"
+                    >
+                      Online
+                    </span>
+                    <span
+                      v-if="qari.code === selectedQari"
+                      class="material-symbols-outlined text-[18px] text-emerald-500 shrink-0"
+                    >
+                      check_circle
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </Transition>
         </div>
       </div>
     </div>
+  </div>
+</div>
 
     <!-- Toast Notifikasi (Salin / Bookmark / Offline Alert) -->
     <Transition name="fade">
@@ -779,6 +1017,9 @@ const {
   playingAyat,
   isPlaying,
   playMode,
+  currentTime,
+  duration,
+  isSeeking,
   togglePlayMode,
   loadIndices,
   loadSurah,
@@ -791,8 +1032,40 @@ const {
   skipPreviousAyat,
   pauseAudio,
   resumeAudio,
-  stopAudio
+  stopAudio,
+  seekAudio,
+  previewSeek,
+  formatAudioTime
 } = useQuran()
+
+// Status Dragging Seekbar Garis Waktu Audio (Quran.com Style)
+const isDraggingSeek = ref(false)
+const localSeekTime = ref(0)
+
+const currentAudioTime = computed(() => {
+  return isDraggingSeek.value ? localSeekTime.value : currentTime.value
+})
+
+const audioDuration = computed(() => {
+  return duration.value || 0
+})
+
+const audioProgressPercent = computed(() => {
+  if (!audioDuration.value || audioDuration.value <= 0) return 0
+  const pct = (currentAudioTime.value / audioDuration.value) * 100
+  return Math.max(0, Math.min(100, pct))
+})
+
+const handleSeekInput = (val: number) => {
+  isDraggingSeek.value = true
+  localSeekTime.value = val
+  previewSeek(val)
+}
+
+const handleSeekChange = (val: number) => {
+  isDraggingSeek.value = false
+  seekAudio(val)
+}
 
 // Mode Tampilan: 'reader' (baca surah) atau 'catalog' (daftar 114 surah & 30 juz)
 const viewMode = ref<'reader' | 'catalog'>('reader')
@@ -803,7 +1076,90 @@ const readFormat = ref<'verse' | 'mushaf'>('verse')
 
 const searchQuery = ref('')
 const showDescription = ref(false)
+
+// Status Popup Dropdown & Panel
 const showSettingsPanel = ref(false)
+const isSurahDropdownOpen = ref(false)
+const isQariDropdownOpen = ref(false)
+const surahDropdownSearch = ref('')
+
+// Referensi DOM Elemen untuk Deteksi Klik di Luar (Click Outside)
+const surahDropdownRef = ref<HTMLElement | null>(null)
+const surahSearchInputRef = ref<HTMLInputElement | null>(null)
+const surahListRef = ref<HTMLElement | null>(null)
+const qariDropdownRef = ref<HTMLElement | null>(null)
+const settingsButtonRef = ref<HTMLElement | null>(null)
+const settingsPanelRef = ref<HTMLElement | null>(null)
+
+// Nama Singkat Qari Aktif untuk Tombol
+const currentQariShortName = computed(() => {
+  const q = availableQaris.value.find((item) => item.code === selectedQari.value)
+  if (!q) return 'Pilih Qari'
+  return q.name.replace('Syeikh ', '')
+})
+
+// Filter Pencarian Dropdown Surah Cepat
+const filteredDropdownSurahs = computed(() => {
+  const q = surahDropdownSearch.value.trim().toLowerCase()
+  if (!q) return surahs.value
+  return surahs.value.filter((s) => {
+    return (
+      s.nomor.toString() === q ||
+      s.namaLatin.toLowerCase().includes(q) ||
+      s.nama.includes(q) ||
+      s.arti.toLowerCase().includes(q)
+    )
+  })
+})
+
+// Fungsi Pengalih Tampilan Dropdown Surah
+const toggleSurahDropdown = async () => {
+  isSurahDropdownOpen.value = !isSurahDropdownOpen.value
+  if (isSurahDropdownOpen.value) {
+    isQariDropdownOpen.value = false
+    showSettingsPanel.value = false
+    surahDropdownSearch.value = ''
+    await nextTick()
+    if (surahSearchInputRef.value) {
+      surahSearchInputRef.value.focus()
+    }
+    if (currentSurah.value) {
+      const activeEl = document.getElementById(`surah-opt-${currentSurah.value.nomor}`)
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: 'nearest' })
+      }
+    }
+  }
+}
+
+const handleSelectSurahFromDropdown = (nomor: number) => {
+  isSurahDropdownOpen.value = false
+  surahDropdownSearch.value = ''
+  selectSurah(nomor)
+}
+
+// Fungsi Pengalih Tampilan Dropdown Qari
+const toggleQariDropdown = () => {
+  isQariDropdownOpen.value = !isQariDropdownOpen.value
+  if (isQariDropdownOpen.value) {
+    isSurahDropdownOpen.value = false
+    showSettingsPanel.value = false
+  }
+}
+
+const handleSelectQariFromDropdown = (code: string) => {
+  isQariDropdownOpen.value = false
+  onQariChange(code)
+}
+
+// Fungsi Pengalih Panel Pengaturan
+const toggleSettingsPanel = () => {
+  showSettingsPanel.value = !showSettingsPanel.value
+  if (showSettingsPanel.value) {
+    isSurahDropdownOpen.value = false
+    isQariDropdownOpen.value = false
+  }
+}
 
 // Pengaturan Tampilan Huruf & Terjemahan
 const arabicFontSize = ref(32)
@@ -825,7 +1181,9 @@ const handleScroll = () => {
   } else if (currentY > lastScrollY + scrollThreshold) {
     // Scroll ke bawah: FiGo naik (sembunyi), Quran Header menggantikan di top-0
     isFiGoNavbarHidden.value = true
-    showSettingsPanel.value = false // Tutup popup settings jika user sedang menggulir layar
+    showSettingsPanel.value = false
+    isSurahDropdownOpen.value = false
+    isQariDropdownOpen.value = false
   } else if (currentY < lastScrollY - scrollThreshold) {
     // Scroll ke atas: FiGo turun kembali
     isFiGoNavbarHidden.value = false
@@ -966,6 +1324,8 @@ onMounted(async () => {
 
   // Pasang pendengar scroll untuk smart headroom
   window.addEventListener('scroll', handleScroll, { passive: true })
+  window.addEventListener('click', handleGlobalClick)
+  window.addEventListener('keydown', handleKeydown)
 
   // Muat surah dari query URL atau default ke Surah 1 Al-Fatihah
   const qSurah = route.query.surah ? parseInt(route.query.surah as string, 10) : 1
@@ -982,8 +1342,34 @@ onMounted(async () => {
   }
 })
 
+// Penanganan Klik Global di Luar Dropdown untuk Menutup Menu
+const handleGlobalClick = (event: MouseEvent) => {
+  const target = event.target as Node
+  if (isSurahDropdownOpen.value && surahDropdownRef.value && !surahDropdownRef.value.contains(target)) {
+    isSurahDropdownOpen.value = false
+  }
+  if (isQariDropdownOpen.value && qariDropdownRef.value && !qariDropdownRef.value.contains(target)) {
+    isQariDropdownOpen.value = false
+  }
+  if (showSettingsPanel.value && settingsPanelRef.value && !settingsPanelRef.value.contains(target)) {
+    if (settingsButtonRef.value && settingsButtonRef.value.contains(target)) return
+    showSettingsPanel.value = false
+  }
+}
+
+// Penanganan Tombol Escape Keyboard untuk Menutup Semua Popup
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') {
+    isSurahDropdownOpen.value = false
+    isQariDropdownOpen.value = false
+    showSettingsPanel.value = false
+  }
+}
+
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('click', handleGlobalClick)
+  window.removeEventListener('keydown', handleKeydown)
   isFiGoNavbarHidden.value = false
 })
 
@@ -1018,5 +1404,25 @@ useSeoMeta({
 .slide-up-leave-to {
   opacity: 0;
   transform: translateY(10px);
+}
+
+.dropdown-fade-enter-active,
+.dropdown-fade-leave-active {
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dropdown-fade-enter-from,
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.96) translateY(-4px);
+}
+
+.dropdown-up-enter-active,
+.dropdown-up-leave-active {
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dropdown-up-enter-from,
+.dropdown-up-leave-to {
+  opacity: 0;
+  transform: scale(0.96) translateY(4px);
 }
 </style>

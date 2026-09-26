@@ -27,6 +27,12 @@ export interface AyatTimestamp {
 let fullAudioPlayer: HTMLAudioElement | null = null
 let currentFullSurahNumber: number | null = null
 let yasserTimestamps: Record<string, AyatTimestamp[]> = {}
+let targetSingleAyat: number | null = null
+
+// State Reaktif Waktu Pemutaran Audio (Quran.com Style Timeline)
+const currentTime = ref(0)
+const duration = ref(0)
+const isSeeking = ref(false)
 
 // 2. Dual-Deck Audio Engine untuk Qari Streaming Online
 let deckA: HTMLAudioElement | null = null
@@ -65,14 +71,65 @@ export function useQuran() {
     if (!fullAudioPlayer) {
       fullAudioPlayer = new Audio()
       fullAudioPlayer.preload = 'auto'
+
+      fullAudioPlayer.ontimeupdate = () => {
+        if (!fullAudioPlayer || isSeeking.value) return
+        const cur = fullAudioPlayer.currentTime
+        currentTime.value = cur
+        if (fullAudioPlayer.duration && !isNaN(fullAudioPlayer.duration)) {
+          duration.value = fullAudioPlayer.duration
+        }
+
+        if (!currentSurah.value) return
+        const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
+        const matched = segList.find((s) => cur >= s.start && cur < s.end)
+
+        // Hentikan pemutaran jika mode per ayat aktif dan ayat target telah selesai
+        if (playMode.value === 'single' && targetSingleAyat !== null) {
+          const activeSeg = segList.find((s) => s.ayat === targetSingleAyat)
+          if (activeSeg && cur >= activeSeg.end) {
+            fullAudioPlayer.pause()
+            isPlaying.value = false
+            targetSingleAyat = null
+            return
+          }
+        }
+
+        if (matched && playingAyat.value !== matched.ayat) {
+          playingAyat.value = matched.ayat
+        }
+      }
+
+      fullAudioPlayer.onended = () => {
+        stopAudio()
+      }
+
+      fullAudioPlayer.onerror = () => {
+        console.warn('Gagal memuat full audio lokal, mencoba fallback online...')
+        onlineApiFailed.value = true
+        stopAudio()
+      }
     }
+
     if (!deckA) {
       deckA = new Audio()
       deckA.preload = 'auto'
+      deckA.ontimeupdate = () => {
+        if (selectedQari.value !== '06' && !isSeeking.value && deckA) {
+          currentTime.value = deckA.currentTime
+          if (deckA.duration && !isNaN(deckA.duration)) duration.value = deckA.duration
+        }
+      }
     }
     if (!deckB) {
       deckB = new Audio()
       deckB.preload = 'auto'
+      deckB.ontimeupdate = () => {
+        if (selectedQari.value !== '06' && !isSeeking.value && deckB) {
+          currentTime.value = deckB.currentTime
+          if (deckB.duration && !isNaN(deckB.duration)) duration.value = deckB.duration
+        }
+      }
     }
   }
 
@@ -121,6 +178,13 @@ export function useQuran() {
       surahs.value = surahRes || []
       juzs.value = juzRes || []
       yasserTimestamps = timeRes || {}
+
+      if (currentSurah.value && selectedQari.value === '06') {
+        const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
+        if (segList.length > 0) {
+          duration.value = segList[segList.length - 1].end
+        }
+      }
     } catch (e) {
       console.error('Gagal memuat indeks Al-Qur\'an:', e)
     }
@@ -131,6 +195,13 @@ export function useQuran() {
     try {
       const data = await $fetch<SurahDetail>(`/dataset/quran/surah/${number}.json`)
       currentSurah.value = data
+      if (selectedQari.value === '06') {
+        const segList = yasserTimestamps[String(number)] || []
+        if (segList.length > 0) {
+          duration.value = segList[segList.length - 1].end
+        }
+      }
+      currentTime.value = 0
       return data
     } catch (e) {
       console.error(`Gagal memuat Surah ${number}:`, e)
@@ -208,6 +279,8 @@ export function useQuran() {
     playingAyat.value = null
     isPlaying.value = false
     hasTriggeredEarly = false
+    targetSingleAyat = null
+    currentTime.value = 0
   }
 
   const pauseAudio = () => {
@@ -225,7 +298,7 @@ export function useQuran() {
 
   const resumeAudio = () => {
     initDecks()
-    if (selectedQari.value === '06' && playMode.value === 'continuous' && fullAudioPlayer && fullAudioPlayer.src) {
+    if (selectedQari.value === '06' && fullAudioPlayer && fullAudioPlayer.src) {
       fullAudioPlayer.play().then(() => {
         isPlaying.value = true
       }).catch((err) => {
@@ -273,6 +346,62 @@ export function useQuran() {
     }
   }
 
+  // Preview Seek Saat Pengguna Menyeret (Drag/Scrub) Seekbar
+  const previewSeek = (targetSeconds: number) => {
+    isSeeking.value = true
+    currentTime.value = targetSeconds
+    if (selectedQari.value === '06' && currentSurah.value) {
+      const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
+      const matched = segList.find((s) => targetSeconds >= s.start && targetSeconds < s.end)
+      if (matched && playingAyat.value !== matched.ayat) {
+        playingAyat.value = matched.ayat
+      }
+    }
+  }
+
+  // Lompat Langsung ke Detik/Menit Tertentu (Seek Audio)
+  const seekAudio = (targetSeconds: number) => {
+    initDecks()
+    isSeeking.value = false
+    currentTime.value = targetSeconds
+
+    if (selectedQari.value === '06') {
+      if (!currentSurah.value) return
+      const surahStr = String(currentSurah.value.nomor).padStart(3, '0')
+      const targetFullSrc = `/audio/quran/06/full/${surahStr}.mp3`
+
+      if (currentFullSurahNumber !== currentSurah.value.nomor || !fullAudioPlayer!.src.includes(`/full/${surahStr}.mp3`)) {
+        fullAudioPlayer!.src = targetFullSrc
+        currentFullSurahNumber = currentSurah.value.nomor
+      }
+
+      const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
+      const matched = segList.find((s) => targetSeconds >= s.start && targetSeconds < s.end)
+      if (matched) {
+        playingAyat.value = matched.ayat
+        if (playMode.value === 'single') {
+          targetSingleAyat = matched.ayat
+        } else {
+          targetSingleAyat = null
+        }
+      }
+
+      seekAndPlayFull(targetSeconds)
+      return
+    }
+
+    // Untuk Qari streaming online: seek pada audio deck aktif
+    const curDeck = activeDeckKey === 'A' ? deckA : deckB
+    if (curDeck && curDeck.duration) {
+      curDeck.currentTime = Math.min(targetSeconds, curDeck.duration)
+      if (!isPlaying.value) {
+        curDeck.play().then(() => {
+          isPlaying.value = true
+        }).catch(() => {})
+      }
+    }
+  }
+
   // Pemutaran Utama: Membedakan Mode Lanjut-Lanjut (Studio Gapless) vs Mode Per Ayat (Hafalan)
   const playAyat = (surahNumber: number, ayatNumber: number) => {
     if (!currentSurah.value) return
@@ -291,40 +420,10 @@ export function useQuran() {
     // 2. KELOMPOK UTAMA: Syeikh Yasser Al-Dosari (Audio Lokal Studio)
     if (selectedQari.value === '06') {
       const surahStr = String(surahNumber).padStart(3, '0')
-      const ayatStr = String(ayatNumber).padStart(3, '0')
+      const targetFullSrc = `/audio/quran/06/full/${surahStr}.mp3`
 
-      // OPSI A: MODE PER AYAT (Stell Per Ayat / Muraja'ah Hafalan)
-      // Memutar hanya ayat yang dipilih lalu berhenti secara anggun
-      if (playMode.value === 'single') {
-        if (fullAudioPlayer && !fullAudioPlayer.paused) {
-          fullAudioPlayer.pause()
-        }
-
-        const singleSrc = `/audio/quran/06/${surahStr}${ayatStr}.mp3`
-        const targetDeck = deckA!
-        targetDeck.src = singleSrc
-        playingAyat.value = ayatNumber
-        isPlaying.value = true
-
-        targetDeck.onended = () => {
-          stopAudio()
-        }
-        targetDeck.onerror = () => {
-          console.warn('Gagal memutar berkas per ayat:', singleSrc)
-          stopAudio()
-        }
-        targetDeck.play().catch(() => {
-          isPlaying.value = false
-        })
-        return
-      }
-
-      // OPSI B: MODE LANJUT-LANJUT (Continuous Studio Audio - 100% Smooth Tanpa Nyandet)
-      // Menggunakan 1 berkas rekaman surah utuh tanpa potongan, dipadu timestamp presisi milidetik
       if (deckA && !deckA.paused) deckA.pause()
       if (deckB && !deckB.paused) deckB.pause()
-
-      const targetFullSrc = `/audio/quran/06/full/${surahStr}.mp3`
 
       // Pasang berkas rekaman surah penuh jika belum aktif
       if (currentFullSurahNumber !== surahNumber || !fullAudioPlayer!.src.includes(`/full/${surahStr}.mp3`)) {
@@ -337,29 +436,20 @@ export function useQuran() {
       const segment = list.find((s) => s.ayat === ayatNumber)
       const seekTarget = segment ? segment.start : 0
 
+      if (list.length > 0) {
+        duration.value = list[list.length - 1].end
+      }
+
       playingAyat.value = ayatNumber
+      currentTime.value = seekTarget
+
+      if (playMode.value === 'single') {
+        targetSingleAyat = ayatNumber
+      } else {
+        targetSingleAyat = null
+      }
+
       seekAndPlayFull(seekTarget)
-
-      // Sinkronisasi otomatis nomor ayat aktif & auto-scroll mengikuti waktu audio rekaman studio
-      fullAudioPlayer!.ontimeupdate = () => {
-        if (!isPlaying.value || !currentSurah.value) return
-        const cur = fullAudioPlayer!.currentTime
-        const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
-        const matched = segList.find((s) => cur >= s.start && cur < s.end)
-        if (matched && playingAyat.value !== matched.ayat) {
-          playingAyat.value = matched.ayat
-        }
-      }
-
-      fullAudioPlayer!.onended = () => {
-        stopAudio()
-      }
-
-      fullAudioPlayer!.onerror = () => {
-        console.warn('Gagal memuat full audio lokal, mencoba fallback online...')
-        onlineApiFailed.value = true
-        stopAudio()
-      }
       return
     }
 
@@ -368,8 +458,8 @@ export function useQuran() {
       fullAudioPlayer.pause()
     }
 
-    const currentDeck = activeDeckKey === 'A' ? deckA! : deckB!
-    const standByDeck = activeDeckKey === 'A' ? deckB! : deckA!
+    const currentDeck = activeDeckKey === 'A' ? deckA : deckB
+    const standByDeck = activeDeckKey === 'A' ? deckB : deckA
 
     const target = currentSurah.value.ayat.find((a) => a.nomorAyat === ayatNumber)
     const qariUrl = target?.audio?.[selectedQari.value] || `https://everyayah.com/data/Alafasy_128kbps/${String(surahNumber).padStart(3, '0')}${String(ayatNumber).padStart(3, '0')}.mp3`
@@ -428,15 +518,6 @@ export function useQuran() {
     if (!currentSurah.value) return
     const next = (playingAyat.value || 0) + 1
     if (next <= currentSurah.value.jumlahAyat) {
-      if (selectedQari.value === '06' && playMode.value === 'continuous' && fullAudioPlayer) {
-        const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
-        const segment = segList.find((s) => s.ayat === next)
-        if (segment) {
-          playingAyat.value = next
-          seekAndPlayFull(segment.start)
-          return
-        }
-      }
       playAyat(currentSurah.value.nomor, next)
     }
   }
@@ -445,15 +526,6 @@ export function useQuran() {
     if (!currentSurah.value) return
     const prev = (playingAyat.value || 2) - 1
     if (prev >= 1) {
-      if (selectedQari.value === '06' && playMode.value === 'continuous' && fullAudioPlayer) {
-        const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
-        const segment = segList.find((s) => s.ayat === prev)
-        if (segment) {
-          playingAyat.value = prev
-          seekAndPlayFull(segment.start)
-          return
-        }
-      }
       playAyat(currentSurah.value.nomor, prev)
     }
   }
@@ -471,6 +543,9 @@ export function useQuran() {
     playingAyat,
     isPlaying,
     playMode,
+    currentTime,
+    duration,
+    isSeeking,
     togglePlayMode,
     loadIndices,
     loadSurah,
@@ -483,8 +558,31 @@ export function useQuran() {
     skipPreviousAyat,
     pauseAudio,
     resumeAudio,
-    stopAudio
+    stopAudio,
+    seekAudio,
+    previewSeek,
+    formatAudioTime
   }
+}
+
+// Format Waktu Audio: jika >= 1 jam (3600 detik) tampilkan Jam:Menit:Detik (cth: 1:08:35 / 1:12:54), jika belum 1 jam tampilkan Menit:Detik tanpa angka jam (cth: 46:39)
+export const formatAudioTime = (seconds: number): string => {
+  if (!seconds || isNaN(seconds) || seconds < 0) return '00:00'
+  const totalSecs = Math.floor(seconds)
+
+  // Hanya jika durasi sudah mencapai atau melebihi 1 jam (3600 detik) tampilkan jam
+  if (totalSecs >= 3600) {
+    const hrs = Math.floor(totalSecs / 3600)
+    const mins = Math.floor((totalSecs % 3600) / 60)
+    const secs = totalSecs % 60
+    return `${hrs}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+  }
+
+  // Jika di bawah 1 jam, format langsung menit:detik tanpa prefix jam
+  const mins = Math.floor(totalSecs / 60)
+  const secs = totalSecs % 60
+
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
 }
 
 // Konversi angka Latin ke angka Arab Timur (Eastern Arabic Numerals)
