@@ -8,14 +8,29 @@
         </div>
       </Transition>
 
-      <!-- Header katalog koleksi utama: hanya tampil saat berada di katalog, disembunyikan saat mode baca aktif -->
-      <header v-if="!selectedDoc" class="mb-8 flex flex-wrap items-end justify-between gap-5 border-b border-slate-200 pb-6 dark:border-slate-800">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800 dark:text-emerald-300">FiGo · Koleksi terbuka</p>
-          <h1 class="mt-2 font-serif text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl dark:text-white">Pengetahuan Nusantara</h1>
-          <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">Arsip spiritual, sastra, sejarah, dan pemikiran Nusantara. Baca pelan, simpan jejak, lanjutkan kapan saja.</p>
+      <!-- Header katalog koleksi utama: tampilan editorial yang bersih & modern -->
+      <header v-if="!selectedDoc" class="mb-5 pb-4 border-b border-slate-200/80 dark:border-white/[0.08]">
+        <div class="flex items-start justify-between gap-4">
+          <div class="space-y-1">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              FiGo Koleksi Terbuka
+            </div>
+            <h1 class="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-slate-950 dark:text-white pt-0.5">
+              Pengetahuan Nusantara
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xl leading-relaxed">
+              Arsip spiritual, sastra, sejarah, dan pemikiran Nusantara. Baca pelan, simpan jejak, lanjutkan kapan saja.
+            </p>
+          </div>
+          <NuxtLink
+            to="/"
+            class="hidden sm:inline-flex min-h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white/80 px-3 text-xs font-semibold text-slate-700 transition hover:border-emerald-600 hover:text-emerald-800 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:text-emerald-400 shrink-0"
+          >
+            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+            Beranda
+          </NuxtLink>
         </div>
-        <NuxtLink to="/" class="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-600 hover:text-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:text-emerald-300"><svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>Beranda</NuxtLink>
       </header>
 
       <div v-if="loading" class="grid min-h-64 place-items-center" role="status"><div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300"><span class="size-4 animate-pulse rounded-full bg-emerald-600" />Memuat arsip…</div></div>
