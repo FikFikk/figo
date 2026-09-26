@@ -22,49 +22,30 @@ permissions:
 
 jobs:
   # =========================================================================
-  # 0. DETEKSI PERUBAHAN FILE (PATH FILTERING)
+  # 1. CABANG BACKEND (DETEKSI & BUILD GO BINARIES)
   # =========================================================================
-  changes:
-    name: Deteksi Perubahan File
+  check-backend:
+    name: Deteksi Backend
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-      android: ${{ steps.filter.outputs.android }}
+      changed: ${{ steps.filter.outputs.changed }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Periksa Jalur Berkas yang Berubah
+      - name: Periksa Jalur Berkas Backend
         uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
-            backend:
+            changed:
               - 'backend-go/**'
               - '.github/workflows/build-all.yml'
-            frontend:
-              - 'app/**'
-              - 'server/**'
-              - 'public/**'
-              - 'nuxt.config.ts'
-              - 'tailwind.config.ts'
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-              - 'scripts/**'
-              - '.github/workflows/build-all.yml'
-            android:
-              - 'android/**'
-              - 'capacitor.config.ts'
-              - '.github/workflows/build-all.yml'
 
-  # =========================================================================
-  # 1. BUILD BACKEND (GO API) - HANYA JIKA ADA PERUBAHAN BACKEND
-  # =========================================================================
   build-backend:
     name: Build Backend (Go Binaries)
-    needs: changes
-    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || needs.changes.outputs.backend == 'true' }}
+    needs: check-backend
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || needs.check-backend.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -103,12 +84,37 @@ jobs:
           retention-days: 14
 
   # =========================================================================
-  # 2. BUILD FRONTEND (NUXT 4 / NITRO SSR) - HANYA JIKA ADA PERUBAHAN FRONTEND
+  # 2. CABANG FRONTEND (DETEKSI & BUILD NUXT 4 / NITRO SSR)
   # =========================================================================
+  check-frontend:
+    name: Deteksi Frontend
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.filter.outputs.changed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Periksa Jalur Berkas Frontend
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            changed:
+              - 'app/**'
+              - 'server/**'
+              - 'public/**'
+              - 'nuxt.config.ts'
+              - 'tailwind.config.ts'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'scripts/**'
+              - '.github/workflows/build-all.yml'
+
   build-frontend:
     name: Build Frontend (Nuxt 4 / Nitro)
-    needs: changes
-    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || needs.changes.outputs.frontend == 'true' }}
+    needs: check-frontend
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || needs.check-frontend.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -147,12 +153,31 @@ jobs:
           retention-days: 14
 
   # =========================================================================
-  # 3. BUILD ANDROID APK (CAPACITOR + GRADLE) - HANYA JIKA ADA PERUBAHAN ANDROID
+  # 3. CABANG ANDROID (DETEKSI & BUILD GRADLE APK)
   # =========================================================================
+  check-android:
+    name: Deteksi Android
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.filter.outputs.changed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Periksa Jalur Berkas Android
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            changed:
+              - 'android/**'
+              - 'capacitor.config.ts'
+              - '.github/workflows/build-all.yml'
+
   build-android:
     name: Build Android APK
-    needs: changes
-    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || needs.changes.outputs.android == 'true' }}
+    needs: check-android
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || needs.check-android.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -219,7 +244,7 @@ jobs:
   # =========================================================================
   release:
     name: Publikasi GitHub Release
-    needs: [changes, build-backend, build-frontend, build-android]
+    needs: [build-backend, build-frontend, build-android]
     if: startsWith(github.ref, 'refs/tags/v') && !cancelled() && !contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     steps:
