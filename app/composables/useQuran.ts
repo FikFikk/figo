@@ -191,6 +191,8 @@ export function useQuran() {
   }
 
   const loadSurah = async (number: number) => {
+    // Pastikan pemutaran audio surah sebelumnya dihentikan total saat memuat surah baru
+    stopAudio()
     loading.value = true
     try {
       const data = await $fetch<SurahDetail>(`/dataset/quran/surah/${number}.json`)
@@ -265,16 +267,25 @@ export function useQuran() {
     }
     if (fullAudioPlayer) {
       fullAudioPlayer.pause()
+      try {
+        fullAudioPlayer.currentTime = 0
+      } catch { /* Abaikan jika audio belum siap */ }
     }
     if (deckA) {
       deckA.pause()
       deckA.onended = null
       deckA.onerror = null
+      try {
+        deckA.currentTime = 0
+      } catch { /* Abaikan */ }
     }
     if (deckB) {
       deckB.pause()
       deckB.onended = null
       deckB.onerror = null
+      try {
+        deckB.currentTime = 0
+      } catch { /* Abaikan */ }
     }
     playingAyat.value = null
     isPlaying.value = false

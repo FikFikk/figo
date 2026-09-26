@@ -996,7 +996,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useQuran, toArabicDigits } from '~/composables/useQuran'
 import type { AyatItem } from '~/types/quran'
 
@@ -1318,6 +1318,37 @@ watch(playingAyat, async (newAyat) => {
   }
 })
 
+// Hentikan pemutaran audio saat beralih ke katalog 114 surah (keluar dari mode baca surah)
+watch(viewMode, (newMode) => {
+  if (newMode === 'catalog') {
+    stopAudio()
+  }
+})
+
+// Hentikan pemutaran audio jika query surah di URL berubah (misal tombol Back/Forward browser)
+watch(
+  () => route.query.surah,
+  async (newSurah, oldSurah) => {
+    if (newSurah && newSurah !== oldSurah) {
+      stopAudio()
+      const sNum = parseInt(newSurah as string, 10)
+      if (!isNaN(sNum) && (!currentSurah.value || currentSurah.value.nomor !== sNum)) {
+        await loadSurah(sNum)
+      }
+    }
+  }
+)
+
+// Hentikan pemutaran audio saat navigasi keluar dari halaman Quran (pindah ke rute lain)
+onBeforeRouteLeave(() => {
+  stopAudio()
+})
+
+// Penanganan Penutupan Halaman / Navigasi Browser
+const handlePageHide = () => {
+  stopAudio()
+}
+
 onMounted(async () => {
   loadStorage()
   await loadIndices()
@@ -1326,6 +1357,7 @@ onMounted(async () => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   window.addEventListener('click', handleGlobalClick)
   window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('pagehide', handlePageHide)
 
   // Muat surah dari query URL atau default ke Surah 1 Al-Fatihah
   const qSurah = route.query.surah ? parseInt(route.query.surah as string, 10) : 1
@@ -1367,9 +1399,12 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 onUnmounted(() => {
+  // Matikan audio total saat keluar dari halaman Quran
+  stopAudio()
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('click', handleGlobalClick)
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('pagehide', handlePageHide)
   isFiGoNavbarHidden.value = false
 })
 
