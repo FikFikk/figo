@@ -1,121 +1,162 @@
 <template>
-  <div class="min-h-[100dvh] w-full max-w-full overflow-x-clip px-4 pb-44 pt-20 text-slate-800 transition-colors duration-200 sm:px-6 md:px-8 md:pt-24 dark:text-slate-200">
-    <div class="mx-auto max-w-7xl">
-      <!-- Header Banner & Navigasi Atas -->
-      <header class="mb-6 pb-4 border-b border-slate-200/80 dark:border-white/[0.08]">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div class="space-y-1">
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Kemenag RI • Rasm Utsmani MSI
-            </div>
-            <h1 class="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-slate-950 dark:text-white pt-0.5 flex items-center gap-2">
-              <span>Al-Qur'an Al-Karim</span>
-              <span class="font-arabic text-xl sm:text-2xl font-normal text-emerald-600 dark:text-emerald-400">القرآن الكريم</span>
-            </h1>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
-              Teks resmi Mushaf Standar Indonesia, terjemahan lengkap Kemenag RI, serta audio murottal Syeikh Yasser Al-Dosari dan qari terkemuka.
-            </p>
+  <div class="min-h-[100dvh] w-full max-w-full overflow-x-clip px-4 pb-44 pt-24 text-slate-800 transition-colors duration-200 sm:px-6 md:px-8 dark:text-slate-200">
+    <!-- ============================================== -->
+    <!-- SMART HEADROOM HEADER (AUTO HIDE/SHOW ON SCROLL) -->
+    <!-- ============================================== -->
+    <header
+      class="fixed inset-x-0 top-0 z-50 border-b backdrop-blur-xl transition-all duration-300 ease-in-out px-4 py-3 sm:px-6 md:px-8 shadow-sm"
+      :class="[
+        isHeaderVisible ? 'translate-y-0' : '-translate-y-full shadow-none',
+        isDark ? 'border-white/[0.08] bg-[#08090d]/90 text-slate-100' : 'border-slate-200/80 bg-white/90 text-slate-900'
+      ]"
+    >
+      <div class="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-3">
+        <!-- Sisi Kiri: Tombol Beranda & Pemilih Surah Cepat -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <NuxtLink
+            to="/"
+            class="grid size-9 place-items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-600 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-emerald-400 transition"
+            title="Kembali ke Beranda"
+          >
+            <span class="material-symbols-outlined text-[18px]">home</span>
+          </NuxtLink>
+
+          <!-- Dropdown Pemilih Cepat Surah (1–114) Saat Mode Baca Aktif -->
+          <div v-if="viewMode === 'reader' && currentSurah" class="relative">
+            <label class="sr-only">Pilih Surah Cepat</label>
+            <select
+              :value="currentSurah.nomor"
+              class="h-9 rounded-xl border bg-transparent pl-3 pr-8 text-xs font-bold outline-none cursor-pointer transition focus:ring-2 focus:ring-emerald-500 font-serif"
+              :class="isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900 shadow-2xs'"
+              @change="selectSurah(parseInt(($event.target as HTMLSelectElement).value, 10))"
+            >
+              <option v-for="s in surahs" :key="s.nomor" :value="s.nomor">
+                {{ s.nomor }}. {{ s.namaLatin }} ({{ s.nama }})
+              </option>
+            </select>
           </div>
 
-          <div class="flex items-center gap-2 shrink-0">
-            <!-- Tombol Beranda -->
-            <NuxtLink
-              to="/"
-              class="inline-flex min-h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white/80 px-3 text-xs font-semibold text-slate-700 transition hover:border-emerald-600 hover:text-emerald-800 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:text-emerald-400"
-            >
-              <span class="material-symbols-outlined text-[16px]">home</span>
-              Beranda
-            </NuxtLink>
+          <!-- Lencana Info Kontekstual -->
+          <span
+            v-if="viewMode === 'reader' && currentSurah"
+            class="hidden lg:inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800 dark:text-emerald-300"
+          >
+            {{ currentSurah.tempatTurun }} • {{ currentSurah.jumlahAyat }} Ayat • {{ currentSurah.arti }}
+          </span>
+        </div>
 
-            <!-- Mode Switcher: Mode Baca vs Katalog -->
+        <!-- Sisi Kanan: Pengalih Format Baca, Katalog, & Pengaturan -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <!-- Toggle Format Baca: Ayat demi Ayat vs Mode Mushaf Utuh -->
+          <div
+            v-if="viewMode === 'reader'"
+            class="flex items-center rounded-xl border p-0.5"
+            :class="isDark ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-slate-100'"
+          >
             <button
-              v-if="viewMode === 'reader'"
               type="button"
-              class="inline-flex min-h-9 items-center gap-1.5 rounded-2xl bg-emerald-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600"
-              @click="viewMode = 'catalog'"
+              class="px-2.5 py-1 text-xs font-semibold rounded-lg transition"
+              :class="readFormat === 'verse'
+                ? 'bg-emerald-600 text-white shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'"
+              @click="readFormat = 'verse'"
             >
-              <span class="material-symbols-outlined text-[16px]">menu_book</span>
-              Daftar Surah (114)
+              Ayat demi Ayat
             </button>
             <button
-              v-else-if="currentSurah"
               type="button"
-              class="inline-flex min-h-9 items-center gap-1.5 rounded-2xl bg-emerald-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600"
-              @click="viewMode = 'reader'"
+              class="px-2.5 py-1 text-xs font-semibold rounded-lg transition"
+              :class="readFormat === 'mushaf'
+                ? 'bg-emerald-600 text-white shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'"
+              @click="readFormat = 'mushaf'"
             >
-              <span class="material-symbols-outlined text-[16px]">auto_stories</span>
-              Lanjut Baca Surah {{ currentSurah.namaLatin }}
+              Membaca
             </button>
           </div>
-        </div>
 
-        <!-- Tab Pemilih Tampilan -->
-        <div class="mt-4 flex items-center gap-1 border-t border-slate-100 pt-3 dark:border-slate-800/80">
+          <!-- Tombol Katalog 114 Surah / 30 Juz -->
           <button
             type="button"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight transition flex items-center gap-1.5"
-            :class="viewMode === 'reader'
-              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'"
-            @click="viewMode = 'reader'"
+            class="inline-flex min-h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition"
+            :class="viewMode === 'catalog'
+              ? 'bg-emerald-600 text-white border-transparent'
+              : 'border-slate-200 bg-white/80 text-slate-700 hover:border-emerald-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'"
+            @click="viewMode = viewMode === 'catalog' ? 'reader' : 'catalog'"
           >
-            <span class="material-symbols-outlined text-[15px]">auto_stories</span>
-            Mode Baca ({{ currentSurah ? currentSurah.namaLatin : 'Al-Fatihah' }})
+            <span class="material-symbols-outlined text-[16px]">
+              {{ viewMode === 'catalog' ? 'auto_stories' : 'menu_book' }}
+            </span>
+            <span class="hidden sm:inline">{{ viewMode === 'catalog' ? 'Kembali Membaca' : 'Semua Surah' }}</span>
           </button>
-          <button
-            type="button"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight transition flex items-center gap-1.5"
-            :class="viewMode === 'catalog' && catalogTab === 'surah'
-              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'"
-            @click="openCatalog('surah')"
-          >
-            <span class="material-symbols-outlined text-[15px]">format_list_numbered</span>
-            114 Surah
-          </button>
-          <button
-            type="button"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight transition flex items-center gap-1.5"
-            :class="viewMode === 'catalog' && catalogTab === 'juz'
-              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'"
-            @click="openCatalog('juz')"
-          >
-            <span class="material-symbols-outlined text-[15px]">grid_view</span>
-            30 Juz
-          </button>
-        </div>
-      </header>
 
-      <!-- Banner Terakhir Dibaca (Jika ada bookmark tersimpan) -->
-      <div
-        v-if="lastRead && viewMode === 'catalog'"
-        class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 backdrop-blur-sm dark:bg-emerald-950/20"
-      >
-        <div class="flex items-center gap-3">
-          <div class="grid size-10 place-items-center rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-            <span class="material-symbols-outlined text-xl">bookmark</span>
-          </div>
-          <div>
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Terakhir Dibaca
-            </p>
-            <p class="text-sm font-bold text-slate-900 dark:text-white">
-              Surah {{ lastRead.surahName }} (Ayat {{ lastRead.ayatNumber }})
-            </p>
-          </div>
+          <!-- Tombol Panel Pengaturan Font -->
+          <button
+            type="button"
+            class="grid size-9 place-items-center rounded-xl border transition cursor-pointer"
+            :class="showSettingsPanel
+              ? 'border-emerald-500 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+              : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'"
+            title="Pengaturan Tampilan Baca"
+            @click="showSettingsPanel = !showSettingsPanel"
+          >
+            <span class="material-symbols-outlined text-[19px]">tune</span>
+          </button>
         </div>
-        <button
-          type="button"
-          class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-700"
-          @click="selectSurah(lastRead.surahNumber, lastRead.ayatNumber)"
-        >
-          <span>Lanjutkan Tilawah</span>
-          <span class="material-symbols-outlined text-sm">arrow_forward</span>
-        </button>
       </div>
 
+      <!-- Drawer Panel Pengaturan Tampilan Huruf & Terjemahan -->
+      <Transition name="slide-up">
+        <div
+          v-if="showSettingsPanel"
+          class="mx-auto max-w-7xl mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.06] grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs"
+        >
+          <!-- Pengatur Ukuran Huruf Arab -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-semibold">
+              <span>Ukuran Aksara Arab:</span>
+              <span class="font-mono text-emerald-600 dark:text-emerald-400">{{ arabicFontSize }}px</span>
+            </div>
+            <input
+              v-model.number="arabicFontSize"
+              type="range"
+              min="24"
+              max="48"
+              step="2"
+              class="w-full accent-emerald-600 cursor-pointer"
+            />
+          </div>
+
+          <!-- Toggle Transliterasi Latin -->
+          <div class="flex items-center justify-between sm:justify-center gap-3">
+            <span class="font-semibold">Transliterasi Latin:</span>
+            <button
+              type="button"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
+              :class="showLatin ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
+              @click="showLatin = !showLatin"
+            >
+              <span class="inline-block size-4 transform rounded-full bg-white transition-transform" :class="showLatin ? 'translate-x-6' : 'translate-x-1'" />
+            </button>
+          </div>
+
+          <!-- Toggle Terjemahan Bahasa Indonesia -->
+          <div class="flex items-center justify-between sm:justify-end gap-3">
+            <span class="font-semibold">Terjemahan Indonesia:</span>
+            <button
+              type="button"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
+              :class="showTranslation ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
+              @click="showTranslation = !showTranslation"
+            >
+              <span class="inline-block size-4 transform rounded-full bg-white transition-transform" :class="showTranslation ? 'translate-x-6' : 'translate-x-1'" />
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </header>
+
+    <div class="mx-auto max-w-5xl">
       <!-- ============================================== -->
       <!-- TAMPILAN 1: MODE BACA SURAH (READER) -->
       <!-- ============================================== -->
@@ -129,9 +170,9 @@
         </div>
 
         <template v-else-if="currentSurah">
-          <!-- Banner Hero Informasi Surah Terpilih -->
-          <div class="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-6 sm:p-8 dark:border-emerald-500/20 dark:from-emerald-950/30 dark:via-emerald-900/10">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <!-- Hero Header Surah Editorial Minimalis -->
+          <div class="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-6 sm:p-8 dark:border-emerald-500/20 dark:from-emerald-950/30 dark:via-emerald-900/10 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div class="space-y-2">
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="rounded-xl bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white shadow-xs">
@@ -146,22 +187,22 @@
                 </div>
 
                 <div class="flex items-baseline gap-4 pt-1">
-                  <h2 class="text-3xl sm:text-4xl font-serif font-black tracking-tight text-slate-950 dark:text-white">
+                  <h1 class="text-3xl sm:text-4xl font-serif font-black tracking-tight text-slate-950 dark:text-white">
                     {{ currentSurah.namaLatin }}
-                  </h2>
+                  </h1>
                   <span class="font-arabic text-3xl sm:text-4xl text-emerald-600 dark:text-emerald-400 font-normal">
                     {{ currentSurah.nama }}
                   </span>
                 </div>
 
-                <!-- Accordion Deskripsi Makna / Asbabun Nuzul -->
+                <!-- Accordion Deskripsi Makna / Pengantar Surah -->
                 <div class="pt-2">
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+                    class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 cursor-pointer"
                     @click="showDescription = !showDescription"
                   >
-                    <span>{{ showDescription ? 'Sembunyikan Keterangan Surah' : 'Baca Pengantar & Makna Surah' }}</span>
+                    <span>{{ showDescription ? 'Sembunyikan Pengantar Surah' : 'Baca Pengantar & Makna Surah' }}</span>
                     <span class="material-symbols-outlined text-sm transition-transform" :class="{ 'rotate-180': showDescription }">
                       expand_more
                     </span>
@@ -181,7 +222,7 @@
                 <button
                   v-if="currentSurah.suratSebelumnya"
                   type="button"
-                  class="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-emerald-600 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-emerald-400"
+                  class="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-emerald-600 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-emerald-400 cursor-pointer"
                   @click="selectSurah(currentSurah.suratSebelumnya.nomor)"
                 >
                   <span class="material-symbols-outlined text-sm">arrow_back</span>
@@ -190,7 +231,7 @@
                 <button
                   v-if="currentSurah.suratSelanjutnya"
                   type="button"
-                  class="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-emerald-600 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-emerald-400"
+                  class="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-emerald-600 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-emerald-400 cursor-pointer"
                   @click="selectSurah(currentSurah.suratSelanjutnya.nomor)"
                 >
                   <span>{{ currentSurah.suratSelanjutnya.namaLatin }}</span>
@@ -200,53 +241,53 @@
             </div>
           </div>
 
-          <!-- Banner Kaligrafi Bismillah (Kecuali Surah At-Taubah no 9 dan Al-Fatihah di mana bismillah adalah ayat 1) -->
+          <!-- Banner Kaligrafi Bismillah (Kecuali Surah At-Taubah no 9 dan Al-Fatihah no 1) -->
           <div
             v-if="currentSurah.nomor !== 9 && currentSurah.nomor !== 1"
             class="my-8 text-center"
           >
-            <div class="inline-block rounded-3xl border border-emerald-500/20 bg-white/60 px-8 py-5 shadow-xs backdrop-blur-sm dark:bg-slate-900/60">
+            <div class="inline-block rounded-3xl border border-emerald-500/20 bg-white/60 px-8 py-4 shadow-xs backdrop-blur-sm dark:bg-slate-900/60">
               <p class="font-arabic text-2xl sm:text-3xl text-emerald-800 dark:text-emerald-300 leading-loose">
                 بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ
               </p>
-              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 italic">
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 italic font-serif">
                 Dengan nama Allah Yang Maha Pengasih lagi Maha Penyayang
               </p>
             </div>
           </div>
 
-          <!-- Daftar Kartu Ayat-Ayat Al-Qur'an -->
-          <div class="space-y-4">
+          <!-- FORMAT 1: AYAT DEMI AYAT (CARD VIEW DENGAN TOMBOL AKSI & TERJEMAHAN) -->
+          <div v-if="readFormat === 'verse'" class="space-y-4">
             <article
               v-for="item in currentSurah.ayat"
               :id="`ayat-${item.nomorAyat}`"
               :key="item.nomorAyat"
-              class="relative rounded-3xl border p-5 sm:p-7 transition-all duration-300"
+              class="relative rounded-3xl border p-5 sm:p-6 transition-all duration-300"
               :class="playingAyat === item.nomorAyat
                 ? 'border-emerald-500 bg-emerald-500/[0.06] ring-2 ring-emerald-500/30 dark:bg-emerald-950/20'
                 : 'border-slate-200/90 bg-white/80 hover:border-slate-300 dark:border-white/[0.08] dark:bg-[#0c0e14]/80 dark:hover:border-white/[0.14]'"
             >
-              <!-- Baris Aksi Ayat: Nomor, Tombol Audio, Copy, Bookmark -->
-              <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3 dark:border-white/[0.06]">
+              <!-- Baris Meta Ayat: Nomor Ayat & Tombol Aksi Cepat (Play, Copy, Bookmark) -->
+              <div class="mb-4 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-white/[0.06]">
                 <div class="flex items-center gap-2">
-                  <span class="inline-flex size-9 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                  <span class="font-mono text-xs font-bold text-slate-500 dark:text-slate-400">
                     {{ currentSurah.nomor }}:{{ item.nomorAyat }}
                   </span>
                   <span v-if="playingAyat === item.nomorAyat" class="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white animate-pulse">
                     <span class="material-symbols-outlined text-xs">volume_up</span>
-                    Sedang Diputar
+                    Tilawah Aktif
                   </span>
                 </div>
 
-                <div class="flex items-center gap-1 sm:gap-1.5">
+                <div class="flex items-center gap-1">
                   <!-- Putar Audio Ayat Ini -->
                   <button
                     type="button"
-                    class="grid size-9 place-items-center rounded-xl transition cursor-pointer"
-                    :class="playingAyat === item.nomorAyat
+                    class="grid size-8 place-items-center rounded-xl transition cursor-pointer"
+                    :class="playingAyat === item.nomorAyat && isPlaying
                       ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'border border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-600 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-emerald-400'"
-                    :aria-label="`Putar audio ayat ${item.nomorAyat}`"
+                      : 'text-slate-500 hover:bg-slate-100 hover:text-emerald-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-emerald-400'"
+                    :title="`Putar audio ayat ${item.nomorAyat}`"
                     @click="playAyat(currentSurah.nomor, item.nomorAyat)"
                   >
                     <span class="material-symbols-outlined text-[18px]">
@@ -254,11 +295,11 @@
                     </span>
                   </button>
 
-                  <!-- Salin Ayat -->
+                  <!-- Salin Teks Ayat -->
                   <button
                     type="button"
-                    class="grid size-9 place-items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-600 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-emerald-400 transition cursor-pointer"
-                    :aria-label="`Salin ayat ${item.nomorAyat}`"
+                    class="grid size-8 place-items-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-emerald-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-emerald-400 transition cursor-pointer"
+                    :title="`Salin ayat ${item.nomorAyat}`"
                     @click="copyAyat(item)"
                   >
                     <span class="material-symbols-outlined text-[17px]">content_copy</span>
@@ -267,11 +308,11 @@
                   <!-- Simpan Bookmark Terakhir Dibaca -->
                   <button
                     type="button"
-                    class="grid size-9 place-items-center rounded-xl border transition cursor-pointer"
+                    class="grid size-8 place-items-center rounded-xl transition cursor-pointer"
                     :class="isMarked(item.nomorAyat)
-                      ? 'border-emerald-500 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-600 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-emerald-400'"
-                    :aria-label="`Tandai terakhir dibaca ayat ${item.nomorAyat}`"
+                      ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+                      : 'text-slate-500 hover:bg-slate-100 hover:text-emerald-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-emerald-400'"
+                    :title="`Tandai terakhir dibaca ayat ${item.nomorAyat}`"
                     @click="bookmarkAyat(item.nomorAyat)"
                   >
                     <span class="material-symbols-outlined text-[17px]">
@@ -281,21 +322,42 @@
                 </div>
               </div>
 
-              <!-- Teks Arab Kaligrafi Rasm Utsmani MSI Kemenag RI -->
+              <!-- Teks Arab Kaligrafi Rasm Utsmani MSI Kemenag RI dengan Medali Angka Arab -->
               <div class="mb-4 text-right" dir="rtl">
                 <p
-                  class="font-arabic font-medium tracking-normal text-slate-950 dark:text-white leading-[2.5] select-text"
+                  class="font-arabic font-medium tracking-normal text-slate-950 dark:text-white leading-[2.6] select-text"
                   :style="{ fontSize: `${arabicFontSize}px` }"
                 >
                   {{ item.teksArab }}
-                  <span class="inline-block px-1 font-arabic text-emerald-600 dark:text-emerald-400 opacity-90 text-[0.85em]">
-                    ۝
+
+                  <!-- Ornamen Penutup Ayat Berisi Angka Arab Timur yang Presisi -->
+                  <span
+                    class="inline-flex items-center justify-center size-9 mx-2 align-middle select-none relative text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform"
+                    dir="ltr"
+                    :aria-label="`Ayat ${item.nomorAyat}`"
+                  >
+                    <!-- Ornamen Medali Geometris Islami (Oktagon & Lingkaran Emas/Emerald) -->
+                    <svg class="size-9 absolute inset-0 drop-shadow-xs" viewBox="0 0 40 40" fill="none">
+                      <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.4" stroke-dasharray="1.5 2.5" />
+                      <path
+                        d="M20 3 L24.5 7.5 L31 7.5 L32.5 14 L37 18.5 L35 24.5 L37 30 L31 32.5 L29 37 L20 35 L11 37 L9 32.5 L3 30 L5 24.5 L3 18.5 L7.5 14 L9 7.5 L15.5 7.5 Z"
+                        stroke="currentColor"
+                        stroke-width="1.2"
+                        fill="currentColor"
+                        fill-opacity="0.08"
+                      />
+                      <circle cx="20" cy="20" r="13" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.7" />
+                    </svg>
+                    <!-- Angka Arab Timur (Eastern Arabic Numerals) -->
+                    <span class="font-arabic font-bold text-xs pt-0.5 text-emerald-700 dark:text-emerald-300 relative z-10 leading-none">
+                      {{ toArabicDigits(item.nomorAyat) }}
+                    </span>
                   </span>
                 </p>
               </div>
 
-              <!-- Transliterasi Latin Fonetik Standar Kemenag -->
-              <div v-if="showLatin" class="mb-3">
+              <!-- Transliterasi Latin Fonetik Standar Kemenag RI -->
+              <div v-if="showLatin" class="mb-2.5">
                 <p class="font-serif italic text-xs sm:text-sm text-emerald-800/90 dark:text-emerald-300/90 leading-relaxed">
                   {{ item.teksLatin }}
                 </p>
@@ -308,6 +370,69 @@
                 </p>
               </div>
             </article>
+          </div>
+
+          <!-- FORMAT 2: MODE MUSHAF LENGKAP (CONTINUOUS FLOW BACA SEPERTI MUSHAF ASLI) -->
+          <div
+            v-else-if="readFormat === 'mushaf'"
+            class="rounded-3xl border border-slate-200/90 bg-white/90 p-7 sm:p-10 shadow-sm dark:border-white/[0.08] dark:bg-[#0c0e14]/90"
+          >
+            <div class="text-right leading-[3.2] select-text" dir="rtl">
+              <span
+                v-for="item in currentSurah.ayat"
+                :id="`ayat-${item.nomorAyat}`"
+                :key="item.nomorAyat"
+                class="transition-colors rounded-xl px-1.5 py-1 inline"
+                :class="playingAyat === item.nomorAyat ? 'bg-emerald-500/20 text-emerald-950 dark:text-white' : ''"
+              >
+                <span
+                  class="font-arabic font-medium tracking-normal text-slate-950 dark:text-white cursor-pointer hover:text-emerald-600 transition-colors"
+                  :style="{ fontSize: `${arabicFontSize}px` }"
+                  @click="playAyat(currentSurah.nomor, item.nomorAyat)"
+                >
+                  {{ item.teksArab }}
+                </span>
+
+                <!-- Medali Nomor Ayat Arab -->
+                <span
+                  class="inline-flex items-center justify-center size-9 mx-2 align-middle select-none relative text-emerald-600 dark:text-emerald-400 cursor-pointer"
+                  dir="ltr"
+                  :title="`Ayat ${item.nomorAyat} - Klik untuk putar suara`"
+                  @click="playAyat(currentSurah.nomor, item.nomorAyat)"
+                >
+                  <svg class="size-9 absolute inset-0 drop-shadow-xs" viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.4" stroke-dasharray="1.5 2.5" />
+                    <path
+                      d="M20 3 L24.5 7.5 L31 7.5 L32.5 14 L37 18.5 L35 24.5 L37 30 L31 32.5 L29 37 L20 35 L11 37 L9 32.5 L3 30 L5 24.5 L3 18.5 L7.5 14 L9 7.5 L15.5 7.5 Z"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      fill="currentColor"
+                      fill-opacity="0.08"
+                    />
+                    <circle cx="20" cy="20" r="13" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.7" />
+                  </svg>
+                  <span class="font-arabic font-bold text-xs pt-0.5 text-emerald-700 dark:text-emerald-300 relative z-10 leading-none">
+                    {{ toArabicDigits(item.nomorAyat) }}
+                  </span>
+                </span>
+              </span>
+            </div>
+
+            <!-- Panel Terjemahan Khusus Ayat yang Sedang Aktif dalam Mode Mushaf -->
+            <div
+              v-if="playingAyat && showTranslation"
+              class="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/[0.08] text-left"
+              dir="ltr"
+            >
+              <div class="flex items-center gap-2 mb-2">
+                <span class="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  Terjemahan Ayat {{ playingAyat }}
+                </span>
+              </div>
+              <p class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                {{ currentSurah.ayat.find(a => a.nomorAyat === playingAyat)?.teksIndonesia }}
+              </p>
+            </div>
           </div>
         </template>
       </div>
@@ -331,12 +456,60 @@
           </label>
         </div>
 
+        <!-- Banner Lanjutkan Membaca -->
+        <div
+          v-if="lastRead"
+          class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 backdrop-blur-sm dark:bg-emerald-950/20"
+        >
+          <div class="flex items-center gap-3">
+            <div class="grid size-10 place-items-center rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+              <span class="material-symbols-outlined text-xl">bookmark</span>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                Terakhir Dibaca
+              </p>
+              <p class="text-sm font-bold text-slate-900 dark:text-white">
+                Surah {{ lastRead.surahName }} (Ayat {{ lastRead.ayatNumber }})
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-700 cursor-pointer"
+            @click="selectSurah(lastRead.surahNumber, lastRead.ayatNumber)"
+          >
+            <span>Lanjutkan Tilawah</span>
+            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+          </button>
+        </div>
+
+        <!-- Tab Katalog: 114 Surah vs 30 Juz -->
+        <div class="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-white/[0.06]">
+          <button
+            type="button"
+            class="px-4 py-1.5 rounded-xl text-xs font-bold transition"
+            :class="catalogTab === 'surah'
+              ? 'bg-emerald-600 text-white'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'"
+            @click="catalogTab = 'surah'"
+          >
+            114 Surah
+          </button>
+          <button
+            type="button"
+            class="px-4 py-1.5 rounded-xl text-xs font-bold transition"
+            :class="catalogTab === 'juz'
+              ? 'bg-emerald-600 text-white'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'"
+            @click="catalogTab = 'juz'"
+          >
+            30 Juz
+          </button>
+        </div>
+
         <!-- TAB 1: Grid 114 Surah -->
         <div v-if="catalogTab === 'surah'">
-          <div class="mb-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Menampilkan {{ filteredSurahs.length }} dari 114 Surah</span>
-          </div>
-
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             <div
               v-for="surah in filteredSurahs"
@@ -377,10 +550,6 @@
 
         <!-- TAB 2: Grid 30 Juz -->
         <div v-else-if="catalogTab === 'juz'">
-          <div class="mb-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Daftar 30 Juz Al-Qur'an Lengkap</span>
-          </div>
-
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             <div
               v-for="item in filteredJuzs"
@@ -416,49 +585,71 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- DOCK BAR AUDIO & KONTROL TAMPILAN (STICKY DOCK) -->
+    <!-- DOCK BAR AUDIO (DESAIN ELEGAN SEPERTI QURAN.COM) -->
     <!-- ============================================== -->
     <div
       v-if="viewMode === 'reader' && currentSurah"
-      class="fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-xl transition-all duration-200 px-4 py-3 sm:px-6 shadow-2xl"
-      :class="isDark ? 'border-white/[0.08] bg-[#08090d]/90 text-slate-100' : 'border-slate-200 bg-white/90 text-slate-900'"
+      class="fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-xl transition-all duration-200 px-4 py-2.5 sm:px-6 md:px-8 shadow-2xl"
+      :class="isDark ? 'border-white/[0.08] bg-[#08090d]/95 text-slate-100' : 'border-slate-200 bg-white/95 text-slate-900'"
     >
-      <div class="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-3">
-        <!-- Informasi Status Audio & Tombol Putar Surah Penuh -->
-        <div class="flex items-center gap-3">
-          <button
-            type="button"
-            class="flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-emerald-700 active:scale-95 cursor-pointer"
-            @click="togglePlaySurah"
-          >
-            <span class="material-symbols-outlined text-[20px]">
-              {{ isPlaying ? 'pause_circle' : 'play_circle' }}
-            </span>
-            <span>
-              {{ isPlaying ? 'Jeda Tilawah' : (playingAyat ? `Lanjut Ayat ${playingAyat}` : `Putar Surah ${currentSurah.namaLatin}`) }}
-            </span>
-          </button>
-
-          <!-- Waveform Visualizer Saat Audio Berjalan -->
-          <div v-if="isPlaying" class="hidden sm:flex items-center gap-0.5 px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-500">
-            <span class="w-1 h-3 bg-emerald-500 animate-pulse rounded-full" />
-            <span class="w-1 h-5 bg-emerald-500 animate-pulse rounded-full delay-75" />
-            <span class="w-1 h-2 bg-emerald-500 animate-pulse rounded-full delay-150" />
-            <span class="w-1 h-4 bg-emerald-500 animate-pulse rounded-full delay-100" />
-            <span class="text-[10px] font-mono font-semibold ml-1.5 text-emerald-600 dark:text-emerald-400">
-              Ayat {{ playingAyat }}
-            </span>
+      <div class="mx-auto max-w-5xl flex items-center justify-between gap-3">
+        <!-- Informasi Ayat & Qari Aktif -->
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="hidden sm:grid size-10 place-items-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 shrink-0">
+            <span class="material-symbols-outlined text-xl">graphic_eq</span>
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold truncate text-slate-900 dark:text-white">
+              QS {{ currentSurah.nomor }}:{{ playingAyat || 1 }} • {{ currentSurah.namaLatin }}
+            </p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              {{ availableQaris.find(q => q.code === selectedQari)?.name || 'Syeikh Yasser Al-Dosari' }}
+            </p>
           </div>
         </div>
 
-        <!-- Pemilih Qari & Pengaturan Font / Terjemahan -->
-        <div class="flex items-center gap-2 sm:gap-3">
-          <!-- Pemilih Qari (Default Syeikh Yasser Al-Dosari) -->
+        <!-- Tombol Kendali Media (Skip Prev, Play/Pause, Skip Next) -->
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <!-- Ayat Sebelumnya -->
+          <button
+            type="button"
+            class="grid size-9 place-items-center rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition cursor-pointer"
+            title="Ayat Sebelumnya"
+            @click="skipPreviousAyat"
+          >
+            <span class="material-symbols-outlined text-[20px]">skip_previous</span>
+          </button>
+
+          <!-- Tombol Utama Play / Pause -->
+          <button
+            type="button"
+            class="flex items-center justify-center size-10 rounded-2xl bg-emerald-600 text-white shadow-md transition hover:bg-emerald-700 active:scale-95 cursor-pointer"
+            :title="isPlaying ? 'Jeda Tilawah' : 'Putar Tilawah'"
+            @click="togglePlaySurah"
+          >
+            <span class="material-symbols-outlined text-[24px]">
+              {{ isPlaying ? 'pause' : 'play_arrow' }}
+            </span>
+          </button>
+
+          <!-- Ayat Berikutnya -->
+          <button
+            type="button"
+            class="grid size-9 place-items-center rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition cursor-pointer"
+            title="Ayat Berikutnya"
+            @click="skipNextAyat"
+          >
+            <span class="material-symbols-outlined text-[20px]">skip_next</span>
+          </button>
+        </div>
+
+        <!-- Pemilih Qari (Offline Ready) -->
+        <div class="flex items-center gap-2 shrink-0">
           <div class="relative">
             <label class="sr-only">Pilih Qari</label>
             <select
               :value="selectedQari"
-              class="h-9 rounded-xl border bg-transparent pl-2.5 pr-7 text-xs font-semibold outline-none cursor-pointer transition focus:ring-2 focus:ring-emerald-500"
+              class="h-9 rounded-xl border bg-transparent pl-2.5 pr-7 text-xs font-semibold outline-none cursor-pointer transition focus:ring-2 focus:ring-emerald-500 max-w-[150px] sm:max-w-[220px] truncate"
               :class="isDark ? 'border-white/10 bg-slate-900 text-slate-200' : 'border-slate-200 bg-white text-slate-800'"
               @change="onQariChange(($event.target as HTMLSelectElement).value)"
             >
@@ -467,74 +658,11 @@
               </option>
             </select>
           </div>
-
-          <!-- Tombol Buka Panel Pengaturan Tampilan -->
-          <button
-            type="button"
-            class="grid size-9 place-items-center rounded-xl border transition cursor-pointer"
-            :class="showSettingsPanel
-              ? 'border-emerald-500 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-              : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'"
-            title="Pengaturan Tampilan Baca"
-            @click="showSettingsPanel = !showSettingsPanel"
-          >
-            <span class="material-symbols-outlined text-[19px]">tune</span>
-          </button>
         </div>
       </div>
-
-      <!-- Popover Pengaturan Tampilan -->
-      <Transition name="slide-up">
-        <div
-          v-if="showSettingsPanel"
-          class="mx-auto max-w-7xl mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.06] grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs"
-        >
-          <!-- Pengatur Ukuran Huruf Arab -->
-          <div class="space-y-1">
-            <div class="flex justify-between font-semibold">
-              <span>Ukuran Teks Arab:</span>
-              <span class="font-mono text-emerald-600 dark:text-emerald-400">{{ arabicFontSize }}px</span>
-            </div>
-            <input
-              v-model.number="arabicFontSize"
-              type="range"
-              min="22"
-              max="44"
-              step="2"
-              class="w-full accent-emerald-600 cursor-pointer"
-            />
-          </div>
-
-          <!-- Toggle Transliterasi Latin -->
-          <div class="flex items-center justify-between sm:justify-center gap-3">
-            <span class="font-semibold">Transliterasi Latin:</span>
-            <button
-              type="button"
-              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
-              :class="showLatin ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
-              @click="showLatin = !showLatin"
-            >
-              <span class="inline-block size-4 transform rounded-full bg-white transition-transform" :class="showLatin ? 'translate-x-6' : 'translate-x-1'" />
-            </button>
-          </div>
-
-          <!-- Toggle Terjemahan Bahasa Indonesia -->
-          <div class="flex items-center justify-between sm:justify-end gap-3">
-            <span class="font-semibold">Terjemahan Indonesia:</span>
-            <button
-              type="button"
-              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
-              :class="showTranslation ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
-              @click="showTranslation = !showTranslation"
-            >
-              <span class="inline-block size-4 transform rounded-full bg-white transition-transform" :class="showTranslation ? 'translate-x-6' : 'translate-x-1'" />
-            </button>
-          </div>
-        </div>
-      </Transition>
     </div>
 
-    <!-- Toast Notifikasi (Salin / Bookmark) -->
+    <!-- Toast Notifikasi (Salin / Bookmark / Offline Alert) -->
     <Transition name="fade">
       <div
         v-if="toastMessage"
@@ -549,9 +677,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useQuran, QARI_OPTIONS } from '~/composables/useQuran'
+import { useQuran, toArabicDigits } from '~/composables/useQuran'
 import type { AyatItem } from '~/types/quran'
 
 const { isDark } = useColorMode()
@@ -578,24 +706,59 @@ const {
   saveLastRead,
   playAyat,
   playFullSurah,
+  skipNextAyat,
+  skipPreviousAyat,
   pauseAudio,
   resumeAudio,
   stopAudio
 } = useQuran()
 
-// Mode Tampilan: 'reader' (default baca surah) atau 'catalog' (daftar 114 surah & 30 juz)
+// Mode Tampilan: 'reader' (baca surah) atau 'catalog' (daftar 114 surah & 30 juz)
 const viewMode = ref<'reader' | 'catalog'>('reader')
 const catalogTab = ref<'surah' | 'juz'>('surah')
+
+// Format Tampilan Membaca: 'verse' (ayat demi ayat dengan terjemahan) atau 'mushaf' (teks mengalir utuh)
+const readFormat = ref<'verse' | 'mushaf'>('verse')
+
 const searchQuery = ref('')
 const showDescription = ref(false)
 const showSettingsPanel = ref(false)
 
-// Pengaturan Tampilan Ayat
-const arabicFontSize = ref(30)
+// Pengaturan Tampilan Huruf & Terjemahan
+const arabicFontSize = ref(32)
 const showLatin = ref(true)
 const showTranslation = ref(true)
 
-// Toast Feedback
+// Smart Headroom: Auto-hide header saat scroll ke bawah, auto-show saat scroll ke atas
+const isHeaderVisible = ref(true)
+let lastScrollY = 0
+const scrollThreshold = 10
+
+const handleScroll = () => {
+  if (typeof window === 'undefined') return
+  const currentY = window.scrollY
+
+  // Jika masih di area atas halaman, selalu tampilkan header
+  if (currentY < 60) {
+    isHeaderVisible.value = true
+    lastScrollY = currentY
+    return
+  }
+
+  // Scroll ke bawah: sembunyikan header
+  if (currentY > lastScrollY + scrollThreshold) {
+    isHeaderVisible.value = false
+    showSettingsPanel.value = false // Tutup drawer settings jika sedang terbuka
+  }
+  // Scroll ke atas: tampilkan kembali header
+  else if (currentY < lastScrollY - scrollThreshold) {
+    isHeaderVisible.value = true
+  }
+
+  lastScrollY = currentY
+}
+
+// Toast Notifikasi
 const toastMessage = ref('')
 let toastTimer: any = null
 
@@ -633,11 +796,6 @@ const filteredJuzs = computed(() => {
     )
   })
 })
-
-const openCatalog = (tab: 'surah' | 'juz') => {
-  catalogTab.value = tab
-  viewMode.value = 'catalog'
-}
 
 const selectSurah = async (number: number, targetAyat?: number) => {
   stopAudio()
@@ -699,14 +857,14 @@ const copyAyat = async (item: AyatItem) => {
   }
 }
 
-// Notifikasi cerdas jika API online gagal dan sistem beralih ke audio lokal
+// Notifikasi jika API online gagal dan sistem beralih otomatis ke audio lokal
 watch(onlineApiFailed, (failed) => {
   if (failed) {
     showToast('Koneksi online tidak tersedia, beralih ke Syeikh Yasser Al-Dosari (Lokal)')
   }
 })
 
-// Otomatis scroll ke ayat yang sedang dibaca agar selalu terlihat nyaman di layar
+// Otomatis scroll memusatkan ayat yang sedang dibacakan
 watch(playingAyat, async (newAyat) => {
   if (newAyat) {
     await nextTick()
@@ -720,6 +878,9 @@ watch(playingAyat, async (newAyat) => {
 onMounted(async () => {
   loadStorage()
   await loadIndices()
+
+  // Pasang pendengar scroll untuk smart headroom
+  window.addEventListener('scroll', handleScroll, { passive: true })
 
   // Muat surah dari query URL atau default ke Surah 1 Al-Fatihah
   const qSurah = route.query.surah ? parseInt(route.query.surah as string, 10) : 1
@@ -736,9 +897,13 @@ onMounted(async () => {
   }
 })
 
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
 useSeoMeta({
-  title: 'Al-Qur\'an Al-Karim Online — Terjemahan Resmi Kemenag RI & Audio Syeikh Yasser Al-Dosari',
-  description: 'Baca Al-Qur\'an 30 Juz lengkap dengan Rasm Utsmani Standar Indonesia (MSI), transliterasi Latin, terjemahan resmi Kemenag RI, serta audio murottal merdu Syeikh Yasser Al-Dosari.',
+  title: 'Al-Qur\'an Al-Karim Online — Rasm Utsmani MSI & Audio Syeikh Yasser Al-Dosari',
+  description: 'Baca Al-Qur\'an 30 Juz lengkap dengan Rasm Utsmani Mushaf Standar Indonesia (MSI), terjemahan resmi Kemenag RI, ornamen penutup ayat berangka Arab, dan audio gapless Syeikh Yasser Al-Dosari.',
 })
 </script>
 

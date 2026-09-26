@@ -376,6 +376,24 @@ export function useQuran() {
     playAyat(surahNumber, 1)
   }
 
+  const skipNextAyat = () => {
+    if (!currentSurah.value) return
+    const next = (playingAyat.value || 0) + 1
+    if (next <= currentSurah.value.jumlahAyat) {
+      activeDeckKey = activeDeckKey === 'A' ? 'B' : 'A'
+      playAyat(currentSurah.value.nomor, next)
+    }
+  }
+
+  const skipPreviousAyat = () => {
+    if (!currentSurah.value) return
+    const prev = (playingAyat.value || 2) - 1
+    if (prev >= 1) {
+      activeDeckKey = activeDeckKey === 'A' ? 'B' : 'A'
+      playAyat(currentSurah.value.nomor, prev)
+    }
+  }
+
   return {
     surahs,
     juzs,
@@ -396,8 +414,17 @@ export function useQuran() {
     saveLastRead,
     playAyat,
     playFullSurah,
+    skipNextAyat,
+    skipPreviousAyat,
     pauseAudio,
     resumeAudio,
     stopAudio
   }
 }
+
+// Konversi angka Latin ke angka Arab Timur (Eastern Arabic Numerals)
+export const toArabicDigits = (num: number): string => {
+  const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩']
+  return String(num).replace(/[0-9]/g, (digit) => arabicDigits[parseInt(digit, 10)])
+}
+
