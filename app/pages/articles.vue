@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-[100dvh] px-4 pb-36 pt-20 text-slate-800 transition-colors duration-200 md:px-6 md:pt-24 dark:text-slate-200">
+  <div class="min-h-[100dvh] w-full max-w-full overflow-x-clip px-4 pb-36 pt-20 text-slate-800 transition-colors duration-200 sm:px-6 md:px-8 md:pt-24 dark:text-slate-200">
     <div class="mx-auto max-w-7xl">
       <Transition name="slide-down">
         <div v-if="showHighlightMenu" class="fixed left-1/2 top-24 z-[60] flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-950/95" role="toolbar" aria-label="Pilih warna sorotan">

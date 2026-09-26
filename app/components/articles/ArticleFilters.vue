@@ -26,8 +26,8 @@
       </button>
     </div>
 
-    <!-- Baris 2: Kategori Horizontal Chips (1 Baris Rapi, Swipeable) -->
-    <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar" aria-label="Kategori artikel">
+    <!-- Baris 2: Kategori Horizontal Chips (1 Baris Rapi, Sejajar Presisi) -->
+    <div class="flex w-full items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar scroll-smooth" aria-label="Kategori artikel">
       <button
         v-for="category in categories"
         :key="category"
@@ -43,8 +43,8 @@
       </button>
     </div>
 
-    <!-- Baris 3: Status Hasil & Pilihan Urutan Inline (Tidak Memakan Baris Penuh!) -->
-    <div class="flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 px-0.5">
+    <!-- Baris 3: Status Hasil & Pilihan Urutan Inline (Sejajar Presisi dengan Search Bar & Kartu) -->
+    <div class="flex w-full items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
       <div class="flex items-center gap-2">
         <span>Menampilkan <strong class="font-semibold text-slate-800 dark:text-slate-200">{{ resultCount }}</strong> artikel</span>
         <button
