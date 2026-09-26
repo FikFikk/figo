@@ -462,7 +462,7 @@
               :class="isDark ? 'border-white/10 bg-slate-900 text-slate-200' : 'border-slate-200 bg-white text-slate-800'"
               @change="onQariChange(($event.target as HTMLSelectElement).value)"
             >
-              <option v-for="qari in QARI_OPTIONS" :key="qari.code" :value="qari.code">
+              <option v-for="qari in availableQaris" :key="qari.code" :value="qari.code">
                 {{ qari.name }} ({{ qari.role }})
               </option>
             </select>
@@ -564,6 +564,9 @@ const {
   currentSurah,
   loading,
   selectedQari,
+  availableQaris,
+  isOnline,
+  onlineApiFailed,
   lastRead,
   playingAyat,
   isPlaying,
@@ -667,7 +670,8 @@ const togglePlaySurah = () => {
 
 const onQariChange = (code: string) => {
   setQari(code)
-  showToast(`Qari diubah: ${QARI_OPTIONS.find((q) => q.code === code)?.name}`)
+  const qari = availableQaris.value.find((q) => q.code === code)
+  showToast(`Qari: ${qari?.name || 'Syeikh Yasser Al-Dosari'}`)
 }
 
 const isMarked = (ayatNumber: number) => {
@@ -694,6 +698,13 @@ const copyAyat = async (item: AyatItem) => {
     showToast('Gagal menyalin ayat')
   }
 }
+
+// Notifikasi cerdas jika API online gagal dan sistem beralih ke audio lokal
+watch(onlineApiFailed, (failed) => {
+  if (failed) {
+    showToast('Koneksi online tidak tersedia, beralih ke Syeikh Yasser Al-Dosari (Lokal)')
+  }
+})
 
 // Otomatis scroll ke ayat yang sedang dibaca agar selalu terlihat nyaman di layar
 watch(playingAyat, async (newAyat) => {

@@ -29,9 +29,13 @@ export function useQuran() {
   const juzs = ref<JuzItem[]>([])
   const currentSurah = ref<SurahDetail | null>(null)
   const loading = ref(false)
-  const selectedQari = ref('06') // Bawaan utama: Syeikh Yasser Al-Dosari
+  const selectedQari = ref('06') // Bawaan utama: Syeikh Yasser Al-Dosari (Lokal)
 
   const lastRead = ref<LastReadItem | null>(null)
+
+  // Status Konektivitas Jaringan & Ketersediaan API Online
+  const isOnline = ref(true)
+  const onlineApiFailed = ref(false)
 
   // Status Pemutaran Audio
   const playingAyat = ref<number | null>(null)
@@ -49,6 +53,43 @@ export function useQuran() {
       deckB.preload = 'auto'
     }
   }
+
+  const initConnectivity = () => {
+    if (import.meta.client) {
+      isOnline.value = navigator.onLine
+      window.addEventListener('online', () => {
+        isOnline.value = true
+        onlineApiFailed.value = false
+      })
+      window.addEventListener('offline', () => {
+        isOnline.value = false
+        // Otomatis kembalikan ke Syeikh Yasser Al-Dosari yang tersimpan lokal saat offline
+        selectedQari.value = '06'
+      })
+    }
+  }
+
+  // Daftar Qari yang tersedia secara dinamis:
+  // Jika offline atau API online gagal, pilihan qari lain otomatis hilang dan hanya menyisakan Syeikh Yasser Al-Dosari (Lokal)
+  const availableQaris = computed<QariOption[]>(() => {
+    if (!isOnline.value || onlineApiFailed.value) {
+      return [
+        {
+          id: '06',
+          code: '06',
+          name: 'Syeikh Yasser Al-Dosari',
+          role: 'Imam Masjidil Haram (Lokal / Offline Ready)'
+        }
+      ]
+    }
+
+    return QARI_OPTIONS.map((q) => {
+      if (q.code === '06') {
+        return { ...q, role: `${q.role} • Lokal` }
+      }
+      return { ...q, role: `${q.role} • Online` }
+    })
+  })
 
   const loadIndices = async () => {
     try {
@@ -78,6 +119,7 @@ export function useQuran() {
   }
 
   const loadStorage = () => {
+    initConnectivity()
     if (import.meta.client) {
       const savedQari = localStorage.getItem('figo_quran_qari')
       if (savedQari && QARI_OPTIONS.some((q) => q.code === savedQari)) {
@@ -92,15 +134,24 @@ export function useQuran() {
     }
   }
 
+  // Mendapatkan URL audio: Syeikh Yasser Al-Dosari dari sistem lokal kita (/audio/quran/06/),
+  // sedangkan qari lainnya streaming dari CDN resmi
   const resolveAyatAudioUrl = (surahNumber: number, ayatNumber: number): string => {
     if (!currentSurah.value) return ''
+    const surahStr = String(surahNumber).padStart(3, '0')
+    const ayatStr = String(ayatNumber).padStart(3, '0')
+
+    // Bawaan lokal di sistem kita untuk Syeikh Yasser Al-Dosari
+    if (selectedQari.value === '06') {
+      return `/audio/quran/06/${surahStr}${ayatStr}.mp3`
+    }
+
+    // Untuk qari lainnya: streaming dari CDN resmi
     const target = currentSurah.value.ayat.find((a) => a.nomorAyat === ayatNumber)
     if (target?.audio?.[selectedQari.value]) {
       return target.audio[selectedQari.value]
     }
-    const qariCode = selectedQari.value === '06' ? 'Yasser_Ad-Dussary_128kbps' : 'Alafasy_128kbps'
-    const surahStr = String(surahNumber).padStart(3, '0')
-    const ayatStr = String(ayatNumber).padStart(3, '0')
+    const qariCode = selectedQari.value === '05' ? 'Alafasy_128kbps' : 'Yasser_Ad-Dussary_128kbps'
     return `https://everyayah.com/data/${qariCode}/${surahStr}${ayatStr}.mp3`
   }
 
@@ -265,8 +316,31 @@ export function useQuran() {
       }
     }
 
+    // Penanganan error cerdas: Jika audio online gagal, otomatis beralih ke Syeikh Yasser Al-Dosari lokal
     currentDeck.onerror = () => {
       console.warn(`Gagal memuat audio ayat ${surahNumber}:${ayatNumber}`)
+
+      // Jika qari online yang gagal, alihkan ke audio lokal aman Syeikh Yasser Al-Dosari dan sembunyikan qari online
+      if (selectedQari.value !== '06') {
+        console.warn('API qari online gagal atau tidak dapat diakses. Mengalihkan ke audio lokal Syeikh Yasser Al-Dosari.')
+        onlineApiFailed.value = true
+        selectedQari.value = '06'
+        playAyat(surahNumber, ayatNumber)
+        return
+      }
+
+      // Jika berkas lokal 06 masih dalam antrean unduh, coba fallback ke CDN Yasser Al-Dosari
+      const surahStr = String(surahNumber).padStart(3, '0')
+      const ayatStr = String(ayatNumber).padStart(3, '0')
+      const cdnUrl = `https://cdn.equran.id/audio-partial/Yasser-Al-Dosari/${surahStr}${ayatStr}.mp3`
+      if (currentDeck.src !== cdnUrl) {
+        currentDeck.src = cdnUrl
+        currentDeck.play().catch(() => {
+          stopAudio()
+        })
+        return
+      }
+
       const nextAyat = ayatNumber + 1
       if (currentSurah.value && nextAyat <= currentSurah.value.jumlahAyat) {
         activeDeckKey = activeDeckKey === 'A' ? 'B' : 'A'
@@ -308,6 +382,9 @@ export function useQuran() {
     currentSurah,
     loading,
     selectedQari,
+    availableQaris,
+    isOnline,
+    onlineApiFailed,
     lastRead,
     playingAyat,
     isPlaying,
