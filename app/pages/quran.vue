@@ -520,9 +520,9 @@
                 </p>
               </div>
 
-              <!-- Transliterasi Latin Fonetik Standar Kemenag RI -->
+              <!-- Transliterasi Latin Fonetik Standar Kemenag RI (Sans-serif Bersih, Jelas, & Nyaman Dibaca) -->
               <div v-if="showLatin" class="mb-2.5">
-                <p class="font-serif italic text-xs sm:text-sm text-emerald-800/90 dark:text-emerald-300/90 leading-relaxed">
+                <p class="font-sans font-medium text-xs sm:text-sm text-emerald-700 dark:text-emerald-400 leading-relaxed tracking-wide select-text">
                   {{ item.teksLatin }}
                 </p>
               </div>
