@@ -1,12 +1,12 @@
 <template>
   <!-- Header navigasi minimalis dark/light -->
-  <nav class="fixed top-0 inset-x-0 w-full h-14 z-50 backdrop-blur-xl transition-all duration-300 border-b flex items-center"
+  <nav class="fixed top-0 inset-x-0 w-full z-50 backdrop-blur-xl transition-transform duration-300 border-b"
     :class="[
-      isFiGoNavbarHidden && route.path.startsWith('/quran') ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100',
+      isFiGoNavbarHidden && route.path.startsWith('/quran') ? '-translate-y-full pointer-events-none' : 'translate-y-0',
       isDark ? 'bg-[#08090d]/85 border-white/[0.08] text-slate-100' : 'bg-white/85 border-slate-200/80 text-slate-900 shadow-xs'
     ]"
   >
-    <div class="flex justify-between items-center px-4 sm:px-6 md:px-8 py-3 max-w-7xl mx-auto">
+    <div class="flex justify-between items-center px-4 sm:px-6 md:px-8 py-3 max-w-7xl mx-auto w-full">
       <!-- Logo brand teks tanpa ikon F -->
       <div class="flex items-center gap-3">
         <NuxtLink to="/" class="flex items-center gap-2.5 group">
