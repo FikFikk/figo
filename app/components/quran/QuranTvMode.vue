@@ -25,12 +25,12 @@
     <!-- ============================================================== -->
     <!-- BARIS ATAS: HEADER SMART TV (BRANDING, JAM DIGITAL & KONTROL) -->
     <!-- ============================================================== -->
-    <header
-      class="relative z-20 flex items-center justify-between px-6 pt-6 sm:px-10 sm:pt-8 transition-opacity duration-300"
-      :class="{ 'opacity-0': isInactive && isPlaying, 'opacity-100': !isInactive || !isPlaying }"
-    >
-      <!-- Sisi Kiri: Branding FiGo Quran TV -->
-      <div class="flex items-center gap-3">
+    <header class="relative z-20 flex items-center justify-between px-6 pt-6 sm:px-10 sm:pt-8">
+      <!-- Sisi Kiri: Branding FiGo Quran TV (Fade saat inaktif agar layar bersih) -->
+      <div
+        class="flex items-center gap-3 transition-opacity duration-500"
+        :class="{ 'opacity-0 pointer-events-none': isInactive && isPlaying, 'opacity-100': !isInactive || !isPlaying }"
+      >
         <div class="grid size-10 place-items-center rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 shadow-lg shadow-emerald-500/10">
           <span class="material-symbols-outlined text-2xl">tv_gen</span>
         </div>
@@ -43,8 +43,11 @@
         </div>
       </div>
 
-      <!-- Sisi Tengah: Jam Dinding Digital Real-time untuk Display Ruangan / Smart TV -->
-      <div class="hidden md:flex flex-col items-center">
+      <!-- Sisi Tengah: Jam Dinding Digital Real-time (SELALU TAMPIL di Layar TV Ambient) -->
+      <div
+        class="flex flex-col items-center transition-all duration-500 select-none"
+        :class="{ 'scale-105 opacity-90 drop-shadow-md': isInactive && isPlaying, 'opacity-100': !isInactive || !isPlaying }"
+      >
         <div class="font-mono text-2xl lg:text-3xl font-bold tracking-widest text-emerald-300 drop-shadow-sm">
           {{ currentTimeStr }}
         </div>
@@ -53,8 +56,11 @@
         </div>
       </div>
 
-      <!-- Sisi Kanan: Tombol Kendali Layar Penuh & Tutup -->
-      <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Sisi Kanan: Tombol Kendali Layar Penuh & Tutup (Fade saat inaktif) -->
+      <div
+        class="flex items-center gap-2 sm:gap-3 transition-opacity duration-500"
+        :class="{ 'opacity-0 pointer-events-none': isInactive && isPlaying, 'opacity-100': !isInactive || !isPlaying }"
+      >
         <!-- Toggle Layar Penuh (Browser Fullscreen API) -->
         <button
           type="button"
@@ -239,23 +245,37 @@
       </div>
 
       <!-- ========================================================== -->
-      <!-- SISI KANAN: THE ACTIVE AYAT SPOTLIGHT (SINEMATIK & BESAR) -->
+      <!-- SISI KANAN: THE ACTIVE AYAT SPOTLIGHT & ANTICIPATION CARDS -->
       <!-- ========================================================== -->
       <div class="lg:col-span-7 xl:col-span-8 flex flex-col justify-center h-full min-h-[380px] sm:min-h-[460px]">
-        <div class="relative w-full rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-2xl p-6 sm:p-10 lg:p-12 shadow-2xl overflow-hidden flex flex-col justify-between">
+        <div class="relative w-full rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-2xl p-6 sm:p-8 lg:p-10 shadow-2xl overflow-hidden flex flex-col justify-between">
           <!-- Aksen Garis Emas Puncak Kartu -->
           <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent" />
 
-          <!-- Header Kartu Ayat Aktif -->
-          <div class="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-6">
+          <!-- Header Kartu: Status Ayat Aktif & Konteks Ayat Sebelumnya -->
+          <div class="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-4 gap-3 flex-wrap">
             <div class="flex items-center gap-2">
-              <span class="rounded-xl bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 font-mono text-xs font-bold text-emerald-300">
+              <span class="rounded-xl bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 font-mono text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                <span class="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 AYAT {{ activeAyatNumber }}
               </span>
               <span class="text-xs text-slate-400 font-medium">
                 dari {{ activeSurah?.jumlahAyat }} Ayat
               </span>
             </div>
+
+            <!-- Konteks Ayat Sebelumnya (Quick Preview) -->
+            <button
+              v-if="prevAyatData"
+              type="button"
+              class="flex items-center gap-1.5 rounded-xl border border-white/5 bg-white/[0.02] px-2.5 py-1 text-[11px] text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer max-w-xs truncate"
+              :title="`Kembali ke Ayat ${prevAyatData.nomorAyat}: ${prevAyatData.teksLatin}`"
+              @click="skipPreviousAyat"
+            >
+              <span class="material-symbols-outlined text-[14px]">undo</span>
+              <span class="font-semibold text-slate-300">Ayat {{ prevAyatData.nomorAyat }}:</span>
+              <span class="truncate font-sans">{{ prevAyatData.teksLatin }}</span>
+            </button>
 
             <!-- Petunjuk Tombol Remote Smart TV -->
             <div class="hidden sm:flex items-center gap-2 text-[10px] text-slate-400 font-mono">
@@ -267,11 +287,11 @@
 
           <!-- Transisi Teks Ayat yang Halus (Smooth Cross-fade saat Berganti) -->
           <Transition name="ayat-fade" mode="out-in">
-            <div :key="activeAyatNumber" class="space-y-6 sm:space-y-8 my-auto">
+            <div :key="activeAyatNumber" class="space-y-4 sm:space-y-6 my-auto">
               <!-- Teks Arab Rasm Utsmani Berukuran Besar (Ultra-Legible dari Sofa TV) -->
               <div class="text-right" dir="rtl">
                 <p
-                  class="font-arabic font-normal tracking-wide text-white leading-[2.4] sm:leading-[2.6] select-text drop-shadow-md text-3xl sm:text-4xl md:text-5xl lg:text-[46px]"
+                  class="font-arabic font-normal tracking-wide text-white leading-[2.3] sm:leading-[2.5] select-text drop-shadow-md text-3xl sm:text-4xl md:text-5xl lg:text-[44px]"
                 >
                   {{ activeAyatData?.teksArab }}
 
@@ -299,14 +319,14 @@
               </div>
 
               <!-- Transliterasi Latin Fonetik Standar (Tegak & Jelas) -->
-              <div v-if="activeAyatData?.teksLatin" class="pt-2">
+              <div v-if="activeAyatData?.teksLatin" class="pt-1">
                 <p class="font-sans font-medium text-emerald-400 text-sm sm:text-base md:text-lg leading-relaxed tracking-wide select-text">
                   {{ activeAyatData.teksLatin }}
                 </p>
               </div>
 
               <!-- Terjemahan Resmi Kemenag RI -->
-              <div v-if="activeAyatData?.teksIndonesia" class="border-t border-white/[0.08] pt-4">
+              <div v-if="activeAyatData?.teksIndonesia" class="border-t border-white/[0.08] pt-3">
                 <p class="font-sans text-slate-300 text-sm sm:text-base md:text-lg leading-relaxed select-text">
                   {{ activeAyatData.teksIndonesia }}
                 </p>
@@ -314,8 +334,35 @@
             </div>
           </Transition>
 
+          <!-- Banner Lirik Selanjutnya / Anticipation Preview (Up Next Teaser) -->
+          <div
+            v-if="nextAyatData"
+            class="mt-4 rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/[0.07] via-emerald-500/[0.03] to-transparent p-3 sm:p-3.5 backdrop-blur-md transition-all hover:border-emerald-500/40 hover:bg-emerald-500/[0.1] cursor-pointer group"
+            :title="`Klik untuk langsung memutar Ayat ${nextAyatData.nomorAyat}`"
+            @click="skipNextAyat"
+          >
+            <div class="flex items-center justify-between text-[11px] font-semibold text-emerald-400 mb-1">
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[15px] animate-pulse">fast_forward</span>
+                <span class="uppercase tracking-wider">Ayat Berikutnya (QS {{ activeSurah?.nomor }}:{{ nextAyatData.nomorAyat }})</span>
+              </div>
+              <span class="text-[10px] text-slate-400 font-mono group-hover:text-emerald-300 transition flex items-center gap-1">
+                <span>Lompat</span>
+                <span class="material-symbols-outlined text-xs">arrow_forward</span>
+              </span>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <p class="font-sans text-xs text-slate-300 font-medium truncate">
+                {{ nextAyatData.teksLatin }}
+              </p>
+              <p class="font-arabic text-sm text-slate-200 shrink-0 text-right opacity-90" dir="rtl">
+                {{ nextAyatData.teksArab }}
+              </p>
+            </div>
+          </div>
+
           <!-- Footer Kartu: Navigasi Cepat Antara Ayat -->
-          <div class="flex items-center justify-between border-t border-white/[0.08] pt-4 mt-6 text-xs text-slate-400">
+          <div class="flex items-center justify-between border-t border-white/[0.08] pt-3 mt-4 text-xs text-slate-400">
             <button
               type="button"
               class="flex items-center gap-1 hover:text-white transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
@@ -447,6 +494,20 @@ const activeAyatData = computed(() => {
   if (!s || !s.ayat || s.ayat.length === 0) return null
   const num = activeAyatNumber.value
   return s.ayat.find((a) => a.nomorAyat === num) || s.ayat[0]
+})
+
+// Ayat Sebelumnya (Untuk Konteks & Navigasi Cepat)
+const prevAyatData = computed(() => {
+  const s = activeSurah.value
+  if (!s || !s.ayat || activeAyatNumber.value <= 1) return null
+  return s.ayat.find((a) => a.nomorAyat === activeAyatNumber.value - 1) || null
+})
+
+// Ayat Selanjutnya (Untuk Antisipasi Membaca / Up Next Preview)
+const nextAyatData = computed(() => {
+  const s = activeSurah.value
+  if (!s || !s.ayat || activeAyatNumber.value >= s.jumlahAyat) return null
+  return s.ayat.find((a) => a.nomorAyat === activeAyatNumber.value + 1) || null
 })
 
 const currentQariName = computed(() => {
