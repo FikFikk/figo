@@ -29,6 +29,10 @@ const currentFullSurahNumber = ref<number | null>(null)
 let yasserTimestamps: Record<string, AyatTimestamp[]> = {}
 let targetSingleAyat: number | null = null
 
+// Jeda antisipasi lirik (0.5 detik): menampilkan teks ayat berikutnya saat pelafalan ayat sebelumnya selesai
+// dan qari sedang mengambil jeda napas (waqaf), memberi waktu jeda visual bagi pembaca agar ritme membaca selaras
+const LYRIC_LEAD_TIME = 0.5
+
 // State Reaktif Waktu Pemutaran Audio (Quran.com Style Timeline)
 const currentTime = ref(0)
 const duration = ref(0)
@@ -83,7 +87,11 @@ export function useQuran() {
         }
 
         const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
-        const matched = segList.find((s) => cur >= s.start && cur < s.end)
+        const matchTime = cur + LYRIC_LEAD_TIME
+        let matched = segList.find((s) => matchTime >= s.start && matchTime < s.end)
+        if (!matched && cur >= (segList[segList.length - 1]?.start || 0)) {
+          matched = segList[segList.length - 1]
+        }
 
         // Hentikan pemutaran jika mode per ayat aktif dan ayat target telah selesai
         if (playMode.value === 'single' && targetSingleAyat !== null) {
@@ -385,7 +393,11 @@ export function useQuran() {
     currentTime.value = targetSeconds
     if (selectedQari.value === '06' && currentSurah.value) {
       const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
-      const matched = segList.find((s) => targetSeconds >= s.start && targetSeconds < s.end)
+      const matchTime = targetSeconds + LYRIC_LEAD_TIME
+      let matched = segList.find((s) => matchTime >= s.start && matchTime < s.end)
+      if (!matched && targetSeconds >= (segList[segList.length - 1]?.start || 0)) {
+        matched = segList[segList.length - 1]
+      }
       if (matched && playingAyat.value !== matched.ayat) {
         playingAyat.value = matched.ayat
       }
@@ -410,7 +422,11 @@ export function useQuran() {
       }
 
       const segList = yasserTimestamps[String(currentSurah.value.nomor)] || []
-      const matched = segList.find((s) => targetSeconds >= s.start && targetSeconds < s.end)
+      const matchTime = targetSeconds + LYRIC_LEAD_TIME
+      let matched = segList.find((s) => matchTime >= s.start && matchTime < s.end)
+      if (!matched && targetSeconds >= (segList[segList.length - 1]?.start || 0)) {
+        matched = segList[segList.length - 1]
+      }
       if (matched) {
         playingAyat.value = matched.ayat
         if (playMode.value === 'single') {
