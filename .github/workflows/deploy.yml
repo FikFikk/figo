@@ -91,9 +91,15 @@ jobs:
             exit 1
           fi
           mkdir -p "$APP_PATH"
-          tar -xzf figo-deploy-bundle/figo-deploy-bundle.tar.gz || tar -xzf figo-deploy-bundle.tar.gz
+          if [ -f "figo-deploy-bundle/figo-deploy-bundle.tar.gz" ]; then
+            tar -xzf figo-deploy-bundle/figo-deploy-bundle.tar.gz
+          elif [ -f "figo-deploy-bundle.tar.gz" ]; then
+            tar -xzf figo-deploy-bundle.tar.gz
+          fi
           rsync -a --delete ./.output/ "$APP_PATH/.output/"
           mkdir -p "$APP_PATH/backend-go"
+          # Hapus file biner lama (unlink inode) agar tidak memicu 'Text file busy' saat proses Go aktif di PM2
+          rm -f "$APP_PATH/backend-go/figo-download-api"
           cp ./backend-go/figo-download-api "$APP_PATH/backend-go/figo-download-api"
           chmod +x "$APP_PATH/backend-go/figo-download-api"
           cp ./ecosystem.config.cjs "$APP_PATH/ecosystem.config.cjs"
