@@ -98,7 +98,7 @@ jobs:
           elif [ -f "figo-deploy-bundle.tar.gz" ]; then
             tar -xzf figo-deploy-bundle.tar.gz
           fi
-          rsync -a --delete ./.output/ "$APP_PATH/.output/"
+          rsync -a --delete --exclude='/public/audio' ./.output/ "$APP_PATH/.output/"
           mkdir -p "$APP_PATH/backend-go"
           # Hapus file biner lama (unlink inode) agar tidak memicu 'Text file busy' saat proses Go aktif di PM2
           rm -f "$APP_PATH/backend-go/figo-download-api"

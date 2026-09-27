@@ -114,7 +114,19 @@ export function useQuran() {
       }
 
       fullAudioPlayer.onerror = () => {
-        console.warn('Gagal memuat audio quran dari CDN.')
+        const surah = currentSurah.value
+        const surahStr = surah ? String(surah.nomor).padStart(3, '0') : ''
+        const cdnUrl = surah?.audioFull?.['06'] || (surahStr ? `https://cdn.equran.id/audio-full/Yasser-Al-Dosari/${surahStr}.mp3` : '')
+
+        // Jika berkas lokal belum diunduh ke server, otomatis alihkan ke CDN online Equran ID
+        if (cdnUrl && fullAudioPlayer && fullAudioPlayer.src && !fullAudioPlayer.src.includes('cdn.equran.id')) {
+          console.warn(`[Quran Audio] Berkas lokal belum tersedia di server, beralih ke CDN online: ${cdnUrl}`)
+          fullAudioPlayer.src = cdnUrl
+          seekAndPlayFull(currentTime.value, true)
+          return
+        }
+
+        console.warn('Gagal memuat audio quran baik lokal maupun online.')
         onlineApiFailed.value = true
         stopAudio()
       }
@@ -413,7 +425,7 @@ export function useQuran() {
     if (selectedQari.value === '06') {
       if (!currentSurah.value) return
       const surahStr = String(currentSurah.value.nomor).padStart(3, '0')
-      const targetFullSrc = currentSurah.value?.audioFull?.['06'] || `https://cdn.equran.id/audio-full/Yasser-Al-Dosari/${surahStr}.mp3`
+      const targetFullSrc = `/audio/quran/06/full/${surahStr}.mp3`
       const isNewSurah = currentFullSurahNumber.value !== currentSurah.value.nomor || !fullAudioPlayer!.src.includes(`${surahStr}.mp3`)
 
       if (isNewSurah) {
@@ -469,10 +481,10 @@ export function useQuran() {
       return
     }
 
-    // 2. KELOMPOK UTAMA: Syeikh Yasser Al-Dosari (Audio Studio Full Stream CDN)
+    // 2. KELOMPOK UTAMA: Syeikh Yasser Al-Dosari (Audio Studio Full Lokal / CDN Fallback)
     if (selectedQari.value === '06') {
       const surahStr = String(surahNumber).padStart(3, '0')
-      const targetFullSrc = currentSurah.value?.audioFull?.['06'] || `https://cdn.equran.id/audio-full/Yasser-Al-Dosari/${surahStr}.mp3`
+      const targetFullSrc = `/audio/quran/06/full/${surahStr}.mp3`
 
       if (deckA && !deckA.paused) deckA.pause()
       if (deckB && !deckB.paused) deckB.pause()
