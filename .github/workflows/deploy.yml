@@ -33,9 +33,9 @@ concurrency:
 
 jobs:
   deploy:
-    # Label runner self-hosted di server. Sesuaikan jika kamu memberi label lain
-    # saat registrasi runner (mis. menambahkan label "porto").
     runs-on: [self-hosted, linux]
+    env:
+      RUNNER_TOOL_CACHE: /home/fikfikk/actions-runner-figo/_work/_tool
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,7 +49,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
 
       - name: Setup Go
         uses: actions/setup-go@v5
