@@ -174,7 +174,7 @@ export function useQuran() {
       const [surahRes, juzRes, timeRes] = await Promise.all([
         $fetch<SurahSummary[]>('/dataset/quran/surah_index.json'),
         $fetch<JuzItem[]>('/dataset/quran/juz_index.json'),
-        $fetch<Record<string, AyatTimestamp[]>>('/dataset/quran/yasser_timestamps.json')
+        $fetch<Record<string, AyatTimestamp[]>>('/dataset/quran/yasser_timestamps.json?v=20260927')
       ])
       surahs.value = surahRes || []
       juzs.value = juzRes || []
