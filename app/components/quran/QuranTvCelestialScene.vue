@@ -1,17 +1,18 @@
 <template>
   <div class="pointer-events-none absolute inset-0 z-0 overflow-hidden select-none">
-    <!-- Kanvas WebGL Three.js untuk Efek Angkasa Spiritual & Geometri Islam -->
-    <canvas ref="canvasRef" class="size-full opacity-90 transition-opacity duration-1000" />
+    <!-- Kanvas WebGL Three.js: Gelombang Cahaya Sakinah yang Tenang & Segar (Tanpa Partikel Ramai) -->
+    <canvas ref="canvasRef" class="size-full opacity-70 transition-opacity duration-1000" />
 
-    <!-- Lapisan Gradien Atmosferik Obsidian & Nuansa Cahaya Zamrud -->
+    <!-- Gradien Halus Atmosferik Ambient Spotify/Apple Music Style -->
     <div
-      class="absolute inset-0 bg-radial from-transparent via-[#030712]/50 to-[#02050b]/90 pointer-events-none"
+      class="absolute inset-0 bg-gradient-to-b from-[#030712]/40 via-transparent to-[#02050b]/80 pointer-events-none"
+    />
+    <!-- Pendaran Halus Zamrud & Amber di Sudut Layar -->
+    <div
+      class="absolute -top-40 -left-20 h-[500px] w-[500px] rounded-full bg-emerald-600/10 blur-[150px] pointer-events-none"
     />
     <div
-      class="absolute -top-32 left-1/4 h-96 w-96 rounded-full bg-emerald-500/10 blur-[120px] pointer-events-none animate-pulse-slow"
-    />
-    <div
-      class="absolute -bottom-32 right-1/4 h-96 w-96 rounded-full bg-amber-500/5 blur-[140px] pointer-events-none"
+      class="absolute -bottom-40 right-10 h-[500px] w-[500px] rounded-full bg-teal-600/5 blur-[160px] pointer-events-none"
     />
   </div>
 </template>
@@ -34,80 +35,15 @@ let camera: THREE.PerspectiveCamera | null = null
 let renderer: THREE.WebGLRenderer | null = null
 let animationFrameId: number | null = null
 
-// Objek Geometri Islam & Partikel Bintang
-let starsPoints: THREE.Points | null = null
-let starsGeometry: THREE.BufferGeometry | null = null
-let sacredGroup: THREE.Group | null = null
-let leftHaloGroup: THREE.Group | null = null
+// Mesh Gelombang Sutra Sakinah (Ethereal Organic Wave)
+let waveGeometry: THREE.PlaneGeometry | null = null
+let waveMesh: THREE.Mesh | null = null
+let wireMesh: THREE.Mesh | null = null
 
-// Array kecepatan dan posisi dasar partikel
-let starPositions: Float32Array
-let starInitialY: Float32Array
-let starSpeeds: Float32Array
+// Simpan posisi Z awal bidang datar untuk kalkulasi gelombang
+let originalZ: Float32Array | null = null
 
-// Buat tekstur partikel bintang bercahaya lembut (Aura Emas-Zamrud) menggunakan kanvas 2D
-const createStarTexture = (): THREE.CanvasTexture => {
-  const canvas = document.createElement('canvas')
-  canvas.width = 64
-  canvas.height = 64
-  const ctx = canvas.getContext('2d')
-  if (ctx) {
-    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)')
-    gradient.addColorStop(0.2, 'rgba(251, 191, 36, 0.85)') // Kilau Emas
-    gradient.addColorStop(0.5, 'rgba(16, 185, 129, 0.4)') // Pendar Zamrud
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, 64, 64)
-  }
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.needsUpdate = true
-  return texture
-}
-
-// Bangun Struktur 3D Bintang 8-Penjuru (Rub el Hizb)
-const createRubElHizbGeometry = (radius: number): THREE.BufferGeometry => {
-  const points: THREE.Vector3[] = []
-  const halfPi = Math.PI / 2
-  const quarterPi = Math.PI / 4
-
-  // Kotak Pertama
-  for (let i = 0; i < 4; i++) {
-    const a1 = i * halfPi
-    const a2 = (i + 1) * halfPi
-    points.push(
-      new THREE.Vector3(radius * Math.cos(a1), radius * Math.sin(a1), 0),
-      new THREE.Vector3(radius * Math.cos(a2), radius * Math.sin(a2), 0)
-    )
-  }
-
-  // Kotak Kedua (Diputar 45 derajat membentuk bintang 8)
-  for (let i = 0; i < 4; i++) {
-    const a1 = i * halfPi + quarterPi
-    const a2 = (i + 1) * halfPi + quarterPi
-    points.push(
-      new THREE.Vector3(radius * Math.cos(a1), radius * Math.sin(a1), 0),
-      new THREE.Vector3(radius * Math.cos(a2), radius * Math.sin(a2), 0)
-    )
-  }
-
-  const geometry = new THREE.BufferGeometry().setFromPoints(points)
-  return geometry
-}
-
-// Bangun Cincin Lingkaran Konsentris Geometri Islam
-const createCircleGeometry = (radius: number, segments = 64): THREE.BufferGeometry => {
-  const points: THREE.Vector3[] = []
-  const step = (Math.PI * 2) / segments
-  for (let i = 0; i <= segments; i++) {
-    const angle = i * step
-    points.push(new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0))
-  }
-  const geometry = new THREE.BufferGeometry().setFromPoints(points)
-  return geometry
-}
-
-// Inisialisasi Tampilan Three.js
+// Inisialisasi Tampilan Three.js Minimalis & Khusyuk
 const initThreeScene = () => {
   if (!canvasRef.value) return
 
@@ -117,10 +53,11 @@ const initThreeScene = () => {
 
   // Setup Scene & Kamera
   scene = new THREE.Scene()
-  camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000)
-  camera.position.set(0, 0, 32)
+  camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000)
+  camera.position.set(0, 5, 28)
+  camera.lookAt(0, 0, 0)
 
-  // Setup WebGL Renderer dengan performa teroptimasi untuk TV
+  // WebGL Renderer dengan performa teroptimasi untuk Smart TV
   renderer = new THREE.WebGLRenderer({
     canvas,
     alpha: true,
@@ -131,174 +68,94 @@ const initThreeScene = () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
 
   // =========================================================================
-  // 1. SISTEM PARTIKEL DEBU BINTANG CELESTIAL (1.000 Butir Bintang Melayang)
+  // PENCAHAYAAN AMBIENT KHUSYUK (ZAMRUD & EMAS REDUP)
   // =========================================================================
-  const starCount = 1000
-  starPositions = new Float32Array(starCount * 3)
-  starInitialY = new Float32Array(starCount)
-  starSpeeds = new Float32Array(starCount)
-  const starColors = new Float32Array(starCount * 3)
+  const ambientLight = new THREE.AmbientLight(0x064e3b, 1.2)
+  scene.add(ambientLight)
 
-  const colorPalette = [
-    new THREE.Color('#10b981'), // Zamrud Utama
-    new THREE.Color('#34d399'), // Zamrud Cerah
-    new THREE.Color('#fbbf24'), // Emas Murni
-    new THREE.Color('#f59e0b'), // Amber Hangat
-    new THREE.Color('#38bdf8'), // Sian Ethereal
-    new THREE.Color('#ffffff')  // Bintang Putih
-  ]
+  const pointLight = new THREE.PointLight(0x10b981, 2, 50)
+  pointLight.position.set(0, 10, 10)
+  scene.add(pointLight)
 
-  for (let i = 0; i < starCount; i++) {
-    const i3 = i * 3
-    starPositions[i3] = (Math.random() - 0.5) * 80
-    starPositions[i3 + 1] = (Math.random() - 0.5) * 50
-    starPositions[i3 + 2] = (Math.random() - 0.5) * 40 - 5
+  const goldAccentLight = new THREE.PointLight(0xf59e0b, 1.2, 40)
+  goldAccentLight.position.set(-15, 8, 8)
+  scene.add(goldAccentLight)
 
-    starInitialY[i] = starPositions[i3 + 1]
-    starSpeeds[i] = 0.005 + Math.random() * 0.015
+  // =========================================================================
+  // GELOMBANG SUTRA SAKINAH (ETHEREAL SILK WAVE MESH)
+  // Konsep: Tenang, bernafas lembut, tidak ada partikel bising/ramai
+  // =========================================================================
+  const planeWidth = 75
+  const planeHeight = 45
+  const segW = 40
+  const segH = 26
 
-    const col = colorPalette[Math.floor(Math.random() * colorPalette.length)]
-    starColors[i3] = col.r
-    starColors[i3 + 1] = col.g
-    starColors[i3 + 2] = col.b
+  waveGeometry = new THREE.PlaneGeometry(planeWidth, planeHeight, segW, segH)
+  const posAttr = waveGeometry.attributes.position
+  originalZ = new Float32Array(posAttr.count)
+  for (let i = 0; i < posAttr.count; i++) {
+    originalZ[i] = posAttr.getZ(i)
   }
 
-  starsGeometry = new THREE.BufferGeometry()
-  starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3))
-  starsGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3))
-
-  const starTexture = createStarTexture()
-  const starsMaterial = new THREE.PointsMaterial({
-    size: 1.4,
-    map: starTexture,
+  // Material Permukaan Halus Zamrud Pekat
+  const waveMaterial = new THREE.MeshStandardMaterial({
+    color: 0x032e22,
+    roughness: 0.7,
+    metalness: 0.15,
     transparent: true,
-    opacity: 0.85,
-    vertexColors: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false
+    opacity: 0.5,
+    side: THREE.DoubleSide
   })
 
-  starsPoints = new THREE.Points(starsGeometry, starsMaterial)
-  scene.add(starsPoints)
+  waveMesh = new THREE.Mesh(waveGeometry, waveMaterial)
+  waveMesh.rotation.x = -Math.PI / 2.7
+  waveMesh.position.set(0, -6, -4)
+  scene.add(waveMesh)
 
-  // =========================================================================
-  // 2. GEOMETRI SUCI PUSAT: ASTROLABE ISLAM (RUB EL HIZB 8-STAR & CINCIN ORBIT)
-  // =========================================================================
-  sacredGroup = new THREE.Group()
-
-  // Material Garis Emas Berpendar
-  const goldLineMaterial = new THREE.LineBasicMaterial({
-    color: 0xf59e0b,
-    transparent: true,
-    opacity: 0.28,
-    blending: THREE.AdditiveBlending
-  })
-
-  // Material Garis Zamrud Khusyuk
-  const emeraldLineMaterial = new THREE.LineBasicMaterial({
+  // Kisi-Kisi Garis Halus Emas-Zamrud (Subtle Elegant Wireframe)
+  const wireMaterial = new THREE.MeshBasicMaterial({
     color: 0x10b981,
+    wireframe: true,
     transparent: true,
-    opacity: 0.32,
-    blending: THREE.AdditiveBlending
+    opacity: 0.12
   })
 
-  // Bintang Rub El Hizb Besar & Sedang
-  const starBigGeo = createRubElHizbGeometry(12)
-  const starBig = new THREE.LineSegments(starBigGeo, goldLineMaterial)
-  sacredGroup.add(starBig)
-
-  const starMidGeo = createRubElHizbGeometry(8.5)
-  const starMid = new THREE.LineSegments(starMidGeo, emeraldLineMaterial)
-  starMid.rotation.z = Math.PI / 8
-  sacredGroup.add(starMid)
-
-  // Cincin Konsentris
-  const ring1Geo = createCircleGeometry(12)
-  const ring1 = new THREE.LineLoop(ring1Geo, goldLineMaterial)
-  sacredGroup.add(ring1)
-
-  const ring2Geo = createCircleGeometry(14.5)
-  const ring2 = new THREE.LineLoop(ring2Geo, emeraldLineMaterial)
-  sacredGroup.add(ring2)
-
-  const ring3Geo = createCircleGeometry(6)
-  const ring3 = new THREE.LineLoop(ring3Geo, goldLineMaterial)
-  sacredGroup.add(ring3)
-
-  // Posisikan di latar belakang tengah dengan sedikit kemiringan perspektif 3D
-  sacredGroup.position.set(4, 0, -12)
-  sacredGroup.rotation.x = 0.35
-  sacredGroup.rotation.y = -0.2
-  scene.add(sacredGroup)
-
-  // =========================================================================
-  // 3. HALO 3D DI BELAKANG PIRINGAN VINYL SURAH (SISI KIRI LAYAR)
-  // =========================================================================
-  leftHaloGroup = new THREE.Group()
-
-  const leftRing1Geo = createCircleGeometry(6.5, 48)
-  const leftRing1 = new THREE.LineLoop(leftRing1Geo, emeraldLineMaterial)
-  leftHaloGroup.add(leftRing1)
-
-  const leftStarGeo = createRubElHizbGeometry(5.2)
-  const leftStar = new THREE.LineSegments(leftStarGeo, goldLineMaterial)
-  leftHaloGroup.add(leftStar)
-
-  const leftRing2Geo = createCircleGeometry(7.8, 48)
-  const leftRing2 = new THREE.LineLoop(leftRing2Geo, goldLineMaterial)
-  leftHaloGroup.add(leftRing2)
-
-  // Posisikan sejajar di belakang komponen Vinyl Player di kiri
-  leftHaloGroup.position.set(-14, 1.5, -4)
-  leftHaloGroup.rotation.x = 0.15
-  scene.add(leftHaloGroup)
+  wireMesh = new THREE.Mesh(waveGeometry, wireMaterial)
+  wireMesh.rotation.x = -Math.PI / 2.7
+  wireMesh.position.set(0, -5.9, -4)
+  scene.add(wireMesh)
 
   // Mulai Loop Animasi
   animate()
 }
 
-// Loop Animasi 60 FPS yang Lembut & Ringan
+// Loop Animasi 60 FPS yang Sangat Halus & Menenangkan Jiwa
 let clock = 0
 const animate = () => {
   animationFrameId = requestAnimationFrame(animate)
 
-  clock += 0.016
-  const isReciting = props.isPlaying
-  const pulseSpeed = isReciting ? 2.2 : 1.0
-  const rotSpeedMultiplier = isReciting ? 1.6 : 1.0
+  clock += 0.012
+  const speed = props.isPlaying ? 1.4 : 0.8
 
-  // 1. Animasi Partikel Bintang (Mengambang Naik & Berkelip Halus)
-  if (starsGeometry && starPositions) {
-    const positions = starsGeometry.attributes.position.array as Float32Array
-    for (let i = 0; i < 1000; i++) {
-      const i3 = i * 3
-      // Pergerakan vertikal halus ke atas
-      positions[i3 + 1] += starSpeeds[i] * rotSpeedMultiplier
-      // Osilasi horizontal lembut
-      positions[i3] += Math.sin(clock + i) * 0.003
+  // Animasi Gelombang Air/Sutra Al-Quran yang Lembut
+  if (waveGeometry && originalZ) {
+    const posAttr = waveGeometry.attributes.position
+    const count = posAttr.count
 
-      // Reset partikel jika keluar dari layar atas
-      if (positions[i3 + 1] > 28) {
-        positions[i3 + 1] = -28
-      }
+    for (let i = 0; i < count; i++) {
+      const u = posAttr.getX(i) * 0.12
+      const v = posAttr.getY(i) * 0.14
+      // Gelombang ganda harmonik yang tenang (sakinah)
+      const waveVal =
+        Math.sin(u + clock * speed) * 1.6 +
+        Math.cos(v + clock * speed * 0.7) * 1.2 +
+        Math.sin((u + v) * 0.5 + clock * 0.5) * 0.8
+
+      posAttr.setZ(i, originalZ[i] + waveVal)
     }
-    starsGeometry.attributes.position.needsUpdate = true
-  }
 
-  // 2. Rotasi & Denyut Nafas Geometri Suci Pusat
-  if (sacredGroup) {
-    sacredGroup.rotation.z += 0.0012 * rotSpeedMultiplier
-    sacredGroup.rotation.y = -0.2 + Math.sin(clock * 0.4) * 0.05
-    // Denyutan ritmis mengikuti lantunan tilawah
-    const pulseScale = 1 + Math.sin(clock * pulseSpeed) * 0.035
-    sacredGroup.scale.set(pulseScale, pulseScale, pulseScale)
-  }
-
-  // 3. Rotasi Halo Sisi Kiri Vinyl
-  if (leftHaloGroup) {
-    leftHaloGroup.rotation.z -= 0.002 * rotSpeedMultiplier
-    const haloPulse = 1 + Math.cos(clock * pulseSpeed) * 0.03
-    leftHaloGroup.scale.set(haloPulse, haloPulse, haloPulse)
+    posAttr.needsUpdate = true
+    waveGeometry.computeVertexNormals()
   }
 
   if (renderer && scene && camera) {
@@ -306,7 +163,7 @@ const animate = () => {
   }
 }
 
-// Tangani Perubahan Ukuran Layar / Mode Fullscreen TV
+// Tangani Resize Jendela / Fullscreen
 const handleResize = () => {
   if (!canvasRef.value || !renderer || !camera) return
   const width = canvasRef.value.clientWidth || window.innerWidth
@@ -319,7 +176,6 @@ const handleResize = () => {
 }
 
 onMounted(() => {
-  // Tunggu DOM terpasang sempurna
   nextTick(() => {
     initThreeScene()
     window.addEventListener('resize', handleResize)
@@ -333,7 +189,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
 
   // Bersihkan Memori WebGL Three.js secara Sempurna
-  if (starsGeometry) starsGeometry.dispose()
+  if (waveGeometry) waveGeometry.dispose()
   if (renderer) {
     renderer.dispose()
     renderer.forceContextLoss()
@@ -343,20 +199,3 @@ onBeforeUnmount(() => {
   renderer = null
 })
 </script>
-
-<style scoped>
-@keyframes pulseSlow {
-  0%, 100% {
-    opacity: 0.15;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.28;
-    transform: scale(1.12);
-  }
-}
-
-.animate-pulse-slow {
-  animation: pulseSlow 8s ease-in-out infinite;
-}
-</style>
