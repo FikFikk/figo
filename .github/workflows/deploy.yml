@@ -75,6 +75,8 @@ jobs:
     name: Deploy & Reload PM2 (Armbian Server)
     needs: build
     runs-on: [self-hosted, linux]
+    env:
+      RUNNER_TRACK_PROCESSES: 'false'
     steps:
       - name: Unduh Artefak Deploy
         uses: actions/download-artifact@v4
