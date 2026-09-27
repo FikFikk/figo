@@ -1,13 +1,8 @@
-# Build & Deploy Nuxt 4 (SSR) ke server lewat self-hosted runner yang berjalan
-# DI server itu sendiri. Runner connect OUTBOUND ke GitHub, jadi server TIDAK
-# perlu IP publik / port-forward (aman di balik NAT/CGNAT).
-#
-# CATATAN PENTING (beda dari project static sebelah):
-# - Project ini SSR (ssr: true) + Nitro server + PM2, BUKAN static generate.
-# - Native deps (sharp, ffmpeg-static, yt-dlp dari youtube-dl-exec) bersifat
-#   per-arch. Build WAJIB di self-hosted runner (server) supaya binary cocok
-#   dengan arsitektur server (mis. ARM). Tidak boleh build di runner x64 GitHub
-#   lalu salin .output ke server ARM -> sharp/ffmpeg akan crash saat runtime.
+# Arsitektur Hybrid CI/CD:
+# 1. Build (Nuxt SSR + Go Linux ARM64) di-compile di GitHub Cloud Runner (ubuntu-latest)
+#    - Menggunakan CPU multi-core server & NVMe berkecepatan tinggi (~1-2 menit).
+# 2. Deploy hanya mendownload bundle jadi dan me-reload PM2 di Armbian (self-hosted)
+#    - Armbian TIDAK PERLU compile atau install node_modules berat (~30 detik).
 name: Build & Deploy to Server
 
 on:
@@ -20,22 +15,19 @@ on:
       - "README.md"
       - "documentation.md"
       - "documentation-api.md"
-  workflow_dispatch: # bisa dijalankan manual dari tab Actions
+  workflow_dispatch:
 
-# Hanya butuh read repo; deploy lewat self-hosted runner.
 permissions:
   contents: read
 
-# Cegah dua deploy jalan bersamaan ke server yang sama.
 concurrency:
   group: "deploy-figo"
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    runs-on: [self-hosted, linux]
-    env:
-      RUNNER_TOOL_CACHE: /home/fikfikk/actions-runner-figo/_work/_tool
+  build:
+    name: Build Nuxt SSR & Go Backend (GitHub Cloud)
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -48,7 +40,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: "pnpm"
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -56,23 +49,39 @@ jobs:
           go-version: "1.22"
 
       - name: Install dependencies
-        # frozen-lockfile: gagal kalau lockfile tidak sinkron (deterministik).
-        # Native binaries (sharp/ffmpeg/yt-dlp) ter-install untuk arch server.
         run: pnpm install --frozen-lockfile
 
       - name: Build Nuxt (SSR / Nitro node-server)
         run: pnpm run build
 
-      - name: Build Go download API
+      - name: Build Go download API (Linux ARM64)
         run: |
           set -e
           cd backend-go
-          go build -trimpath -ldflags="-s -w" -o figo-download-api .
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o figo-download-api .
 
-      - name: Publish .output ke direktori app
-        # APP_PATH diisi via repo Variables (Settings > Variables), bukan Secret,
-        # karena bukan rahasia. Hanya .output yang disalin: file lama yang tak ada
-        # di build baru ikut terhapus (--delete). Trailing slash = salin ISI folder.
+      - name: Arsipkan hasil build
+        run: |
+          tar -czf figo-deploy-bundle.tar.gz .output backend-go/figo-download-api ecosystem.config.cjs
+
+      - name: Unggah Artefak Deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: figo-deploy-bundle
+          path: figo-deploy-bundle.tar.gz
+          retention-days: 1
+
+  deploy:
+    name: Deploy & Reload PM2 (Armbian Server)
+    needs: build
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Unduh Artefak Deploy
+        uses: actions/download-artifact@v4
+        with:
+          name: figo-deploy-bundle
+
+      - name: Publish ke direktori app
         env:
           APP_PATH: ${{ vars.APP_PATH }}
         run: |
@@ -82,16 +91,15 @@ jobs:
             exit 1
           fi
           mkdir -p "$APP_PATH"
+          tar -xzf figo-deploy-bundle/figo-deploy-bundle.tar.gz || tar -xzf figo-deploy-bundle.tar.gz
           rsync -a --delete ./.output/ "$APP_PATH/.output/"
           mkdir -p "$APP_PATH/backend-go"
           cp ./backend-go/figo-download-api "$APP_PATH/backend-go/figo-download-api"
+          chmod +x "$APP_PATH/backend-go/figo-download-api"
           cp ./ecosystem.config.cjs "$APP_PATH/ecosystem.config.cjs"
           echo "Publish selesai ke $APP_PATH"
 
       - name: Reload PM2
-        # startOrReload: start kalau belum jalan, reload (zero-downtime) kalau sudah.
-        # --update-env supaya perubahan .env / env ter-apply.
-        # .env (berisi RAPIDAPI_KEY) HARUS sudah ada manual di $APP_PATH (lihat README).
         env:
           APP_PATH: ${{ vars.APP_PATH }}
         run: |
