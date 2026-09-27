@@ -26,13 +26,20 @@
         <span :class="isDark ? 'font-medium text-white' : 'font-medium text-slate-900'">No account. No fee. No nonsense.</span>
       </p>
 
-      <div class="flex items-center justify-center pt-1">
+      <div class="flex items-center justify-center gap-3 pt-1 flex-wrap">
+        <NuxtLink
+          to="/quran"
+          class="min-h-11 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-headline font-bold text-sm shadow-lg shadow-emerald-600/25 hover:-translate-y-0.5 transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+        >
+          <span class="material-symbols-outlined text-lg">auto_stories</span>
+          <span>Al-Qur'an Digital</span>
+        </NuxtLink>
         <NuxtLink
           to="/tools"
-          class="min-h-11 px-5 py-2.5 rounded-2xl border border-primary/30 text-primary font-headline font-bold text-sm hover:bg-primary/10 hover:-translate-y-0.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+          class="min-h-11 px-5 py-2.5 rounded-2xl border border-primary/30 text-primary font-headline font-bold text-sm hover:bg-primary/10 hover:-translate-y-0.5 transition-all flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
         >
-          Explore tools
-          <span class="material-symbols-outlined text-lg align-middle ml-1">arrow_downward</span>
+          <span>Explore tools</span>
+          <span class="material-symbols-outlined text-lg">arrow_downward</span>
         </NuxtLink>
       </div>
     </div>

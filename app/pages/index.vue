@@ -62,7 +62,7 @@
         </p>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
         <div
           v-for="tool in ecosystemTools"
           :key="tool.title"
@@ -212,6 +212,13 @@ const coreTools = [
 
 const ecosystemTools = [
   {
+    icon: 'auto_stories',
+    title: "Al-Qur'an Al-Karim",
+    description: "Mushaf digital 30 Juz Rasm Utsmani, terjemahan resmi Kemenag, audio studio & Mode Smart TV.",
+    route: '/quran',
+    bg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
+  },
+  {
     icon: 'restaurant',
     title: 'Global Recipes',
     description: 'Koleksi resep masakan internasional dengan penskalaan porsi real-time.',
@@ -223,7 +230,7 @@ const ecosystemTools = [
     title: 'Nutrition Index',
     description: 'Basis data nutrisi dan kandungan gizi ribuan produk pangan.',
     route: '/foods',
-    bg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
+    bg: 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400',
   },
   {
     icon: 'calendar_month',
