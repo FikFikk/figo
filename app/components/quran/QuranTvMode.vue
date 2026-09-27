@@ -6,21 +6,8 @@
     @mousemove="handleActivity"
     @keydown="handleKeydown"
   >
-    <!-- Background Ambient Glow & Islamic Ornament Watermark -->
-    <div class="pointer-events-none absolute inset-0 overflow-hidden">
-      <!-- Glow Emerald Kiri Atas -->
-      <div
-        class="absolute -top-32 -left-32 size-[600px] rounded-full bg-emerald-600/15 blur-[140px] transition-transform duration-1000"
-        :class="{ 'scale-125 opacity-90': isPlaying, 'scale-100 opacity-40': !isPlaying }"
-      />
-      <!-- Glow Biru Safir Kanan Bawah -->
-      <div
-        class="absolute -bottom-40 -right-40 size-[700px] rounded-full bg-blue-600/10 blur-[160px] transition-transform duration-1000"
-        :class="{ 'scale-110 opacity-70': isPlaying, 'scale-100 opacity-30': !isPlaying }"
-      />
-      <!-- Pola Geometris Islami Samar (Subtle Star Pattern) -->
-      <div class="absolute inset-0 bg-[radial-gradient(rgba(16,185,129,0.04)_1.5px,transparent_1.5px)] [background-size:36px_36px] opacity-70" />
-    </div>
+    <!-- Latar Belakang 3D Three.js: Debu Bintang Celestial & Astrolabe Suci Rub el Hizb -->
+    <QuranTvCelestialScene :is-playing="isPlaying" />
 
     <!-- ============================================================== -->
     <!-- BARIS ATAS: HEADER SMART TV (BRANDING, JAM DIGITAL & KONTROL) -->
@@ -94,63 +81,79 @@
       <div class="lg:col-span-5 xl:col-span-4 flex flex-col items-center lg:items-start text-center lg:text-left space-y-6">
         <!-- Vinyl Ornamen Kaligrafi Surah (Berputar saat Audio Dimainkan) -->
         <div class="relative group">
-          <!-- Piringan Luar Glassmorphism -->
+          <!-- Halo Pendar Gelombang Suara Melingkar Saat Audio Berputar -->
           <div
-            class="relative size-44 sm:size-56 md:size-64 rounded-full p-2.5 bg-gradient-to-br from-emerald-500/20 via-white/5 to-white/[0.02] border border-white/10 shadow-2xl backdrop-blur-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-105"
+            v-if="isPlaying"
+            class="absolute -inset-4 sm:-inset-6 rounded-full bg-gradient-to-r from-emerald-500/20 via-amber-500/10 to-emerald-500/20 blur-2xl animate-pulse pointer-events-none"
+          />
+
+          <!-- Cincin Luar Astrolabe Islam Berkisi Emas -->
+          <div
+            class="relative size-48 sm:size-60 md:size-72 rounded-full p-3 bg-gradient-to-br from-amber-500/15 via-emerald-500/10 to-white/[0.03] border border-amber-400/30 shadow-[0_0_50px_rgba(16,185,129,0.25)] backdrop-blur-2xl flex items-center justify-center transition-all duration-700 group-hover:scale-105"
           >
-            <!-- Cincin Vinyl Berputar -->
+            <!-- Cincin Vinyl Berputar dengan Garis Alur Piringan Hitam -->
             <div
-              class="size-full rounded-full border border-dashed border-emerald-500/40 p-3.5 flex items-center justify-center"
+              class="size-full rounded-full border border-dashed border-emerald-400/50 p-4 flex items-center justify-center relative bg-[radial-gradient(circle_at_center,#111827_0%,#030712_65%,#022c22_100%)] shadow-2xl"
               :class="{ 'animate-spin-slow': isPlaying }"
             >
-              <!-- Lingkaran Inti Piringan Musik -->
-              <div class="size-full rounded-full bg-gradient-to-br from-slate-900 to-black border border-emerald-500/30 flex flex-col items-center justify-center p-4 relative shadow-inner">
-                <!-- Kaligrafi Nama Surah Arab -->
-                <span class="font-arabic text-3xl sm:text-4xl text-emerald-400 drop-shadow-md select-text">
+              <!-- Garis Geometris Konsentris Vinyl Emas -->
+              <div class="absolute inset-4 rounded-full border border-amber-400/20 pointer-events-none" />
+              <div class="absolute inset-8 rounded-full border border-emerald-400/15 pointer-events-none" />
+
+              <!-- Kubah Inti Zamrud Bercahaya dengan Kaligrafi Nama Surah -->
+              <div class="size-full rounded-full bg-gradient-to-br from-emerald-950 via-slate-950 to-black border border-emerald-400/40 flex flex-col items-center justify-center p-4 relative shadow-[inset_0_0_25px_rgba(16,185,129,0.3)]">
+                <!-- Kaligrafi Nama Surah Arab dengan Efek Pendar Nur -->
+                <span class="font-arabic text-3xl sm:text-4xl text-emerald-300 drop-shadow-[0_0_20px_rgba(52,211,153,0.7)] select-text">
                   {{ activeSurah?.nama }}
                 </span>
                 <!-- Nomor Surah -->
-                <span class="mt-1 font-mono text-[11px] font-bold text-emerald-500/90 tracking-wider">
+                <span class="mt-1 font-mono text-[11px] font-bold text-amber-300/90 tracking-widest uppercase">
                   SURAH {{ activeSurah?.nomor }}
                 </span>
-                <!-- Titik Lubang Tengah Vinyl -->
-                <div class="size-4 rounded-full bg-slate-950 border border-emerald-500/60 mt-1 shadow-inner" />
+                <!-- Titik Poros Tengah Piringan Vinyl -->
+                <div class="size-4 rounded-full bg-slate-950 border border-amber-400/80 mt-1 shadow-inner ring-2 ring-emerald-500/40" />
               </div>
             </div>
 
-            <!-- Gelombang Suara Animasi Saat Play -->
+            <!-- Lencana Status Sedang Tilawah di Bagian Bawah Vinyl -->
             <div
               v-if="isPlaying"
-              class="absolute -bottom-3 inset-x-0 mx-auto w-max px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 backdrop-blur-md flex items-center gap-1 text-[11px] font-semibold text-emerald-300"
+              class="absolute -bottom-3 inset-x-0 mx-auto w-max px-3.5 py-1 rounded-full bg-gradient-to-r from-emerald-500/30 via-emerald-500/20 to-amber-500/20 border border-emerald-400/50 backdrop-blur-md flex items-center gap-1.5 text-[11px] font-bold text-emerald-300 shadow-lg shadow-emerald-900/40"
             >
-              <span class="material-symbols-outlined text-sm animate-pulse">graphic_eq</span>
+              <span class="material-symbols-outlined text-sm animate-pulse text-amber-300">graphic_eq</span>
               <span>Sedang Tilawah</span>
             </div>
           </div>
         </div>
 
-        <!-- Info Surah & Qari -->
-        <div class="space-y-2 w-full max-w-sm">
+        <!-- Info Surah & Qari Berestetika Religius Modern -->
+        <div class="space-y-2.5 w-full max-w-sm">
           <div class="flex items-center justify-center lg:justify-start gap-2 flex-wrap">
-            <span class="rounded-xl bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 text-xs font-bold text-emerald-300">
+            <span class="rounded-xl bg-gradient-to-r from-emerald-500/20 to-amber-500/10 border border-emerald-400/30 px-3 py-0.5 text-xs font-bold text-emerald-300 shadow-sm">
               QS {{ activeSurah?.nomor }}:{{ playingAyat || 1 }}
             </span>
-            <span class="rounded-xl border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-slate-300">
+            <span class="rounded-xl border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-slate-300 uppercase tracking-wider">
               {{ activeSurah?.tempatTurun }} • {{ activeSurah?.jumlahAyat }} Ayat
             </span>
           </div>
 
-          <h2 class="text-2xl sm:text-3xl font-serif font-black tracking-tight text-white">
+          <!-- Judul Latin Surah dengan Efek Emas Permata -->
+          <h2 class="text-3xl sm:text-4xl font-serif font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-emerald-100 to-white drop-shadow-sm">
             Surah {{ activeSurah?.namaLatin }}
           </h2>
 
           <p class="text-xs text-slate-400">
-            Arti: <strong class="text-slate-200">{{ activeSurah?.arti }}</strong>
+            Arti: <strong class="text-slate-200 font-semibold">{{ activeSurah?.arti }}</strong>
           </p>
 
-          <!-- Qari Aktif -->
-          <div class="pt-2 flex items-center justify-center lg:justify-start gap-2.5">
-            <div class="size-2 rounded-full bg-emerald-400 animate-ping" />
+          <!-- Qari Aktif dengan Live Frequency Equalizer -->
+          <div class="pt-1.5 flex items-center justify-center lg:justify-start gap-2.5">
+            <div class="flex items-center gap-0.5 h-3.5 px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+              <span class="w-0.5 bg-emerald-400 rounded-full h-full" :class="{ 'animate-music-bar-1': isPlaying }" />
+              <span class="w-0.5 bg-emerald-400 rounded-full h-full" :class="{ 'animate-music-bar-2': isPlaying }" />
+              <span class="w-0.5 bg-emerald-400 rounded-full h-full" :class="{ 'animate-music-bar-3': isPlaying }" />
+              <span class="w-0.5 bg-emerald-400 rounded-full h-full" :class="{ 'animate-music-bar-4': isPlaying }" />
+            </div>
             <span class="text-xs font-semibold text-emerald-300">
               {{ currentQariName }}
             </span>
@@ -248,71 +251,80 @@
       <!-- SISI KANAN: THE ACTIVE AYAT SPOTLIGHT & ANTICIPATION CARDS -->
       <!-- ========================================================== -->
       <div class="lg:col-span-7 xl:col-span-8 flex flex-col justify-center h-full min-h-[380px] sm:min-h-[460px]">
-        <div class="relative w-full rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-2xl p-6 sm:p-8 lg:p-10 shadow-2xl overflow-hidden flex flex-col justify-between">
-          <!-- Aksen Garis Emas Puncak Kartu -->
-          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent" />
+        <!-- Konteks Ayat Sebelumnya (Floating Scripture Ribbon di Atas Kartu Utama) -->
+        <Transition name="ayat-fade">
+          <button
+            v-if="prevAyatData"
+            type="button"
+            class="mb-3 w-full rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] hover:border-emerald-500/30 px-4 py-2.5 backdrop-blur-xl transition-all duration-300 cursor-pointer flex items-center justify-between gap-4 text-left group select-none shadow-sm"
+            :title="`Klik untuk kembali ke Ayat ${prevAyatData.nomorAyat}`"
+            @click="skipPreviousAyat"
+          >
+            <div class="flex items-center gap-2 text-xs text-slate-400 min-w-0">
+              <span class="material-symbols-outlined text-[15px] text-emerald-400/80 group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+              <span class="font-mono font-bold text-emerald-300 uppercase tracking-wider text-[11px] shrink-0">Ayat {{ prevAyatData.nomorAyat }}</span>
+              <span class="text-slate-600 hidden sm:inline">•</span>
+              <span class="truncate font-sans text-slate-400 group-hover:text-slate-200 transition text-xs">{{ cleanLatinText(prevAyatData.teksLatin) }}</span>
+            </div>
+            <div class="font-arabic text-sm text-slate-300/80 shrink-0 text-right group-hover:text-slate-100 transition" dir="rtl">
+              {{ prevAyatData.teksArab }}
+            </div>
+          </button>
+        </Transition>
 
-          <!-- Header Kartu: Status Ayat Aktif & Konteks Ayat Sebelumnya -->
+        <!-- Kartu Ayat Aktif: Sorotan Utama Berpendar Nur Ilahi -->
+        <div class="relative w-full rounded-3xl border border-emerald-500/25 bg-gradient-to-b from-white/[0.05] via-emerald-950/[0.1] to-black/40 backdrop-blur-2xl p-6 sm:p-8 lg:p-10 shadow-[0_0_50px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col justify-between">
+          <!-- Aksen Garis Emas Puncak Kartu -->
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-amber-400/60 via-emerald-400/70 to-transparent" />
+
+          <!-- Header Kartu: Status Ayat Aktif & Petunjuk Kontrol -->
           <div class="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-4 gap-3 flex-wrap">
             <div class="flex items-center gap-2">
-              <span class="rounded-xl bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 font-mono text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                <span class="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                AYAT {{ activeAyatNumber }}
+              <span class="rounded-full bg-gradient-to-r from-emerald-500/25 via-emerald-500/20 to-amber-500/15 border border-emerald-400/40 px-3.5 py-1 font-mono text-xs font-bold text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-2">
+                <span class="size-2 rounded-full bg-emerald-400 animate-ping" />
+                AYAT {{ activeAyatData?.nomorAyat || activeAyatNumber }}
               </span>
               <span class="text-xs text-slate-400 font-medium">
                 dari {{ activeSurah?.jumlahAyat }} Ayat
               </span>
             </div>
 
-            <!-- Konteks Ayat Sebelumnya (Quick Preview) -->
-            <button
-              v-if="prevAyatData"
-              type="button"
-              class="flex items-center gap-1.5 rounded-xl border border-white/5 bg-white/[0.02] px-2.5 py-1 text-[11px] text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer max-w-xs truncate"
-              :title="`Kembali ke Ayat ${prevAyatData.nomorAyat}: ${prevAyatData.teksLatin}`"
-              @click="skipPreviousAyat"
-            >
-              <span class="material-symbols-outlined text-[14px]">undo</span>
-              <span class="font-semibold text-slate-300">Ayat {{ prevAyatData.nomorAyat }}:</span>
-              <span class="truncate font-sans">{{ prevAyatData.teksLatin }}</span>
-            </button>
-
             <!-- Petunjuk Tombol Remote Smart TV -->
             <div class="hidden sm:flex items-center gap-2 text-[10px] text-slate-400 font-mono">
-              <span class="px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10">Spasi</span> Putar/Jeda
-              <span class="px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10">◀ ▶</span> Ganti Ayat
-              <span class="px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10">F</span> Layar Penuh
+              <span class="px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10 text-slate-300">Spasi</span> Putar/Jeda
+              <span class="px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10 text-slate-300">◀ ▶</span> Ganti Ayat
+              <span class="px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10 text-slate-300">F</span> Layar Penuh
             </div>
           </div>
 
           <!-- Transisi Teks Ayat yang Halus (Smooth Cross-fade saat Berganti) -->
-          <Transition name="ayat-fade" mode="out-in">
-            <div :key="activeAyatNumber" class="space-y-4 sm:space-y-6 my-auto">
+          <Transition name="ayat-fade">
+            <div :key="activeAyatData?.nomorAyat || activeAyatNumber" class="space-y-4 sm:space-y-6 my-auto">
               <!-- Teks Arab Rasm Utsmani Berukuran Besar (Ultra-Legible dari Sofa TV) -->
               <div class="text-right" dir="rtl">
                 <p
-                  class="font-arabic font-normal tracking-wide text-white leading-[2.3] sm:leading-[2.5] select-text drop-shadow-md text-3xl sm:text-4xl md:text-5xl lg:text-[44px]"
+                  class="font-arabic font-normal tracking-wide text-white leading-[2.4] sm:leading-[2.6] select-text drop-shadow-[0_0_30px_rgba(16,185,129,0.35)] text-3xl sm:text-4xl md:text-5xl lg:text-[46px]"
                 >
                   {{ activeAyatData?.teksArab }}
 
                   <!-- Medali Nomor Ayat Emas/Emerald -->
                   <span
-                    class="inline-flex items-center justify-center size-10 sm:size-12 mx-2 sm:mx-3 align-middle select-none relative text-emerald-400 shrink-0"
+                    class="inline-flex items-center justify-center size-10 sm:size-12 mx-2 sm:mx-3 align-middle select-none relative text-amber-300 shrink-0"
                     dir="ltr"
                   >
                     <svg class="size-full absolute inset-0 drop-shadow-md" viewBox="0 0 40 40" fill="none">
-                      <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.5" stroke-dasharray="1.5 2.5" />
+                      <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.6" stroke-dasharray="1.5 2.5" />
                       <path
                         d="M20 3 L24.5 7.5 L31 7.5 L32.5 14 L37 18.5 L35 24.5 L37 30 L31 32.5 L29 37 L20 35 L11 37 L9 32.5 L3 30 L5 24.5 L3 18.5 L7.5 14 L9 7.5 L15.5 7.5 Z"
                         stroke="currentColor"
                         stroke-width="1.2"
                         fill="currentColor"
-                        fill-opacity="0.12"
+                        fill-opacity="0.15"
                       />
-                      <circle cx="20" cy="20" r="13" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.8" />
+                      <circle cx="20" cy="20" r="13" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.9" />
                     </svg>
-                    <span class="font-arabic font-bold text-xs sm:text-sm pt-0.5 text-emerald-300 relative z-10 leading-none">
-                      {{ toArabicDigits(activeAyatNumber) }}
+                    <span class="font-arabic font-bold text-xs sm:text-sm pt-0.5 text-amber-200 relative z-10 leading-none">
+                      {{ toArabicDigits(activeAyatData?.nomorAyat || activeAyatNumber) }}
                     </span>
                   </span>
                 </p>
@@ -320,14 +332,14 @@
 
               <!-- Transliterasi Latin Fonetik Standar (Tegak & Jelas) -->
               <div v-if="activeAyatData?.teksLatin" class="pt-1">
-                <p class="font-sans font-medium text-emerald-400 text-sm sm:text-base md:text-lg leading-relaxed tracking-wide select-text">
-                  {{ activeAyatData.teksLatin }}
+                <p class="font-sans font-medium text-emerald-300 text-sm sm:text-base md:text-lg leading-relaxed tracking-wide select-text">
+                  {{ cleanLatinText(activeAyatData.teksLatin) }}
                 </p>
               </div>
 
               <!-- Terjemahan Resmi Kemenag RI -->
               <div v-if="activeAyatData?.teksIndonesia" class="border-t border-white/[0.08] pt-3">
-                <p class="font-sans text-slate-300 text-sm sm:text-base md:text-lg leading-relaxed select-text">
+                <p class="font-sans text-slate-200/90 text-sm sm:text-base md:text-lg leading-relaxed select-text">
                   {{ activeAyatData.teksIndonesia }}
                 </p>
               </div>
@@ -337,25 +349,27 @@
           <!-- Banner Lirik Selanjutnya / Anticipation Preview (Up Next Teaser) -->
           <div
             v-if="nextAyatData"
-            class="mt-4 rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/[0.07] via-emerald-500/[0.03] to-transparent p-3 sm:p-3.5 backdrop-blur-md transition-all hover:border-emerald-500/40 hover:bg-emerald-500/[0.1] cursor-pointer group"
+            class="mt-4 rounded-2xl border border-amber-500/25 bg-gradient-to-r from-emerald-500/[0.1] via-amber-500/[0.05] to-transparent p-3.5 sm:p-4 backdrop-blur-md transition-all duration-300 hover:border-emerald-400/50 hover:bg-emerald-500/[0.14] cursor-pointer group shadow-lg"
             :title="`Klik untuk langsung memutar Ayat ${nextAyatData.nomorAyat}`"
             @click="skipNextAyat"
           >
-            <div class="flex items-center justify-between text-[11px] font-semibold text-emerald-400 mb-1">
+            <div class="flex items-center justify-between text-[11px] font-semibold text-emerald-300 mb-1.5">
               <div class="flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[15px] animate-pulse">fast_forward</span>
-                <span class="uppercase tracking-wider">Ayat Berikutnya (QS {{ activeSurah?.nomor }}:{{ nextAyatData.nomorAyat }})</span>
+                <span class="material-symbols-outlined text-[16px] text-amber-400 animate-pulse">fast_forward</span>
+                <span class="uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-amber-200 to-emerald-200 font-bold">
+                  Ayat Berikutnya (QS {{ activeSurah?.nomor }}:{{ nextAyatData.nomorAyat }})
+                </span>
               </div>
               <span class="text-[10px] text-slate-400 font-mono group-hover:text-emerald-300 transition flex items-center gap-1">
                 <span>Lompat</span>
-                <span class="material-symbols-outlined text-xs">arrow_forward</span>
+                <span class="material-symbols-outlined text-xs group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </span>
             </div>
             <div class="flex items-center justify-between gap-4">
-              <p class="font-sans text-xs text-slate-300 font-medium truncate">
-                {{ nextAyatData.teksLatin }}
+              <p class="font-sans text-xs sm:text-sm text-slate-300 font-medium truncate">
+                {{ cleanLatinText(nextAyatData.teksLatin) }}
               </p>
-              <p class="font-arabic text-sm text-slate-200 shrink-0 text-right opacity-90" dir="rtl">
+              <p class="font-arabic text-sm sm:text-base text-amber-100/95 shrink-0 text-right opacity-90 group-hover:opacity-100 transition" dir="rtl">
                 {{ nextAyatData.teksArab }}
               </p>
             </div>
@@ -365,11 +379,11 @@
           <div class="flex items-center justify-between border-t border-white/[0.08] pt-3 mt-4 text-xs text-slate-400">
             <button
               type="button"
-              class="flex items-center gap-1 hover:text-white transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              class="flex items-center gap-1.5 hover:text-white transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed group px-2 py-1 rounded-lg hover:bg-white/5"
               :disabled="activeAyatNumber <= 1"
               @click="skipPreviousAyat"
             >
-              <span class="material-symbols-outlined text-sm">arrow_back</span>
+              <span class="material-symbols-outlined text-sm group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
               <span>Sebelumnya</span>
             </button>
 
@@ -379,12 +393,12 @@
 
             <button
               type="button"
-              class="flex items-center gap-1 hover:text-white transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              class="flex items-center gap-1.5 hover:text-white transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed group px-2 py-1 rounded-lg hover:bg-white/5"
               :disabled="activeAyatNumber >= (activeSurah?.jumlahAyat || 1)"
               @click="skipNextAyat"
             >
               <span>Selanjutnya</span>
-              <span class="material-symbols-outlined text-sm">arrow_forward</span>
+              <span class="material-symbols-outlined text-sm group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
             </button>
           </div>
         </div>
@@ -409,6 +423,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import QuranTvCelestialScene from './QuranTvCelestialScene.vue'
 import { useQuran, toArabicDigits } from '~/composables/useQuran'
 import type { SurahDetail } from '~/types/quran'
 
@@ -482,6 +497,12 @@ const handleActivity = () => {
   inactivityTimer = setTimeout(() => {
     isInactive.value = true
   }, 4500)
+}
+
+// Sanitasi karakter kontrol non-standar (seperti 0x91 / 0x92) menjadi tanda kutip fonetik standar
+const cleanLatinText = (str?: string) => {
+  if (!str) return ''
+  return str.replace(/[\u0091\u0092]/g, "'").replace(/[\u0093\u0094]/g, '"')
 }
 
 // Ayat Aktif yang Sedang Ditampilkan
@@ -643,6 +664,29 @@ onUnmounted(() => {
 
 .animate-spin-slow {
   animation: spin-slow 40s linear infinite;
+}
+
+/* Animasi Equalizer Musik Qari */
+@keyframes musicBar {
+  0%, 100% {
+    height: 4px;
+  }
+  50% {
+    height: 14px;
+  }
+}
+
+.animate-music-bar-1 {
+  animation: musicBar 0.8s ease-in-out infinite;
+}
+.animate-music-bar-2 {
+  animation: musicBar 0.6s ease-in-out infinite 0.2s;
+}
+.animate-music-bar-3 {
+  animation: musicBar 0.9s ease-in-out infinite 0.4s;
+}
+.animate-music-bar-4 {
+  animation: musicBar 0.7s ease-in-out infinite 0.1s;
 }
 
 /* Transisi Halus Pergantian Ayat (Sinematik Cross-fade) */
