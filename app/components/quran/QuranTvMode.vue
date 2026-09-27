@@ -272,129 +272,129 @@
           </div>
         </div>
 
-        <!-- Wadah Aliran Lirik 3-Ayat Spotify-Style dengan Efek Masking & Animasi Geser Naik -->
-        <div class="relative flex-1 flex flex-col justify-center overflow-y-auto no-scrollbar max-h-[76vh] py-2 [mask-image:linear-gradient(to_bottom,transparent,black_8%,black_92%,transparent)]">
-          <Transition name="spotify-stream" mode="out-in">
-            <div :key="activeAyatData?.nomorAyat || activeAyatNumber" class="space-y-6 sm:space-y-8 my-auto">
-              
-              <!-- ==================================================== -->
-              <!-- 1. AYAT SEBELUMNYA (Diredam / Abu-abu / Opacity 35%) -->
-              <!-- ==================================================== -->
-              <div
-                v-if="prevAyatData"
-                class="group transition-all duration-500 opacity-30 hover:opacity-75 cursor-pointer select-none space-y-1.5 text-slate-400"
-                :title="`Klik untuk kembali ke Ayat ${prevAyatData.nomorAyat}`"
-                @click="skipPreviousAyat"
-              >
-                <!-- Nomor Ayat Kecil -->
-                <div class="flex items-center gap-1.5 text-[11px] font-mono font-semibold text-slate-400">
+        <!-- Wadah Aliran Lirik Spotify-Style Kontinu (Akselerasi Perangkat Keras GPU Compositor 60FPS) -->
+        <div
+          ref="lyricsViewportRef"
+          class="relative flex-1 w-full overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_14%,black_86%,transparent)]"
+          @wheel.passive="handleWheel"
+        >
+          <div
+            ref="lyricsTrackRef"
+            class="w-full will-change-transform transition-transform duration-[650ms] ease-[cubic-bezier(0.16,1,0.3,1)] space-y-7 sm:space-y-8"
+            :style="{ transform: `translate3d(0, ${currentTranslateY}px, 0)` }"
+          >
+            <div
+              v-for="ayat in activeSurah?.ayat"
+              :key="ayat.nomorAyat"
+              :id="'tv-verse-' + ayat.nomorAyat"
+              class="group select-none cursor-pointer py-2 transition-opacity duration-500 ease-out will-change-[opacity]"
+              :class="{
+                'opacity-100': getVerseStatus(ayat.nomorAyat) === 'current',
+                'opacity-30 hover:opacity-75': getVerseStatus(ayat.nomorAyat) === 'prev',
+                'opacity-35 hover:opacity-80': getVerseStatus(ayat.nomorAyat) === 'next',
+                'opacity-0 pointer-events-none': getVerseStatus(ayat.nomorAyat) === 'far-prev' || getVerseStatus(ayat.nomorAyat) === 'far-next'
+              }"
+              @click="handleVerseClick(ayat.nomorAyat)"
+            >
+              <!-- 1. Baris Status / Header Ayat -->
+              <div class="flex items-center justify-between text-xs font-mono font-semibold select-none pb-1">
+                <!-- Status: Ayat Sebelumnya -->
+                <div v-if="getVerseStatus(ayat.nomorAyat) === 'prev'" class="flex items-center gap-1.5 text-slate-400">
                   <span class="material-symbols-outlined text-[14px]">undo</span>
-                  <span>AYAT {{ prevAyatData.nomorAyat }}</span>
+                  <span>AYAT {{ ayat.nomorAyat }}</span>
                 </div>
-                <!-- Teks Arab Ayat Sebelumnya -->
-                <p class="font-arabic text-xl sm:text-2xl lg:text-3xl text-slate-400 leading-relaxed text-right" dir="rtl">
-                  {{ prevAyatData.teksArab }}
-                </p>
-                <!-- Teks Latin Ayat Sebelumnya -->
-                <p class="font-sans text-xs sm:text-sm text-slate-400 font-medium tracking-wide">
-                  {{ cleanLatinText(prevAyatData.teksLatin) }}
-                </p>
-                <!-- Terjemahan Ayat Sebelumnya -->
-                <p class="font-sans text-xs sm:text-sm text-slate-500 line-clamp-2">
-                  {{ prevAyatData.teksIndonesia }}
-                </p>
-              </div>
-
-              <!-- ==================================================== -->
-              <!-- 2. AYAT SEKARANG (SOROTAN UTAMA / 100% OPACITY & CERAH) -->
-              <!-- ==================================================== -->
-              <div class="space-y-3 sm:space-y-4 py-2 transition-all duration-500">
-                <!-- Teks Arab Rasm Utsmani (Ukuran Adaptif Menyesuaikan Panjang Ayat agar Terlihat Semua) -->
-                <div class="text-right" dir="rtl">
-                  <p
-                    class="font-arabic font-normal tracking-wide text-white select-text drop-shadow-[0_0_30px_rgba(16,185,129,0.35)]"
-                    :class="[
-                      (activeAyatData?.teksArab?.length || 0) > 180
-                        ? 'text-2xl sm:text-3xl lg:text-[34px] leading-[2.1] sm:leading-[2.2]'
-                        : 'text-3xl sm:text-4xl md:text-5xl lg:text-[44px] leading-[2.3] sm:leading-[2.5]'
-                    ]"
-                  >
-                    {{ activeAyatData?.teksArab }}
-
-                    <!-- Medali Nomor Ayat Emas Utsmani -->
-                    <span
-                      class="inline-flex items-center justify-center size-9 sm:size-11 mx-2 sm:mx-3 align-middle select-none relative text-amber-300 shrink-0"
-                      dir="ltr"
-                    >
-                      <svg class="size-full absolute inset-0 drop-shadow-md" viewBox="0 0 40 40" fill="none">
-                        <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.6" stroke-dasharray="1.5 2.5" />
-                        <path
-                          d="M20 3 L24.5 7.5 L31 7.5 L32.5 14 L37 18.5 L35 24.5 L37 30 L31 32.5 L29 37 L20 35 L11 37 L9 32.5 L3 30 L5 24.5 L3 18.5 L7.5 14 L9 7.5 L15.5 7.5 Z"
-                          stroke="currentColor"
-                          stroke-width="1.2"
-                          fill="currentColor"
-                          fill-opacity="0.15"
-                        />
-                        <circle cx="20" cy="20" r="13" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.9" />
-                      </svg>
-                      <span class="font-arabic font-bold text-xs sm:text-sm pt-0.5 text-amber-200 relative z-10 leading-none">
-                        {{ toArabicDigits(activeAyatData?.nomorAyat || activeAyatNumber) }}
-                      </span>
-                    </span>
-                  </p>
+                <!-- Status: Ayat Saat Ini (Fokus Aktif) -->
+                <div v-else-if="getVerseStatus(ayat.nomorAyat) === 'current'" class="flex items-center gap-2">
+                  <span class="rounded-full bg-emerald-500/20 border border-emerald-400/40 px-2.5 py-0.5 font-mono text-[11px] font-bold text-emerald-300 shadow-sm flex items-center gap-1.5">
+                    <span class="size-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    AYAT {{ ayat.nomorAyat }}
+                  </span>
+                  <span class="text-[11px] text-emerald-400/70 uppercase tracking-wider font-semibold">Sedang Tilawah</span>
                 </div>
-
-                <!-- Transliterasi Latin Fonetik Aktif (Tegak, Hijau Zamrud Bercahaya) -->
-                <div v-if="activeAyatData?.teksLatin" class="pt-0.5">
-                  <p class="font-sans font-semibold text-emerald-300 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed tracking-wide select-text drop-shadow-sm">
-                    {{ cleanLatinText(activeAyatData.teksLatin) }}
-                  </p>
-                </div>
-
-                <!-- Terjemahan Resmi Kemenag RI (Putih Lembut, Jelas dari Sofa TV) -->
-                <div v-if="activeAyatData?.teksIndonesia" class="pt-1">
-                  <p class="font-sans text-slate-100 text-sm sm:text-base md:text-lg leading-relaxed select-text font-normal">
-                    {{ activeAyatData.teksIndonesia }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- ==================================================== -->
-              <!-- 3. AYAT BERIKUTNYA (Diredam / Abu-abu / Opacity 35%) -->
-              <!-- ==================================================== -->
-              <div
-                v-if="nextAyatData"
-                class="group transition-all duration-500 opacity-35 hover:opacity-80 cursor-pointer select-none space-y-1.5 text-slate-400"
-                :title="`Klik untuk lanjut ke Ayat ${nextAyatData.nomorAyat}`"
-                @click="skipNextAyat"
-              >
-                <!-- Nomor Ayat Kecil & Indikator Lanjut -->
-                <div class="flex items-center justify-between text-[11px] font-mono font-semibold text-slate-400">
+                <!-- Status: Ayat Berikutnya -->
+                <div v-else-if="getVerseStatus(ayat.nomorAyat) === 'next'" class="flex items-center justify-between w-full text-slate-400">
                   <div class="flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-[14px] text-emerald-400/80">fast_forward</span>
-                    <span>AYAT BERIKUTNYA • AYAT {{ nextAyatData.nomorAyat }}</span>
+                    <span>AYAT BERIKUTNYA • AYAT {{ ayat.nomorAyat }}</span>
                   </div>
-                  <span class="group-hover:text-emerald-300 transition text-[10px] flex items-center gap-0.5">
+                  <span class="text-[10px] text-emerald-400/60 group-hover:text-emerald-300 transition flex items-center gap-0.5">
                     <span>Lompat</span>
                     <span class="material-symbols-outlined text-xs">arrow_forward</span>
                   </span>
                 </div>
-                <!-- Teks Arab Ayat Berikutnya -->
-                <p class="font-arabic text-xl sm:text-2xl lg:text-3xl text-slate-400 leading-relaxed text-right" dir="rtl">
-                  {{ nextAyatData.teksArab }}
-                </p>
-                <!-- Teks Latin Ayat Berikutnya -->
-                <p class="font-sans text-xs sm:text-sm text-slate-400 font-medium tracking-wide">
-                  {{ cleanLatinText(nextAyatData.teksLatin) }}
-                </p>
-                <!-- Terjemahan Ayat Berikutnya -->
-                <p class="font-sans text-xs sm:text-sm text-slate-500 line-clamp-2">
-                  {{ nextAyatData.teksIndonesia }}
+                <!-- Status: Ayat Lainnya -->
+                <div v-else class="text-slate-600 text-[10px]">
+                  AYAT {{ ayat.nomorAyat }}
+                </div>
+              </div>
+
+              <!-- 2. Teks Arab Rasm Utsmani -->
+              <div class="text-right" dir="rtl">
+                <p
+                  class="font-arabic font-normal tracking-wide select-text"
+                  :class="[
+                    getVerseStatus(ayat.nomorAyat) === 'current'
+                      ? (ayat.teksArab?.length || 0) > 180
+                        ? 'text-2xl sm:text-3xl lg:text-[34px] leading-[2.1] text-white drop-shadow-[0_0_30px_rgba(16,185,129,0.35)]'
+                        : 'text-3xl sm:text-4xl md:text-5xl lg:text-[44px] leading-[2.3] sm:leading-[2.5] text-white drop-shadow-[0_0_30px_rgba(16,185,129,0.35)]'
+                      : 'text-xl sm:text-2xl lg:text-3xl text-slate-400 leading-relaxed'
+                  ]"
+                >
+                  {{ ayat.teksArab }}
+
+                  <!-- Medali Nomor Ayat Emas Utsmani -->
+                  <span
+                    class="inline-flex items-center justify-center size-9 sm:size-11 mx-2 sm:mx-3 align-middle select-none relative text-amber-300 shrink-0"
+                    :class="getVerseStatus(ayat.nomorAyat) === 'current' ? 'opacity-100' : 'opacity-40'"
+                    dir="ltr"
+                  >
+                    <svg class="size-full absolute inset-0 drop-shadow-md" viewBox="0 0 40 40" fill="none">
+                      <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.6" stroke-dasharray="1.5 2.5" />
+                      <path
+                        d="M20 3 L24.5 7.5 L31 7.5 L32.5 14 L37 18.5 L35 24.5 L37 30 L31 32.5 L29 37 L20 35 L11 37 L9 32.5 L3 30 L5 24.5 L3 18.5 L7.5 14 L9 7.5 L15.5 7.5 Z"
+                        stroke="currentColor"
+                        stroke-width="1.2"
+                        fill="currentColor"
+                        fill-opacity="0.15"
+                      />
+                      <circle cx="20" cy="20" r="13" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.9" />
+                    </svg>
+                    <span class="font-arabic font-bold text-xs sm:text-sm pt-0.5 text-amber-200 relative z-10 leading-none">
+                      {{ toArabicDigits(ayat.nomorAyat) }}
+                    </span>
+                  </span>
                 </p>
               </div>
 
+              <!-- 3. Transliterasi Latin Fonetik -->
+              <div v-if="ayat.teksLatin" class="pt-1 text-left">
+                <p
+                  class="font-sans select-text"
+                  :class="[
+                    getVerseStatus(ayat.nomorAyat) === 'current'
+                      ? 'font-semibold text-emerald-300 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed tracking-wide drop-shadow-sm'
+                      : 'font-medium text-slate-400 text-xs sm:text-sm tracking-wide line-clamp-1'
+                  ]"
+                >
+                  {{ cleanLatinText(ayat.teksLatin) }}
+                </p>
+              </div>
+
+              <!-- 4. Terjemahan Resmi Kemenag RI -->
+              <div v-if="ayat.teksIndonesia" class="pt-1 text-left">
+                <p
+                  class="font-sans select-text"
+                  :class="[
+                    getVerseStatus(ayat.nomorAyat) === 'current'
+                      ? 'text-slate-100 text-sm sm:text-base md:text-lg leading-relaxed font-normal'
+                      : 'text-slate-500 text-xs sm:text-sm line-clamp-1'
+                  ]"
+                >
+                  {{ ayat.teksIndonesia }}
+                </p>
+              </div>
             </div>
-          </Transition>
+          </div>
         </div>
 
         <!-- Baris Navigasi Sederhana di Bawah (Minimalis & Elegan) -->
@@ -443,7 +443,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import QuranTvCelestialScene from './QuranTvCelestialScene.vue'
 import { useQuran, toArabicDigits } from '~/composables/useQuran'
 import type { SurahDetail } from '~/types/quran'
@@ -552,6 +552,74 @@ const nextAyatData = computed(() => {
   return s.ayat.find((a) => a.nomorAyat === activeAyatNumber.value + 1) || null
 })
 
+// Referensi Kontainer & Track Aliran Lirik Spotify-Style Berakselerasi GPU 60FPS
+const lyricsViewportRef = ref<HTMLElement | null>(null)
+const lyricsTrackRef = ref<HTMLElement | null>(null)
+const currentTranslateY = ref(0)
+
+// Penentuan Status Relatif Posisi Ayat Terhadap Ayat yang Sedang Tilawah
+const getVerseStatus = (nomorAyat: number) => {
+  const current = activeAyatNumber.value
+  if (nomorAyat === current) return 'current'
+  if (nomorAyat === current - 1) return 'prev'
+  if (nomorAyat === current + 1) return 'next'
+  if (nomorAyat < current - 1) return 'far-prev'
+  return 'far-next'
+}
+
+// Lompat Tilawah ke Ayat Tertentu Saat Baris Ayat Diklik Pengguna
+const handleVerseClick = (nomorAyat: number) => {
+  const s = activeSurah.value
+  if (!s) return
+  if (nomorAyat === activeAyatNumber.value) {
+    togglePlay()
+  } else {
+    playAyat(s.nomor, nomorAyat)
+  }
+}
+
+// Geser Track Sumbu Y Melalui Transform GPU 60FPS (Tanpa Memicu Reflow Layout Browser)
+const updateTranslateY = (_smooth = true) => {
+  if (!lyricsViewportRef.value || !lyricsTrackRef.value) return
+  const viewport = lyricsViewportRef.value
+  const targetEl = lyricsTrackRef.value.querySelector<HTMLElement>(`#tv-verse-${activeAyatNumber.value}`)
+  if (!targetEl) return
+
+  // Posisi pusat vertikal target relatif terhadap track
+  const targetCenter = targetEl.offsetTop + targetEl.clientHeight / 2
+  const viewportCenter = viewport.clientHeight / 2
+
+  currentTranslateY.value = Math.round(viewportCenter - targetCenter)
+}
+
+// Penanganan Scroll Halus Mouse Wheel pada Track GPU
+const handleWheel = (e: WheelEvent) => {
+  if (!lyricsTrackRef.value || !lyricsViewportRef.value) return
+  const trackHeight = lyricsTrackRef.value.clientHeight
+  const viewportHeight = lyricsViewportRef.value.clientHeight
+
+  const minTranslate = viewportHeight / 2 - trackHeight
+  const maxTranslate = viewportHeight / 2
+
+  currentTranslateY.value = Math.min(
+    maxTranslate,
+    Math.max(minTranslate, currentTranslateY.value - e.deltaY * 0.7)
+  )
+}
+
+// Deteksi Pergantian Ayat Tilawah untuk Menggeser GPU Track Secara Mulus 60FPS
+watch(
+  () => activeAyatNumber.value,
+  async () => {
+    await nextTick()
+    updateTranslateY(true)
+  }
+)
+
+const handleResize = () => {
+  updateTranslateY(false)
+}
+
 const currentQariName = computed(() => {
   const q = availableQaris.value.find((item) => item.code === selectedQari.value)
   return q ? q.name : 'Syeikh Yasser Al-Dosari'
@@ -617,6 +685,9 @@ const toggleFullscreen = async () => {
 
 const handleFullscreenChange = () => {
   isFullscreen.value = !!document.fullscreenElement
+  setTimeout(() => {
+    updateTranslateY(false)
+  }, 100)
 }
 
 // Penanganan Tombol Keyboard & Remote Control Smart TV
@@ -647,7 +718,15 @@ onMounted(() => {
   handleActivity()
 
   window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('resize', handleResize)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
+
+  // Pastikan posisi awal lirik berada tepat di tengah saat TV Mode terbuka
+  nextTick(() => {
+    setTimeout(() => {
+      updateTranslateY(false)
+    }, 150)
+  })
 
   // Otomatis mulai putar tilawah saat masuk Mode TV jika belum berputar
   const s = activeSurah.value
@@ -664,6 +743,7 @@ onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer)
   if (inactivityTimer) clearTimeout(inactivityTimer)
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('resize', handleResize)
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
 
   // Keluar dari fullscreen jika masih aktif saat komponen ditutup
