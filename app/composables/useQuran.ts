@@ -28,7 +28,6 @@ let fullAudioPlayer: HTMLAudioElement | null = null
 const currentFullSurahNumber = ref<number | null>(null)
 let yasserTimestamps: Record<string, AyatTimestamp[]> = {}
 let targetSingleAyat: number | null = null
-const localAudioUnavailable = ref(false)
 
 // Jeda antisipasi lirik (0.5 detik): menampilkan teks ayat berikutnya saat pelafalan ayat sebelumnya selesai
 // dan qari sedang mengambil jeda napas (waqaf), memberi waktu jeda visual bagi pembaca agar ritme membaca selaras
@@ -115,20 +114,7 @@ export function useQuran() {
       }
 
       fullAudioPlayer.onerror = () => {
-        const surah = currentSurah.value
-        const surahStr = surah ? String(surah.nomor).padStart(3, '0') : ''
-        const cdnUrl = surah?.audioFull?.['06'] || (surahStr ? `https://cdn.equran.id/audio-full/Yasser-Al-Dosari/${surahStr}.mp3` : '')
-
-        // Jika sebelumnya memuat berkas lokal dan 404/gagal, otomatis beralih ke CDN online Equran ID
-        if (!localAudioUnavailable.value && cdnUrl && fullAudioPlayer && fullAudioPlayer.src && !fullAudioPlayer.src.startsWith('http')) {
-          console.warn(`[Quran Audio] Berkas lokal belum tersedia di server, beralih ke CDN online: ${cdnUrl}`)
-          localAudioUnavailable.value = true
-          fullAudioPlayer.src = cdnUrl
-          seekAndPlayFull(currentTime.value, true)
-          return
-        }
-
-        console.warn('Gagal memuat audio quran baik lokal maupun online.')
+        console.warn('Gagal memuat audio quran dari CDN.')
         onlineApiFailed.value = true
         stopAudio()
       }
@@ -427,8 +413,7 @@ export function useQuran() {
     if (selectedQari.value === '06') {
       if (!currentSurah.value) return
       const surahStr = String(currentSurah.value.nomor).padStart(3, '0')
-      const cdnUrl = currentSurah.value?.audioFull?.['06'] || `https://cdn.equran.id/audio-full/Yasser-Al-Dosari/${surahStr}.mp3`
-      const targetFullSrc = localAudioUnavailable.value ? cdnUrl : `/audio/quran/06/full/${surahStr}.mp3`
+      const targetFullSrc = currentSurah.value?.audioFull?.['06'] || `https://cdn.equran.id/audio-full/Yasser-Al-Dosari/${surahStr}.mp3`
       const isNewSurah = currentFullSurahNumber.value !== currentSurah.value.nomor || !fullAudioPlayer!.src.includes(`${surahStr}.mp3`)
 
       if (isNewSurah) {
@@ -484,11 +469,10 @@ export function useQuran() {
       return
     }
 
-    // 2. KELOMPOK UTAMA: Syeikh Yasser Al-Dosari (Audio Lokal Studio / CDN)
+    // 2. KELOMPOK UTAMA: Syeikh Yasser Al-Dosari (Audio Studio Full Stream CDN)
     if (selectedQari.value === '06') {
       const surahStr = String(surahNumber).padStart(3, '0')
-      const cdnUrl = currentSurah.value?.audioFull?.['06'] || `https://cdn.equran.id/audio-full/Yasser-Al-Dosari/${surahStr}.mp3`
-      const targetFullSrc = localAudioUnavailable.value ? cdnUrl : `/audio/quran/06/full/${surahStr}.mp3`
+      const targetFullSrc = currentSurah.value?.audioFull?.['06'] || `https://cdn.equran.id/audio-full/Yasser-Al-Dosari/${surahStr}.mp3`
 
       if (deckA && !deckA.paused) deckA.pause()
       if (deckB && !deckB.paused) deckB.pause()
