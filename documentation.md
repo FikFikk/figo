@@ -67,3 +67,55 @@ graph TD
 | Robots          | `public/robots.txt`                                     | Allow all, Disallow /api/, Sitemap reference                 |
 | Per-Page SEO    | Semua `pages/*.vue`                                     | useSeoMeta() dengan keyword-rich title & description         |
 | Dynamic SEO     | `pages/tools/[slug].vue`                                | SEO meta berubah berdasarkan slug aktif                      |
+
+## Arsitektur Aplikasi Kala (kala.fikfikk.my.id)
+
+```mermaid
+graph TD
+    A[Pengguna] --> B[Aplikasi Mandiri Kala: Vue 3 + Vite SPA]
+    B --> C{Pilihan Modul}
+    C -->|Kosmologi & Waktu| D[Jadwal Sholat MABIMS Kemenag]
+    C -->|Kosmologi & Waktu| E[Kalender 3 Dimensi Masehi, Hijriah, & Jawa Sultan Agungan]
+    C -->|Kosmologi & Waktu| F[Kalkulator Weton, Pasaran, Neptu, & Watak]
+    C -->|Khazanah Al-Qur'an| G[114 Surah Rasm Utsmani MSI & 30 Juz]
+    G --> H[Audio Streaming Studio CDN Syeikh Yasser Al-Dosari]
+    G --> I[Mode Smart TV As-Sakinah 60FPS Three.js]
+    C -->|Falsafah Ibadah| J[Kajian Asrarus Shalah & Falsafah Makna Sholat]
+    C -->|Arah Kiblat| K[Kompas Geodesik Sfärikal Ka'bah]
+```
+
+### Aturan Entitas Kala
+
+| Entitas | Aturan Bisnis | Catatan |
+| --- | --- | --- |
+| Kala Standalone Architecture | Zero-Backend Static SPA Client-Side | Aplikasi dikompilasi menjadi static distribution murni (HTML/CSS/JS) tanpa membutuhkan server runtime Node.js atau PM2. Berjalan di port dev 9999, subdomain produksi `kala.fikfikk.my.id`, dan Android package `id.my.fikfikk.kala`. |
+| Waktu Sholat & Adzan | Standar Kemenag RI / MABIMS & Geolocation Permissions | Sudut Subuh 20°, sudut Isya 18°, elevasi matahari Dhuha/Terbit, dan ihtiyat 2 menit. Menghitung mundur waktu sholat aktif dan berikutnya secara real-time via koordinat GPS perangkat. Dilengkapi penanganan izin lokasi peramban (Permission API), reverse geocoding nama kota/daerah, deteksi zona waktu dinamis (WIB/WITA/WIT), persistensi `localStorage`, serta modal pemilih kota dengan 42 kota utama di 38 provinsi Indonesia sebagai fallback. |
+| Kalender Tiga Dimensi | Sinkronisasi Masehi, Hijriah, dan Jawa Sultan Agungan | Menghubungkan tanggal Gregorian dengan sistem Umm al-Qura dan penanggalan Jawa Sultan Agungan (Siklus Windu 8 tahun: Alip, Ehe, Jimawal, Je, Dal, Be, Wawu, Jimakhir; Kurup Asapon). |
+| Kalkulator Weton & Karakter | Hari (7), Pasaran (5), Neptu (7–18), dan Watak Primbon | Menghitung neptu hari lahir dan neptu pasaran (Legi, Pahing, Pon, Wage, Kliwon) dengan titik acuan 1 Januari 1970 (Kamis Wage). Menyajikan watak kepribadian spiritual Jawa-Islam tanpa ramalan mistis destruktif. |
+| Khazanah Al-Qur'an & Audio | Rasm Utsmani MSI & Streaming CDN Resmi | 114 Surah, 30 Juz, data MSI Kemenag RI. Audio rekaman studio Syeikh Yasser Al-Dosari di-stream langsung dari `cdn.equran.id` dengan penanda timestamp per ayat tanpa membebani memori lokal. |
+| Mode Smart TV As-Sakinah | Layar Penuh 16:9 Ambient Display 60FPS | Gelombang sutra hening Three.js As-Sakinah emerald-gold, piringan kaligrafi statis, aliran lirik Spotify-style 3-baris vertikal akselerasi GPU compositor, jam digital real-time, dan remote control keyboard TV (Spasi/Panah/F/Esc). |
+| Falsafah & Asrarus Shalah (Article Reader) | Arsitektur Reader 3-Kolom, Custom Tipografi, & Bottom Sheet Mobile | Menyajikan kajian Asrarus Shalah dalam layout artikel profesional ala FiGo: (1) Top bar progress persentase baca; (2) Kolom kiri `ReaderOutline` berisi daftar bab & sorotan bookmark tersimpan; (3) Kolom tengah artikel dengan kaligrafi Arab, kutipan suluk, dan navigasi bab; (4) Kolom kanan `ReaderSettings` untuk kustomisasi ukuran font (14-28px), pilihan jenis huruf (Serif/Sans), jarak baris (Rapat/Nyaman/Longgar), dan perataan paragraf (Rata Kiri/Justify); (5) Tombol aksi mengambang dan bottom sheet Teleport untuk pengalaman baca mobile. |
+| Kompas Arah Kiblat | Perhitungan Great-Circle Azimuth Ka'bah | Menghitung arah sudut Ka'bah (21.4225° N, 39.8262° E) dari koordinat pengguna dengan toleransi keselarasan ±3°. Mendukung sensor orientasi magnetik perangkat HP dan slider simulasi desktop. |
+| UI/UX Iconography & Navigation | 100% Vector SVG via Lucide (Zero Symbol Font) & Mobile Bottom Bar | Seluruh ikon aplikasi diubah menjadi ikon vektor SVG native Lucide (`lucide-vue-next`) untuk menjamin konsistensi render di semua peramban dan sistem operasi tanpa ketergantungan webfont glyph. Dilengkapi floating bottom navigation bar pada viewport mobile (`md:hidden`) dengan safe-area padding. |
+| Auto-Scroll & Karaoke Aksara Arab | Smooth Viewport Centering & Pure Yellow Word-by-Word Highlight | (1) Layar otomatis memusatkan (smooth scroll center) ayat yang sedang diputar secara cerdas saat tilawah berpindah ayat atau saat tombol play ditekan, dilengkapi tombol toggle Auto-Scroll di header; (2) Efek karaoke aksara Arab murni berupa perubahan warna font menjadi kuning (`text-amber-400 font-bold`) tanpa border, tanpa box, tanpa ring, dan tanpa pill background. Kata aktif disorot kuning menyala, dan setelah selesai kata tersebut kembali ke putih lembut sehingga warna kuning tampak berjalan dinamis mengikuti nada pelafalan tilawah; (3) Dilengkapi kalibrasi akustik RMS energi suara per nada untuk Syeikh Yasser Al-Dosari dan model akustik Tajweed adaptif untuk qari lainnya. |
+| Multi-Qari Engine | Dual-Mode Master Studio Lokal vs Qari Internasional Online | (1) **Lokal Studio (Gapless & Cepat)**: Syeikh Yasser Al-Dosari menggunakan audio continuous full stream dengan timestamp presisi milidetik; (2) **Qari Internasional (Streaming Online)**: Syeikh Misyari Rasyid Al-Afasy, Syeikh Abdurrahman As-Sudais, Syeikh Abdullah Al-Juhany, Syeikh Abdul Muhsin Al-Qasim, dan Syeikh Ibrahim Al-Dossari menggunakan dual-deck HTML5 audio player per ayat dengan pergantian instan tanpa jeda buffer; (3) Pilihan qari tersimpan otomatis di `localStorage` dan dapat diganti langsung dari header docked bar, drawer settings, maupun floating audio player bar. |
+
+### Transisi Status Izin Lokasi & Geolocation
+
+| Entitas | Dari | Ke | Pemicu | Catatan |
+| --- | --- | --- | --- | --- |
+| Izin Lokasi | Default / Prompt | Memindai (Locating) | Pengguna menekan tombol "Izinkan Akses Lokasi" atau "Gunakan GPS" | Browser menampilkan modal izin Geolocation API native. |
+| Izin Lokasi | Memindai | Diberikan (Granted) | Pengguna menyetujui izin GPS pada dialog peramban | Koordinat lintang/bujur diperoleh, nama kota/daerah di-reverse geocode, zona waktu disesuaikan, dan jadwal adzan dihitung ulang. Disimpan ke `localStorage`. |
+| Izin Lokasi | Memindai | Ditolak (Denied) | Pengguna menolak izin akses lokasi | Status berubah menjadi denied, peringatan ditampilkan ramah, dan pengguna diarahkan memilih kota manual tanpa merusak kalkulasi. |
+| Izin Lokasi | Default / Denied | Manual Selected | Pengguna memilih kota dari modal CityPickerModal | Koordinat dan zona waktu kota terpilih diterapkan seketika dan disimpan ke `localStorage`. |
+
+### Transisi Status Pemutaran Audio Kala
+
+| Entitas | Dari | Ke | Pemicu | Catatan |
+| --- | --- | --- | --- | --- |
+| Audio Quran | Berhenti | Memutar | Pengguna menekan tombol putar ayat atau masuk Mode TV | Audio studio/online dimuat dari CDN, layar auto-scroll ke ayat, dan kata pertama disorot kuning menyala. |
+| Audio Quran | Memutar | Berpindah Ayat | Timestamp ayat terlampaui (RAF ticker 60FPS) atau audio per-ayat berakhir | Layar otomatis memusatkan ayat baru, ayat sebelumnya kembali ke putih lembut, kata ayat baru mulai berjalan kuning. |
+| Audio Quran | Memutar | Dijeda | Pengguna menekan tombol jeda atau Spasi di remote TV | Posisi detik pemutaran disimpan sementara, status highlight kata aktif terjaga. |
+| Audio Quran | Memutar | Berganti Qari | Pengguna memilih qari lain dari menu dropdown atau drawer | Player menghentikan audio sebelumnya, beralih ke stream qari baru, dan melanjutkan pemutaran otomatis jika sedang aktif. |
+| Audio Quran | Memutar | Selesai | Durasi surah berakhir pada ayat terakhir | Player berhenti dan status reset ke awal surah. |
+

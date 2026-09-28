@@ -111,4 +111,44 @@
 | Response          | HTTP 200 + JSON `{ success: boolean, data: { symbol: string, categories: Record<string, any[]>, summary: any } }`                                                               |
 | Notes             | Proxy data audit fundamental emiten dari RapidAPI IDX beta dengan cache medium TTL. Mendukung normalisasi ticker dan arsitektur integrasi Live AI Router.                     |
 
+| Field             | Detail                                                                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Method + Endpoint | GET /dataset/filsafat_dan_makna_bacaan_sholat.json                                                                                                                              |
+| Auth Required     | No (Static Dataset)                                                                                                                                                             |
+| Headers           | None specific                                                                                                                                                                   |
+| Query Params      | N/A                                                                                                                                                                             |
+| Request Body      | N/A                                                                                                                                                                             |
+| Response          | HTTP 200 + JSON `{ buku_referensi: string, tokoh: string, arsip_pengetahuan: BabItem[] }`                                                                                       |
+| Notes             | Dataset risalah ilmiah Asrarus Shalah dan kajian hikmah gerakan shalat untuk aplikasi Kala.                                                                                   |
+
+| Field             | Detail                                                                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Method + Endpoint | GET https://cdn.equran.id/audio-full/Yasser-Al-Dosari/:surahId.mp3                                                                                                              |
+| Auth Required     | No (Public CDN)                                                                                                                                                                 |
+| Headers           | Range: bytes=... (didukung untuk seeking audio)                                                                                                                                 |
+| Query Params      | N/A                                                                                                                                                                             |
+| Request Body      | N/A                                                                                                                                                                             |
+| Response          | HTTP 200 / 206 Partial Content (Audio MPEG)                                                                                                                                     |
+| Notes             | Sumber audio studio Syeikh Yasser Al-Dosari untuk pemutaran Quran gapless berpresisi timestamp milidetik di aplikasi Kala.                                                     |
+
+| Field             | Detail                                                                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Method + Endpoint | GET https://cdn.equran.id/audio-partial/:qariSlug/:surahAyatId.mp3                                                                                                              |
+| Auth Required     | No (Public CDN)                                                                                                                                                                 |
+| Headers           | Range: bytes=...                                                                                                                                                                |
+| Query Params      | N/A                                                                                                                                                                             |
+| Request Body      | N/A                                                                                                                                                                             |
+| Response          | HTTP 200 / 206 Partial Content (Audio MPEG)                                                                                                                                     |
+| Notes             | Sumber audio streaming per ayat untuk 5 Qari internasional online: Misyari-Rasyid-Al-Afasi, Abdurrahman-as-Sudais, Abdullah-Al-Juhany, Abdul-Muhsin-Al-Qasim, dan Ibrahim-Al-Dossari. |
+
+| Field             | Detail                                                                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Method + Endpoint | GET https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=:lat&longitude=:lng&localityLanguage=id                                                                   |
+| Auth Required     | No (Public Client API)                                                                                                                                                         |
+| Headers           | Accept: application/json                                                                                                                                                        |
+| Query Params      | latitude (float, required), longitude (float, required), localityLanguage (string, default: id)                                                                                 |
+| Request Body      | N/A                                                                                                                                                                             |
+| Response          | HTTP 200 + JSON `{ city: string, locality: string, principalSubdivision: string, countryName: string }`                                                                          |
+| Notes             | Reverse geocoding koordinat GPS menjadi nama kota dan provinsi di Indonesia untuk personalisasi jadwal adzan. Memiliki timeout 3.5s dengan fallback offline 42 kota utama.   |
+
 No scheduled tasks (cron jobs) configured.

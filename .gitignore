@@ -45,3 +45,7 @@ update_patterns.py
 
 # Audio datasets (local media cache)
 public/audio/
+
+# Scratch & temporary analysis
+scratch/
+
